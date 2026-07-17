@@ -185,3 +185,9 @@ The plan shall include all features, in a "crawl-data ASAP" prioritisation.
 
 › Write tests for both frontend and backend parts.
 
+> › Implement the [Plan](./plans/001_ai-usage-crawler-crawl-data-first-implementation-plan.md).
+
+› $commit-with-lplp-style after completed steps
+
+› what about squashing the commits after 41be78c869486dd10ccd9265124b15e2b3353109?
+

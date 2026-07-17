@@ -1,5 +1,60 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "ai-tracker"
+name = "ai-usage"
 version = "0.1.0"
+description = "Local-first usage tracking for AI coding services"
+readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "aiosqlite>=0.22",
+    "alembic>=1.16",
+    "click>=8.2",
+    "cryptography>=45",
+    "fastapi>=0.116",
+    "fastscheduler>=0.2.1",
+    "httpx>=0.28",
+    "pexpect>=4.9; sys_platform != 'win32'",
+    "platformdirs>=4.3",
+    "pydantic>=2.11",
+    "pyyaml>=6.0",
+    "sentry-sdk[fastapi]>=2.35",
+    "sqlalchemy[asyncio]>=2.0.41",
+    "textual>=5.3",
+    "uvicorn>=0.35",
+]
+
+[project.optional-dependencies]
+browser = ["browser-cookie3>=0.20", "playwright>=1.54"]
+test = [
+    "hypothesis>=6.136",
+    "pytest>=8.4",
+    "pytest-asyncio>=1.1",
+    "pytest-cov>=6.2",
+    "respx>=0.22",
+]
+
+[project.scripts]
+ai-usage = "ai_usage.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_usage"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pyright]
+pythonVersion = "3.14"
+typeCheckingMode = "strict"
+include = ["src", "tests"]
+
