@@ -1,0 +1,19 @@
+Started crawling Claude /usage (claude/statusline, 72fc02a2-0e64-4cb4-89f9-e9e218a6ff07).
+Claude /usage's Five hours got a new value to store (14% -> 15%).
+Done crawling Claude /usage in 0.1s (2 metrics).
+Claude /usage: restoring crawl interval to 600 seconds.
+Claude /usage: next crawl in approximately 600 seconds.
+INFO:     ::1:36604 - "GET /api/v1/series?start=2026-07-16T20%3A52%3A31.397Z&end=2026-07-17T20%3A52%3A31.397Z HTTP/1.1" 200 OK
+INFO:     ::1:36604 - "GET /api/v1/latest HTTP/1.1" 200 OK
+INFO:     ::1:36608 - "GET /api/v1/series?start=2026-07-16T20%3A52%3A31.819Z&end=2026-07-17T20%3A52%3A31.819Z&service=codex&account=fcd1aff8-68f7-4f0f-8647-ab21d3517bbe&metric=seven-days HTTP/1.1" 200 OK
+INFO:     ::1:36608 - "GET /api/v1/latest HTTP/1.1" 200 OK
+^CINFO:     Shutting down
+INFO:     Waiting for connections to close. (CTRL+C to force quit)
+^[[A
+^C^C^C^C^C
+^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C
+^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C
+Started crawling Codex app-server (codex/app-server, 72f8fce8-7990-4de6-8fb7-67e09547e229).
+Done crawling Codex app-server in 2.0s (1 metrics).
+Codex app-server: next crawl in approximately 600 seconds.
+^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C
