@@ -355,6 +355,25 @@ def run_all(host: str, port: int, detach_mode: bool) -> None:
 # end def
 
 
+@main.command()
+@click.option("--host", default="localhost")
+@click.option("--port", default=4458, type=int)
+def serve(host: str, port: int) -> None:
+    """Serve the usage API and dashboard without crawling."""
+    import uvicorn
+
+    from ai_usage.api import create_app, exposed_host
+
+    if exposed_host(host):
+        click.echo(
+            "WARNING: serving usage data on a non-loopback address without authentication",
+            err=True,
+        )
+    # end if
+    uvicorn.run(create_app(default_paths()), host=host, port=port)
+# end def
+
+
 if __name__ == "__main__":
     main()
 # end if
