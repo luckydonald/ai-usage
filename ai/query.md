@@ -191,3 +191,7 @@ The plan shall include all features, in a "crawl-data ASAP" prioritisation.
 
 › what about squashing the commits after 41be78c869486dd10ccd9265124b15e2b3353109?
 
+❯ configure a crawler for claude and codex and let it fetch - `uv run ai-usage --help`
+
+› as a step for inbetween: configure a crawler for claude and codex and let it fetch
+

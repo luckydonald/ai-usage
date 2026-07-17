@@ -21,6 +21,7 @@ from ai_usage.providers.claude import (
 )
 from ai_usage.services import detach, install_service, uninstall_service
 from ai_usage.settings import Paths, default_paths
+from ai_usage.shell_completion import install_completion
 
 
 class Runtime:
@@ -305,6 +306,25 @@ def install(enable_server: bool, host: str, port: int) -> None:
     """Install a user-level startup service."""
     target = install_service(default_paths(), enable_server, host, port)
     click.echo(f"Installed {target}")
+# end def
+
+
+@main.command()
+@click.option(
+    "--shell",
+    type=click.Choice(["bash", "zsh", "fish"]),
+    default=None,
+    help="Shell to install completion for. Defaults to $SHELL.",
+)
+def completion(shell: str | None) -> None:
+    """Install shell tab-completion. Safe to re-run."""
+    result = install_completion(default_paths(), main, shell)
+    if result.rc_path is not None:
+        click.echo(f"Wrote {result.script_path} and sourced it from {result.rc_path}")
+        click.echo("Restart your shell (or `source` the rc file) to use it.")
+    else:
+        click.echo(f"Wrote {result.script_path}")
+    # end if
 # end def
 
 
