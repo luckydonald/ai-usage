@@ -358,3 +358,5 @@ Is the status line calling `ai-usage` in some way directly, hence actually writi
 
 ❯ /commit-with-lplp-style but make sure to squash & rebase our AI stuff from between to after the two `Grouped discovery and account registration under \`provider\`` commits.
 
+❯ fix the first few commits after `base/base` having the wrong author/commiter (leaking data); use the `--local` configured git settings instead `--global` ones for those commits.
+
