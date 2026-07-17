@@ -70,6 +70,13 @@ class ConfigStore:
         return path
     # end def
 
+    def delete_account(self, account: AccountConfig) -> None:
+        path = self.paths.services / account.service / f"{account.id}.yml"
+        if path.exists():
+            path.unlink()
+        # end if
+    # end def
+
     def create_account(
         self,
         service: str,
@@ -77,6 +84,7 @@ class ConfigStore:
         name: str,
         credential_id: str | None,
         options: dict[str, Any],
+        discovery_fingerprint: str | None = None,
     ) -> AccountConfig:
         account = AccountConfig(
             id=str(uuid.uuid4()),
@@ -85,9 +93,39 @@ class ConfigStore:
             name=name,
             credential_id=credential_id,
             options=options,
+            discovery_fingerprint=discovery_fingerprint,
         )
         self.save_account(account)
         return account
+    # end def
+
+    def find_discovered_account(
+        self,
+        service: str,
+        provider: str,
+        fingerprint: str,
+        discovered_options: dict[str, Any],
+    ) -> AccountConfig | None:
+        accounts = self.list_accounts(False)
+        matches = [
+            account
+            for account in accounts
+            if account.discovery_fingerprint == fingerprint
+        ]
+        if not matches:
+            matches = [
+                account
+                for account in accounts
+                if account.discovery_fingerprint is None
+                and account.service == service
+                and account.provider == provider
+                and all(account.options.get(key) == value for key, value in discovered_options.items())
+            ]
+        # end if
+        if len(matches) > 1:
+            raise ValueError(f"multiple accounts match discovered provider {service}/{provider}")
+        # end if
+        return matches[0] if matches else None
     # end def
 
     def intervals_for(self, account: AccountConfig) -> dict[str, int]:
@@ -105,4 +143,3 @@ class ConfigStore:
         return merged
     # end def
 # end class
-

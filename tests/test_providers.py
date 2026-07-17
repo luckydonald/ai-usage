@@ -128,6 +128,10 @@ def test_claude_relay_preserves_existing_command(tmp_path) -> None:
     local = tmp_path / "local"
     install_status_relay(account, local)
     assert "ai-usage-relay-relay-account" in settings.read_text(encoding="utf-8")
+    relay_root = local / "claude-relay"
+    assert (relay_root / "ai-usage-relay-relay-account.py").exists()
     remove_status_relay(account, local)
     assert "existing-status" in settings.read_text(encoding="utf-8")
+    assert not (relay_root / "ai-usage-relay-relay-account.py").exists()
+    assert not (relay_root / "relay-account.original.json").exists()
 # end def

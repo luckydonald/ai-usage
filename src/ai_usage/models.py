@@ -75,7 +75,9 @@ class AccountConfig(BaseModel):
     provider: str
     name: str
     enabled: bool = True
+    removed_at: datetime | None = None
     credential_id: str | None = None
+    discovery_fingerprint: str | None = None
     options: dict[str, Any] = Field(default_factory=dict)
     colors: dict[str, str] = Field(default_factory=dict)
     intervals: dict[str, int] = Field(default_factory=dict)
@@ -121,4 +123,3 @@ class GraphSeries(BaseModel):
     points: list[GraphPoint]
     windows: list[GraphWindow]
 # end class
-

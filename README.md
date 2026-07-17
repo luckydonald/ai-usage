@@ -37,23 +37,23 @@ For development, use `uv sync --extra test` instead of `uv tool install .` and r
 
 ## Quick start: Codex and Claude
 
-See which collectors are available:
+Discover local accounts that can be imported:
 
 ```shell
-ai-usage providers
-ai-usage discover codex app-server
-ai-usage discover claude statusline
+ai-usage provider discover
+ai-usage provider discover codex app-server
+ai-usage provider discover claude statusline
 ```
 
-Add the local Codex and Claude profiles:
+Running `ai-usage provider add` in a terminal opens a selection screen containing discovered accounts, followed by a separate “Manually configure other…” menu. To configure the local Codex and Claude profiles non-interactively:
 
 ```shell
-ai-usage add codex app-server \
+ai-usage provider add codex app-server \
   --name "Personal Codex" \
   --profile-dir "$HOME/.codex" \
   --no-input
 
-ai-usage add claude statusline \
+ai-usage provider add claude statusline \
   --name "Personal Claude" \
   --profile-dir "$HOME/.claude" \
   --no-input
@@ -86,7 +86,7 @@ The Copilot collector reads monthly AI-credit usage from GitHub's billing API. P
 Then configure the account:
 
 ```shell
-ai-usage add copilot github-api \
+ai-usage provider add copilot github-api \
   --name "Work Copilot" \
   --username octocat \
   --allowance 300 \
@@ -101,9 +101,11 @@ Delete the plaintext credential file after confirming `ai-usage fetch` works. AI
 
 | Command | Purpose |
 | --- | --- |
-| `ai-usage providers` | List built-in and plugin collectors. |
-| `ai-usage discover SERVICE PROVIDER` | Inspect local profiles that a collector can import; this is read-only. |
-| `ai-usage add SERVICE PROVIDER` | Add an account. Missing required values are prompted unless `--no-input` is used. |
+| `ai-usage provider discover [SERVICE] [PROVIDER]` | Inspect importable local accounts across all matching collectors; this is read-only. |
+| `ai-usage provider add [SERVICE] [PROVIDER]` | Select a discovered account or manually configure a collector. Alias: `new`. |
+| `ai-usage provider list [SERVICE] [PROVIDER]` | List active, disabled, and soft-removed accounts. Alias: `ls`. |
+| `ai-usage provider status [SERVICE] [PROVIDER] [ACCOUNT]` | Show stored configuration, latest usage, fetch result, and crawl state. Alias: `info`. |
+| `ai-usage provider remove [SERVICE] [PROVIDER] [ACCOUNT]` | Disable an account and remove its local secrets while preserving history. Aliases: `del`, `rm`. |
 | `ai-usage fetch [--account ID]` | Collect one sample now. Repeat `--account` to limit the run. |
 | `ai-usage crawl [-d]` | Run the adaptive collector loop, optionally detached. |
 | `ai-usage serve [--host HOST] [--port PORT]` | Serve the dashboard and API without crawling. |
@@ -113,16 +115,34 @@ Delete the plaintext credential file after confirming `ai-usage fetch` works. AI
 | `ai-usage completion [--shell ...]` | Install shell completion for Bash, Zsh, or Fish. |
 | `ai-usage db-upgrade` | Apply pending Alembic migrations manually. |
 
-Use `ai-usage COMMAND --help` for every option. Provider-specific fields can be supplied as regular flags, such as `--profile-dir`, `--command`, or `--allowance`.
+Use `ai-usage provider COMMAND --help` for provider-management options. Provider-specific fields can be supplied as regular flags, such as `--profile-dir`, `--command`, or `--allowance`.
+
+### Remove or restore an account
+
+Removing an account is a soft deletion by default:
+
+```shell
+ai-usage provider remove --account ACCOUNT_ID
+```
+
+The account YAML remains with `enabled: false` and a `removed_at` timestamp, so the state and usage history can synchronize through Git. AI Usage immediately deletes the machine-local encrypted credential, crawl state, fetch-run state, and Claude relay integration. Repeating the command is safe.
+
+When the same local account is discovered and added again, AI Usage restores its existing ID and history. To permanently remove both the tombstone and its JSONL history, use the explicit destructive flag:
+
+```shell
+ai-usage provider rm --account ACCOUNT_ID --delete-history --no-input
+```
+
+Interactive removal asks whether the history should also be deleted and defaults to preserving it.
 
 ## Collection methods
 
 | Service | Provider | Status | Notes |
 | --- | --- | --- | --- |
 | Codex | `app-server` | Recommended | Reads current rate limits through the local Codex app server. |
-| Codex | `status` | Supported | Parses `codex /status`; invokes it twice to refresh stale output. |
+| Codex | `cli-status` | Supported | Parses `codex /status`; invokes it twice to refresh stale output. |
 | Claude | `statusline` | Recommended | Uses the lightweight status relay and falls back to `claude /usage`. |
-| Claude | `usage` | Supported | Always parses `claude /usage` in a pseudo-terminal. |
+| Claude | `cli-usage` | Supported | Always parses `claude /usage` in a pseudo-terminal. |
 | Copilot | `github-api` | Supported | Reads GitHub AI-credit billing usage with an encrypted token. |
 | Codex/Claude | `web` | Experimental | Generic private JSON endpoint adapter; private APIs may change without notice. |
 | Copilot | `entitlements` | Experimental | Generic private entitlement endpoint adapter. |
@@ -254,7 +274,7 @@ Alembic revisions live in `alembic/`. The application automatically upgrades the
 
 ## Troubleshooting
 
-- **Discovery finds nothing:** verify the profile directory exists, or pass `--profile-dir` directly when adding the account.
+- **Discovery finds nothing:** verify the profile directory exists, or use `ai-usage provider add SERVICE PROVIDER --profile-dir ...` for manual configuration.
 - **Claude status data is stale:** run `ai-usage claude-relay-install ACCOUNT_ID` to repair the relay, then use Claude once so its status line emits a fresh payload.
 - **All providers fail:** run `ai-usage fetch` in the foreground; each account prints its own error.
 - **Dashboard says “not built”:** run the frontend build before installing or serving from a source checkout.
