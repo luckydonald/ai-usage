@@ -22,6 +22,7 @@ from ai_usage.database import Database
 from ai_usage.graph import build_series
 from ai_usage.history import HistoryStore
 from ai_usage.orm import MetricSampleRecord
+from ai_usage.progress import ProgressReporter
 from ai_usage.providers import built_in_registry
 from ai_usage.sentry import capture_exception, init_sentry
 from ai_usage.settings import Paths
@@ -31,14 +32,20 @@ LOGGER = logging.getLogger("ai_usage.api")
 
 
 class ApplicationState:
-    def __init__(self, paths: Paths):
+    def __init__(self, paths: Paths, reporter: ProgressReporter = LOGGER.info):
         self.paths = paths
         self.database = Database(paths)
         self.config = ConfigStore(paths)
         self.history = HistoryStore(paths, self.database)
         self.providers = built_in_registry()
-        self.collector = Collector(self.config, self.database, self.history, self.providers)
-        self.crawler = Crawler(self.collector, self.config, self.database)
+        self.collector = Collector(
+            self.config,
+            self.database,
+            self.history,
+            self.providers,
+            reporter=reporter,
+        )
+        self.crawler = Crawler(self.collector, self.config, self.database, reporter=reporter)
     # end def
 
     async def initialize(self) -> None:

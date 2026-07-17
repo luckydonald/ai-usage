@@ -78,6 +78,22 @@ class HistoryStore:
         return events
     # end def
 
+    async def latest_percentages(self, account_id: str) -> dict[str, float]:
+        statement = (
+            select(MetricSampleRecord)
+            .where(MetricSampleRecord.account_id == account_id)
+            .order_by(MetricSampleRecord.observed_at.desc())
+        )
+        async with self.database.sessions() as session:
+            records = list(await session.scalars(statement))
+        # end with
+        latest: dict[str, float] = {}
+        for record in records:
+            latest.setdefault(record.metric_key, record.percentage)
+        # end for
+        return latest
+    # end def
+
     async def index_all(self) -> int:
         count = 0
         for path in sorted(self.paths.history.glob("v1/**/*.jsonl")):
@@ -192,4 +208,3 @@ class HistoryStore:
         # end with
     # end def
 # end class
-
