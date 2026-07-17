@@ -349,3 +349,6 @@ Obviously the commands `list`, `remove` and `status` needs to be newly implement
 > - [Raw log (`126428` chars, `124 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/d918c87c-fad5-4fbe-8ab8-64534b3e1065/tasks/a35abd25d3f4bc450.output)
 > - `9` tools, `32387` tokens, `1.148 s`
 
+❯ I think the "usual stale" case should be simply worded better - not as an error but an information that we don't got new data yet.
+Is the status line calling `ai-usage` in some way directly, hence actually writing changes in real time?
+
