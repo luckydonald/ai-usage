@@ -396,7 +396,7 @@ def run_all(host: str, port: int, detach_mode: bool) -> None:
     except ImportError as exception:
         raise click.ClickException("the API server has not been installed") from exception
     # end try
-    asyncio.run(run_server_and_crawler(paths, host, port))
+    asyncio.run(run_server_and_crawler(paths, host, port, reporter=click.echo))
 # end def
 
 

@@ -1,5 +1,5 @@
-import { createApp } from "vue";
-import { createRouter, createWebHistory } from "vue-router";
+import { createApp, h } from "vue";
+import { createRouter, createWebHistory, RouterView } from "vue-router";
 
 import App from "./App.vue";
 import { initSentry } from "./sentry";
@@ -12,8 +12,7 @@ const router = createRouter({
     { path: "/__sentry-test", component: SentryTestView },
   ],
 });
-const app = createApp({ template: "<router-view />" });
+const app = createApp({ render: () => h(RouterView) });
 app.use(router);
 initSentry(app, router);
 app.mount("#app");
-
