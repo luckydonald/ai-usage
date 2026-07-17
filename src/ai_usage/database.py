@@ -10,7 +10,8 @@ from typing import Any
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import event, select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from ai_usage.crypto import CredentialCipher, EncryptedValue
 from ai_usage.orm import CredentialRecord, SourceRecord
@@ -28,7 +29,7 @@ def sqlite_url(path: Path) -> str:
 class Database:
     def __init__(self, paths: Paths):
         self.paths = paths
-        self.engine: AsyncEngine = create_async_engine(sqlite_url(paths.database))
+        self.engine: AsyncEngine = create_async_engine(sqlite_url(paths.database), poolclass=NullPool)
         self.sessions = async_sessionmaker(self.engine, expire_on_commit=False)
         self.cipher = CredentialCipher.load(paths.credential_key)
 
