@@ -1,0 +1,6 @@
+Started crawling Claude /usage (claude/statusline, 72fc02a2-0e64-4cb4-89f9-e9e218a6ff07).
+Failed crawling Claude /usage in 30.3s: Claude /usage did not become ready; use Claude once to refresh the status relay
+Claude /usage: backing off crawl interval to 240 seconds after failure 2.
+Started crawling Claude /usage (claude/statusline, 72fc02a2-0e64-4cb4-89f9-e9e218a6ff07).
+Failed crawling Claude /usage in 30.4s: Claude /usage did not become ready; use Claude once to refresh the status relay
+Claude /usage: backing off crawl interval to 480 seconds after failure 3.
