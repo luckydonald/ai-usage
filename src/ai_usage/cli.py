@@ -3,6 +3,7 @@
 import asyncio
 import json
 import sys
+from pathlib import Path
 from typing import Any
 
 import click
@@ -71,6 +72,17 @@ def parse_dynamic_options(arguments: tuple[str, ...]) -> dict[str, Any]:
 # end def
 
 
+def credential_payload(secret_json: str | None, secret_file: Path | None) -> str | None:
+    if secret_json and secret_file:
+        raise click.UsageError("use either --secret-json or --secret-file, not both")
+    # end if
+    if secret_file:
+        return secret_file.read_text(encoding="utf-8")
+    # end if
+    return secret_json
+# end def
+
+
 async def create_account(
     runtime: Runtime,
     service: str,
@@ -136,6 +148,11 @@ def main(context: click.Context) -> None:
 @click.argument("provider")
 @click.option("--name")
 @click.option("--secret-json", help="Credential JSON to encrypt in local SQLite.")
+@click.option(
+    "--secret-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Read credential JSON from a file instead of exposing it in shell history.",
+)
 @click.option("--no-input", is_flag=True)
 @click.pass_context
 def add(
@@ -144,6 +161,7 @@ def add(
     provider: str,
     name: str | None,
     secret_json: str | None,
+    secret_file: Path | None,
     no_input: bool,
 ) -> None:
     """Add a configured provider account."""
@@ -156,7 +174,7 @@ def add(
                 service,
                 provider,
                 name,
-                secret_json,
+                credential_payload(secret_json, secret_file),
                 no_input,
                 parse_dynamic_options(tuple(context.args)),
             )
@@ -173,8 +191,8 @@ def add(
 @main.command("providers")
 def list_providers() -> None:
     """List installed provider adapters."""
-    runtime = Runtime(default_paths())
-    for (service, key), provider in sorted(runtime.providers.providers.items()):
+    registry = built_in_registry()
+    for (service, key), provider in sorted(registry.providers.items()):
         marker = " [experimental]" if provider.experimental else ""
         click.echo(f"{service}/{key}: {provider.display_name}{marker}")
     # end for
@@ -187,18 +205,14 @@ def list_providers() -> None:
 def discover(service: str, provider_key: str) -> None:
     """Show local accounts a provider can import."""
     async def execute() -> None:
-        runtime = Runtime(default_paths())
-        try:
-            candidates = await runtime.providers.get(service, provider_key).discover()
-            if not candidates:
-                click.echo("No local accounts discovered")
-            # end if
-            for candidate in candidates:
-                click.echo(json.dumps(candidate.model_dump(mode="json"), sort_keys=True))
-            # end for
-        finally:
-            await runtime.close()
-        # end try
+        registry = built_in_registry()
+        candidates = await registry.get(service, provider_key).discover()
+        if not candidates:
+            click.echo("No local accounts discovered")
+        # end if
+        for candidate in candidates:
+            click.echo(json.dumps(candidate.model_dump(mode="json"), sort_keys=True))
+        # end for
     # end def
 
     asyncio.run(execute())

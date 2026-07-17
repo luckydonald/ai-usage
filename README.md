@@ -1,318 +1,261 @@
-# base
+# AI Usage
 
-Small reusable git base for other repositories.
+AI Usage is a local-first dashboard and crawler for AI coding-service limits. It collects usage from Codex, Claude, and GitHub Copilot, keeps a merge-friendly history, and shows how each allowance is being consumed over time.
 
-This history is intentionally rooted at `empty/init` from `https://github.com/EmptyAAS/empty.git`. That gives multiple repos the same empty ancestor commit, which makes it possible to rebase or merge this base into another repo in a predictable way.
+Everything runs on your machine. Account configuration and history live in `~/.ai-usage`; credentials are encrypted and kept out of the files intended for Git sync.
 
-## Quick links
-- [Include](#all-code-for-c-as-a-single-copy-pastable-one)
-- [Sidecar](#branch-splitting-cleanuncleanhistory)
+## What you get
 
-## Table of contents
+- Multiple accounts and collection methods per service.
+- One-shot collection or an adaptive background crawler.
+- A responsive Vue dashboard with light and dark themes.
+- Filters for service, provider, account, metric, and time range.
+- Stepped usage lines, reset-window overlays, projections, and exhausted periods.
+- JSON API and live Server-Sent Events updates.
+- User-level startup installation on Linux, macOS, and Windows.
+- Optional direct Sentry or Bugsink reporting for backend and frontend errors.
 
-<!-- TOC -->
-* [base](#base)
-  * [Quick links](#quick-links)
-  * [Table of contents](#table-of-contents)
-* [Add This To Your Repo](#add-this-to-your-repo)
-  * [Overview](#overview)
-    * [Which Workflow To Choose](#which-workflow-to-choose)
-* [Installation](#installation)
-  * [Setup](#setup)
-          * [Shared initial commit](#shared-initial-commit)
-  * [Setup: a) Checkout](#setup-a-checkout)
-      * [Rename branch](#rename-branch)
-        * [Local branch](#local-branch)
-        * [Remote branch](#remote-branch)
-          * [Hosted Git](#hosted-git)
-  * [Setup: b) Rebase Onto `base/base`](#setup-b-rebase-onto-basebase)
-  * [Setup: c) Merge `base/base`](#setup-c-merge-basebase)
-    * [All code for c) as a single copy pastable one:](#all-code-for-c-as-a-single-copy-pastable-one)
-      * [Fix user](#fix-user)
-  * [After Adopting The Base](#after-adopting-the-base)
-    * [Git LFS](#git-lfs)
-    * [Claude GitHub issue agent](#claude-github-issue-agent)
-    * [Codex GitHub issue agent](#codex-github-issue-agent)
-    * [Monorepo subfolders: per-subfolder `.claude/`](#monorepo-subfolders-per-subfolder-claude)
-    * [Branch splitting (clean/unclean/history)](#branch-splitting-cleanuncleanhistory)
-<!-- TOC -->
+## Requirements
 
+- Python 3.14 or newer.
+- The corresponding service CLI for CLI-backed collection: `codex` and/or `claude`.
+- Node.js and Corepack only when building the dashboard from source.
 
-# Add This To Your Repo
+## Install from source
 
-## Overview
-There are three ways to adopt this:
+Build the frontend, then install the Python application:
 
-- start with it from the get-go, creating your branch from `base/base`.
-  - obviously only works if you haven't commited anything yet.
-  - otherwise see rebase below, that's basically _"plz pretend I started from that and did all my own commits afterward!"_
-- rebase your repo on top of `base/base` if you want this base to become part of your linear history 
-  - recommended if your git is not yet used by others
-- merge `base/base` into your repo if you do not want to rewrite history
-
-If you only want a one-time copy of the files, just copy them manually. The steps below are for keeping your repo connected to this base over time.
-
-### Which Workflow To Choose
-
-Choose checkout if:
-- you want to create a new project
-- or have not commited anything yet
-
-Choose rebase if:
-
-- you want this base to sit underneath your repo's commits
-- you prefer a linear history
-- force-pushing rewritten history is acceptable
-
-Choose merge if:
-
-- your branch is already published or shared
-- you want the least disruptive adoption path
-- you are fine with explicit merge commits for base updates
-
-
-# Installation
-## Setup
-
-Add the remotes you need, as below.
-We assume your username would be `luckydonald` on GitHub, otherwise remove the `luckydonald@` part from the repository URLs, or replace with your own.
-Specifying the username is only needed if you have more than one GitHub account configured on your machine (e.g. private and work).
-
-```bash
-git remote add base https://luckydonald@github.com/luckydonald/base.git
-git fetch base base
-git lfs install
-pre-commit install
-```
-
-###### Shared initial commit
-> > ℹ️  
-> > If your repository does not already descend from `empty/init`, and you want to merge cleanly later, and it's okay to rewrite its history, re-root it once:
-> 
-> 1. ```bash
->    git remote add empty https://luckydonald@github.com/EmptyAAS/empty.git
->    git fetch empty init
->    ```
-> 2. ```bash
->    git rebase --root --onto empty/init
->    ```
->
-> That keeps your file history intact, but rewrites every commit in the branch so the new root is the shared empty commit.
-
-## Setup: a) Checkout
-
-Use this if you are starting fresh and want your repository branch to begin at `base/base`.
-
-This is the simplest option, but it only makes sense before you have your own commits on the branch.
-
-We assume you want to give your branch the name `mane` here. Replace in the commands below as needed.
-
-Initial adoption:
-
-```bash
-git switch --create mane base/base
-```
-
-If your git version is older and does not support `switch`, use:
-
-```bash
-git checkout -b mane base/base
-```
-
-Then point your own repository remote at the branch and publish it as usual:
-
-```bash
-git push -u origin mane
-```
-
-Future updates work the same as in the other setups: fetch `base`, then either rebase onto `base/base` or merge `base/base`, depending on the workflow you chose for ongoing maintenance.
-
-Notes:
-
-- replace `main` with whatever branch name your repo should use
-- this avoids the one-time re-rooting and adoption steps from the rebase and merge workflows
-- once you start adding your own commits, updates from this base are handled with either section `b)` or `c)`
-
-#### Rename branch
-In case you ran above commands, you'd get the `main` branch. If you want to rename it after-the-fact, here's how:
-
-> In this example I'll rename `main` to `mane` to make sure it's properly ponified.
-
-##### Local branch
 ```shell
-OLD_NAME=main
-NEW_NAME=mane
-REMOTE="origin"
-
-git branch -m "${OLD_NAME}" "${NEW_NAME}"
-git fetch "${REMOTE}"
-git remote set-head "${REMOTE}" -a
-```
-##### Remote branch
-
-###### Hosted Git
-If your repo is on git hoster (GitHub, GitLab, Gitea, Forgejo, …) with a website to manage it,
-it's better to rename the branch in the GUI there, as it will make sure that all settings references will be updated as well.
-For example the protected branch settings, and default `git checkout` branch settings
-
-
-
-## Setup: b) Rebase Onto `base/base`
-
-Use this if you want a clean linear history, and you are comfortable rewriting your branch.
-
-Initial adoption:
-
-```bash
-git rebase --onto base/base empty/init
+cd frontend
+corepack yarn@4.9.2 install
+corepack yarn@4.9.2 build
+cd ..
+uv tool install .
 ```
 
-After that, future updates are just:
+For development, use `uv sync --extra test` instead of `uv tool install .` and run commands as `uv run ai-usage ...`.
 
-```bash
-git fetch base
-git rebase base/base
-```
+## Quick start: Codex and Claude
 
-Notes:
+See which collectors are available:
 
-- resolve conflicts as they appear, then continue with `git rebase --continue`
-- if you already pushed the branch, you will usually need `git push --force-with-lease`
-- this is best for personal branches or repos where force-pushes are acceptable
-
-## Setup: c) Merge `base/base`
-
-Use this if you want to preserve existing history and avoid rebasing published branches.
-
-Initial adoption into an unrelated existing repo:
-
-```bash
-git merge --allow-unrelated-histories --no-ff base/base
-```
-
-Future updates:
-
-```bash
-git fetch base
-git merge --no-ff base/base
-```
-
-Notes:
-
-- this keeps a merge commit for each base update
-- this is the safer choice for shared branches
-- if your repo already shares `empty/init` as an ancestor, the initial `--allow-unrelated-histories` is not needed
-
-### All code for c) as a single copy pastable one:
 ```shell
-git remote add empty https://luckydonald@github.com/EmptyAAS/empty.git
-git remote add base https://luckydonald@github.com/luckydonald/base.git
-git fetch empty init
-git fetch base base
-git lfs install
-git merge --allow-unrelated-histories --no-verify empty/init
-git merge --no-ff --no-verify base/base
-pre-commit install
-[ "$(git config user.name)" = "Lucky Lucy" ] || printf '\033[31mERROR: git user.name is "%s" is not "Lucky Lucy" — fix it if you are me, and I forgot.\033[0m\nhttps://github.com/luckydonald/base/blob/base/README.md#fix-user\n' "$(git config user.name)"
+ai-usage providers
+ai-usage discover codex app-server
+ai-usage discover claude statusline
 ```
 
-#### Fix user
-_Lol, only do if you are me._
+Add the local Codex and Claude profiles:
+
 ```shell
-git config --local user.name "Lucky Lucy"
-git config --local user.email "2.2026._.code@luckydonald.de"
-```
-## After Adopting The Base
+ai-usage add codex app-server \
+  --name "Personal Codex" \
+  --profile-dir "$HOME/.codex" \
+  --no-input
 
-Once the base is present in your repo, the files provided by this repo live in your repo like normal files. In particular, the `scripts/°base/*` helpers are intended to be run from inside the consuming repository.
-
-### Git LFS
-
-This base tracks binary image files (`.png`, `.jpg`, `.jpeg`) with [Git LFS](https://git-lfs.com). The `git lfs install` command in the setup steps above is a one-time setup per machine. The `.gitattributes` file already defines which file types are tracked, so no additional `git lfs track` calls are needed.
-
-After the base files are present in a repository, `scripts/°base/init/checkout.sh` also installs the local LFS hooks and disables GitHub LFS lock verification for discovered GitHub HTTPS remotes. This avoids push failures like `You must have push access to verify locks` in repos that use LFS files but do not use LFS locks.
-
-### Claude GitHub issue agent
-
-This base includes `.github/workflows/claude-issue-agent.yml`, which lets you ask Claude to work on a GitHub issue by mentioning `@claude` in the issue body or in a new issue comment.
-
-To enable it in a consuming repository:
-
-1. Enable GitHub Actions for the repository.
-2. Add at least one of the following Actions secrets:
-   - `ANTHROPIC_API_KEY` — an Anthropic API key (pay-per-token, no subscription required).
-   - `CLAUDE_CODE_OAUTH_TOKEN` — a Claude Code OAuth token (tied to a Claude Pro/Max subscription).
-   Either secret is sufficient; if both are set, the action uses the OAuth token.
-3. Make sure the repository's Actions settings allow workflows to create pull requests. In GitHub, this is under repository **Settings** -> **Actions** -> **General** -> **Workflow permissions**.
-4. Create or edit an issue containing `@claude`, or add a new issue comment containing `@claude`.
-
-When a comment contains only `@claude`, the action addresses the issue title and body rather than treating the one-word comment as the request. If the comment contains more text alongside `@claude`, that comment text is the specific request. When Claude changes files it opens a pull request and comments the result back on the issue.
-
-Further documentation:
-
-- [Claude Code Action on GitHub](https://github.com/anthropics/claude-code-action) — action source, inputs, outputs, and examples.
-- [Anthropic API keys](https://console.anthropic.com/settings/keys) — where to generate an `ANTHROPIC_API_KEY`.
-- [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code/overview) — full Claude Code reference.
-
-### Codex GitHub issue agent
-
-This base includes `.github/workflows/codex-issue-agent.yml`, which lets you ask Codex to work on a GitHub issue by mentioning `@codex` in the issue body or in a new issue comment.
-
-To enable it in a consuming repository:
-
-1. Enable GitHub Actions for the repository.
-2. Add an Actions secret named `OPENAI_API_KEY` with an OpenAI API key that is allowed to use Codex.
-3. Make sure the repository's Actions settings allow workflows to create pull requests. In GitHub, this is under repository **Settings** -> **Actions** -> **General** -> **Workflow permissions**.
-4. Create or edit an issue containing `@codex`, or add a new issue comment containing `@codex`.
-
-When the trigger is in the issue body, the workflow asks Codex to address that issue. When a separate issue comment contains only `@codex`, the workflow also uses the issue title and body as the task instead of treating the one-word comment as the full request. If the comment contains more text, Codex treats that comment as the specific request. When Codex changes files, the workflow commits those changes on a `codex/issue-...` branch, opens a pull request, and comments the result back on the issue.
-
-Further documentation:
-
-- [OpenAI Codex GitHub Action docs](https://developers.openai.com/codex/github-action) explain the `openai/codex-action@v1` inputs, sandbox settings, outputs, and security checklist.
-- [openai/codex-action on GitHub](https://github.com/openai/codex-action) contains the action source and examples.
-- [Codex code review in GitHub](https://developers.openai.com/codex/integrations/github) documents the separate hosted GitHub review integration for pull requests, including `@codex review`.
-
-### Monorepo subfolders: per-subfolder `.claude/`
-
-If you've merged `base` at the top of a monorepo but intend to run Claude from a subfolder (e.g. `monorepo/some_project/`), Claude Code's settings discovery starts at the launch directory and won't reach the root-level `.claude/` from there. Run the helper once inside each subfolder where you want Claude:
-
-```bash
-cd some_project
-../scripts/°base/init/link-subproject-claude.sh
+ai-usage add claude statusline \
+  --name "Personal Claude" \
+  --profile-dir "$HOME/.claude" \
+  --no-input
 ```
 
-This creates a relative symlink `some_project/.claude → ../.claude`, so the same `.claude/settings.json` and `.claude/hooks/permission-check.py` apply. The hooks themselves locate `scripts/°base/` via `git rev-parse --show-toplevel`, so they work from any depth. AI artifacts then land under the subfolder — `some_project/ai/query.md`, `some_project/ai/plans/…` — while commits still go to the single monorepo git, with git-root-relative paths like `some_project/ai/query.md`.
+The Claude status-line collector installs a composable relay in the Claude profile. If a status-line command already exists, AI Usage preserves it and forwards the same input to it. When the relay is missing or stale, the collector falls back to running `claude /usage` in a pseudo-terminal.
 
-The helper is idempotent (no-ops if the symlink already points at the right place), refuses to clobber a non-symlink `.claude/`, and exits cleanly at the git root, so it's safe to re-run or wire into your own setup script.
+Fetch one sample from every configured account:
 
-### Branch splitting (clean/unclean/history)
-
-This base can keep a "clean" branch (no AI/base mentions, safe to publish) in sync with an `ai/UNCLEAN/{branch}` working branch (where AI and code commits mix freely) and an `ai/history/{branch}` branch (the AI-only leftovers). The tooling for this lives under `scripts/°base/git/°split_lib/`, but since it's itself classified as AI/base content, it never exists on a clean checkout — so it ships with a standalone launcher instead.
-
-The simplest way to run it, from any branch of any repo, whether or not `base` has ever been merged in:
-
-```bash
-curl -fSL https://raw.githubusercontent.com/luckydonald/base/refs/heads/base/scripts/%C2%B0base/git/get-base.py | python3 -
+```shell
+ai-usage fetch
 ```
 
-With no extra arguments it figures out what to do from your current branch: on your main branch it runs `update-history-master --yes`; on a clean feature branch it runs `bootstrap-branch <branch>`; on an `ai/UNCLEAN/*` or `ai/history/*` branch it pushes your latest commits forward with `sync-splits <branch> --direction=to-clean-history`.
+Then start the crawler and dashboard together:
 
-To run a specific subcommand instead, append it after the script:
-
-```bash
-curl -fSL https://raw.githubusercontent.com/luckydonald/base/refs/heads/base/scripts/%C2%B0base/git/get-base.py | python3 - bootstrap-branch feature
+```shell
+ai-usage run-all
 ```
 
-`get-base.py` adds a `base` remote (name always literally `base`, so it's never confused with `origin`) if missing, fetches it, sets up a worktree at `.git/luckydonald/base#get-base.py`, and delegates to the real tool there — it never touches your currently checked-out branch or working tree. If your GitHub username differs from `luckydonald`, set `BASE_GIT_USERNAME` first.
+Open <http://localhost:4458>. Running `ai-usage` without a subcommand is the same as `ai-usage run-all`.
 
-Generated split commits default to `✨❯ Lucky Lucy <claude._.ai._.code@luckydonald.de>`. Override that identity for one shell or CI job with `BASE_SPLIT_NAME` and `BASE_SPLIT_EMAIL`, or persist it through Git's normal local/global configuration:
+## Add GitHub Copilot
 
-```bash
-git config --local base.split.name "My Split Bot"
-git config --local base.split.email "split@example.com"
+The Copilot collector reads monthly AI-credit usage from GitHub's billing API. Put a suitable GitHub token in a private JSON file so it does not appear in shell history:
+
+```json
+{"token": "github_pat_..."}
 ```
 
-Environment configuration takes precedence over `base.split.*`. Without either email override, the tool prefers a surviving non-AI identity from the source commit and then `user.name`/`user.email`; `@luckydonald.de` identities map back to the Lucky Lucy default, while other domains retain their own identity. The authorship-rewrite helper recognizes Claude, Codex, and Copilot author/committer identities and removes all `Co-authored-by` trailers.
+Then configure the account:
 
-Before a mutating split run, existing branch tips are backed up as lightweight tags under `bak/split/<branch>/YYYY-MM-DD_HH-MM-SS/{clean,UNCLEAN,history}`. The full branch name is preserved, including any slashes; missing variants simply have no corresponding backup tag.
+```shell
+ai-usage add copilot github-api \
+  --name "Work Copilot" \
+  --username octocat \
+  --allowance 300 \
+  --billing-day 1 \
+  --secret-file ./github-credential.json \
+  --no-input
+```
+
+Delete the plaintext credential file after confirming `ai-usage fetch` works. AI Usage stores an encrypted copy in its local SQLite database.
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `ai-usage providers` | List built-in and plugin collectors. |
+| `ai-usage discover SERVICE PROVIDER` | Inspect local profiles that a collector can import; this is read-only. |
+| `ai-usage add SERVICE PROVIDER` | Add an account. Missing required values are prompted unless `--no-input` is used. |
+| `ai-usage fetch [--account ID]` | Collect one sample now. Repeat `--account` to limit the run. |
+| `ai-usage crawl [-d]` | Run the adaptive collector loop, optionally detached. |
+| `ai-usage serve [--host HOST] [--port PORT]` | Serve the dashboard and API without crawling. |
+| `ai-usage run-all [-d]` | Crawl and serve together. |
+| `ai-usage install [--serve/--no-serve]` | Install and start a user-level startup service. |
+| `ai-usage uninstall` / `deinstall` | Remove the startup service without deleting data. |
+| `ai-usage completion [--shell ...]` | Install shell completion for Bash, Zsh, or Fish. |
+| `ai-usage db-upgrade` | Apply pending Alembic migrations manually. |
+
+Use `ai-usage COMMAND --help` for every option. Provider-specific fields can be supplied as regular flags, such as `--profile-dir`, `--command`, or `--allowance`.
+
+## Collection methods
+
+| Service | Provider | Status | Notes |
+| --- | --- | --- | --- |
+| Codex | `app-server` | Recommended | Reads current rate limits through the local Codex app server. |
+| Codex | `status` | Supported | Parses `codex /status`; invokes it twice to refresh stale output. |
+| Claude | `statusline` | Recommended | Uses the lightweight status relay and falls back to `claude /usage`. |
+| Claude | `usage` | Supported | Always parses `claude /usage` in a pseudo-terminal. |
+| Copilot | `github-api` | Supported | Reads GitHub AI-credit billing usage with an encrypted token. |
+| Codex/Claude | `web` | Experimental | Generic private JSON endpoint adapter; private APIs may change without notice. |
+| Copilot | `entitlements` | Experimental | Generic private entitlement endpoint adapter. |
+
+Third-party packages can register additional collectors through the `ai_usage.providers` Python entry-point group. A provider implements the `Provider` interface and returns typed `Metric` values.
+
+## Dashboard and graph
+
+The graph uses percentage consumed, from 0% to 100%:
+
+- Solid staircase lines are observed samples.
+- Translucent boxes summarize the highest usage in each reset window.
+- Dotted lines project the current window from its observed consumption rate.
+- Dotted reset boxes extend active windows into the future.
+- Gray shading marks the part of a window after an allowance reached 100%.
+
+Choose 24 hours, 7 days, the same calendar day last month, 1 year, or all history. On first load the dashboard automatically widens the range until it finds samples.
+
+Metric colors can be set in an account YAML file:
+
+```yaml
+colors:
+  five-hours: "#d97706"
+  seven-days: "#ea580c"
+```
+
+## Crawl intervals
+
+The normal interval is 10 minutes. When consumption increases, that account switches to a 1-minute interval for 15 minutes. Failed requests use exponential backoff up to one hour. A small random jitter prevents every account from fetching at exactly the same time.
+
+Override the global defaults in `~/.ai-usage/config.yml`:
+
+```yaml
+intervals:
+  normal_seconds: 600
+  active_seconds: 60
+  active_for_seconds: 900
+  maximum_backoff_seconds: 3600
+
+services:
+  claude:
+    intervals:
+      normal_seconds: 300
+
+providers:
+  app-server:
+    intervals:
+      active_seconds: 90
+```
+
+An account's own `intervals` mapping has the highest priority, followed by provider, service, and global settings.
+
+## Data, sync, and credentials
+
+The default layout is:
+
+```text
+~/.ai-usage/
+├── config.yml
+├── services/<service>/<account-id>.yml
+├── history/<service>/<account-id>/<date>.jsonl
+├── credential.key
+└── local/
+    ├── state.sqlite3
+    └── logs/
+```
+
+The YAML configuration and daily JSONL history are stable, append-oriented files suitable for Git. Event IDs make histories mergeable. `local/`, the rebuildable SQLite index, logs, and `credential.key` are ignored by the generated `.gitignore`.
+
+Credentials are encrypted with AES-GCM before storage in SQLite. By default AI Usage generates a mode-`0600` key at `~/.ai-usage/credential.key`. For managed deployments, set either `AI_USAGE_CREDENTIAL_KEY` to a URL-safe base64 32-byte key or `AI_USAGE_CREDENTIAL_KEY_FILE` to a protected key file. Credential material is intentionally not synchronized with the history.
+
+Set `AI_USAGE_HOME` to move the entire data directory.
+
+## Running in the background
+
+Install a startup service with the dashboard enabled:
+
+```shell
+ai-usage install --serve --host localhost --port 4458
+```
+
+Use `--no-serve` for collection only. The installer uses a systemd user unit on Linux, a LaunchAgent on macOS, and a logon task on Windows. `ai-usage uninstall` removes only that integration and keeps all account and history data.
+
+Detached runs are also available without installing a startup service:
+
+```shell
+ai-usage run-all --detach
+```
+
+Their output is written beneath `~/.ai-usage/local/logs/`.
+
+## Security
+
+The web server has no authentication. Its default `localhost` binding is intentional. If you bind to `0.0.0.0` or another non-loopback address, the CLI and dashboard warn that anyone able to reach the port can read the usage data. Put an authenticating reverse proxy in front of it before exposing it to a network.
+
+The private-web providers are experimental and accept cookie/header credentials. Prefer the stable CLI-backed collectors, and never commit plaintext secret files or the local credential key.
+
+## Sentry or Bugsink
+
+Backend and frontend reporting are independent and connect directly to their DSNs; no tunnel is required.
+
+Copy the relevant values from `.env.example`:
+
+- Backend: `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`, `SENTRY_TRACES_SAMPLE_RATE`.
+- Frontend: `VITE_SENTRY_DSN`, `VITE_SENTRY_ENVIRONMENT`, `VITE_SENTRY_RELEASE`, `VITE_SENTRY_TRACES_SAMPLE_RATE`.
+- Frontend sourcemap upload at build time: `BUILD_BUGSINK_URL`, `BUILD_BUGSINK_AUTH_TOKEN`, `BUILD_BUGSINK_PROJECT_SLUG`.
+
+Only `VITE_` variables are compiled into browser code. Never prefix an auth token with `VITE_`. Set `SENTRY_ENABLE_SAMPLE_ROUTES=1` only temporarily when testing the backend error route.
+
+## Development
+
+Install dependencies and run backend tests:
+
+```shell
+uv sync --extra test
+uv run pytest
+```
+
+Run frontend tests and the strict production build:
+
+```shell
+cd frontend
+corepack yarn@4.9.2 install
+corepack yarn@4.9.2 test
+corepack yarn@4.9.2 build
+```
+
+Alembic revisions live in `alembic/`. The application automatically upgrades the local index on startup; use `uv run ai-usage db-upgrade` to do it explicitly.
+
+## Troubleshooting
+
+- **Discovery finds nothing:** verify the profile directory exists, or pass `--profile-dir` directly when adding the account.
+- **Claude status data is stale:** run `ai-usage claude-relay-install ACCOUNT_ID` to repair the relay, then use Claude once so its status line emits a fresh payload.
+- **All providers fail:** run `ai-usage fetch` in the foreground; each account prints its own error.
+- **Dashboard says “not built”:** run the frontend build before installing or serving from a source checkout.
+- **Detached process exits:** inspect `~/.ai-usage/local/logs/detached.log`, or run the same command without `--detach`.

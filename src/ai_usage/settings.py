@@ -23,7 +23,9 @@ class Paths:
         configured_root = os.environ.get("AI_USAGE_HOME")
         root = Path(configured_root).expanduser() if configured_root else Path.home() / ".ai-usage"
         package_root = Path(__file__).resolve().parents[2]
-        frontend = package_root / "frontend" / "dist"
+        installed_frontend = Path(__file__).resolve().parent / "frontend"
+        source_frontend = package_root / "frontend" / "dist"
+        frontend = installed_frontend if installed_frontend.exists() else source_frontend
         return cls(
             root=root,
             services=root / "services",
@@ -58,4 +60,3 @@ def legacy_config_path() -> Path:
     """Return the platform-native location for future migration tooling."""
     return user_config_path("ai-usage")
 # end def
-
