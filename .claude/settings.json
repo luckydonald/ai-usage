@@ -309,7 +309,9 @@
       "mcp__bugsink__get_issue",
       "Bash(echo \"---\")",
       "Bash(echo ---)",
-      "Bash(echo '---')"
+      "Bash(echo '---')",
+      "Bash(UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage:*)",
+      "Bash(curl -fsS http://localhost:4458/)"
     ],
     "deny": [
       "Read(**/.env*)",

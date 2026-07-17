@@ -60,8 +60,8 @@ class ApplicationState:
 # end class
 
 
-def create_app(paths: Paths) -> FastAPI:
-    state = ApplicationState(paths)
+def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAPI:
+    state = ApplicationState(paths, reporter=reporter)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
@@ -226,14 +226,19 @@ def exposed_host(host: str) -> bool:
 # end def
 
 
-async def run_server_and_crawler(paths: Paths, host: str, port: int) -> None:
+async def run_server_and_crawler(
+    paths: Paths,
+    host: str,
+    port: int,
+    reporter: ProgressReporter = LOGGER.info,
+) -> None:
     if exposed_host(host):
         LOGGER.warning(
             "AI Usage is binding to %s without authentication; anyone who can reach the port can read usage data",
             host,
         )
     # end if
-    app = create_app(paths)
+    app = create_app(paths, reporter=reporter)
     runtime: ApplicationState = app.state.runtime
     await runtime.initialize()
     server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, lifespan="off"))

@@ -316,7 +316,9 @@
       {"type": "mcp", "server": "bugsink", "tool": "get_issue"},
       {"type": "bash", "command": "echo \"---\""},
       {"type": "bash", "command": "echo ---"},
-      {"type": "bash", "command": "echo '---'"}
+      {"type": "bash", "command": "echo '---'"},
+      {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage:*"},
+      {"type": "bash", "command": "curl -fsS http://localhost:4458/"}
     ],
     "deny": [
       {"type": "read", "path": "**/.env*"},

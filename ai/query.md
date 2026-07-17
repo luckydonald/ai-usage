@@ -200,3 +200,6 @@ The plan shall include all features, in a "crawl-data ASAP" prioritisation.
 › after commiting fix:
 fetch and crawl do not log them working. That would be helpful to see progress reports (i.e. _started crawling <...> <...>_; _done crawling <xxxx> <yyyy>_; _<xxx>'s 5-hour window got a new value to store (003% -> 099%)_, _decreasing interval to x seconds_.
 
+› Running `uv run ai-usage run-all`, I don't see logs of the `crawler`.
+Additionally, the `vue` app stays blank.
+

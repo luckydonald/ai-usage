@@ -106,10 +106,12 @@ prefix_rule(pattern = ["../scripts/°base/init/link-subproject-claude.sh"], deci
 prefix_rule(pattern = ["echo", "---"], decision = "allow")
 prefix_rule(pattern = ["echo", "---"], decision = "allow")
 prefix_rule(pattern = ["echo", "---"], decision = "allow")
+prefix_rule(pattern = ["curl", "-fsS", "http://localhost:4458/"], decision = "allow")
 
-# 5 command permission(s) could not be translated to a Codex prefix rule and were skipped (compound/redirected/substituted commands).
+# 6 command permission(s) could not be translated to a Codex prefix rule and were skipped (compound/redirected/substituted commands).
 # {"type": "bash", "command": "echo \"exit: $?\""}
 # {"type": "bash", "command": "rm ai/git/pending-commit.md || echo 'was gone'"}
 # {"type": "bash", "command": "GIT_SEQUENCE_EDITOR=/tmp/git-rebase-todo.sh git *"}
 # {"type": "bash", "command": "GIT_SEQUENCE_EDITOR=/tmp/git-rebase-todo.sh git rebase *"}
 # {"type": "bash", "command": "mv .claude/settings.local.json \".claude.settings.local.json.$(date +%Y-%m-%d).bak\""}
+# {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage:*"}

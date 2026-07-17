@@ -3,6 +3,7 @@ from pathlib import Path
 import click
 from click.testing import CliRunner
 
+import ai_usage.api
 from ai_usage.cli import credential_payload, main
 
 
@@ -34,4 +35,18 @@ def test_discovery_does_not_create_runtime_directory(tmp_path: Path, monkeypatch
 
     assert result.exit_code == 0
     assert not (tmp_path / ".ai-usage").exists()
+# end def
+
+
+def test_run_all_passes_visible_progress_reporter(monkeypatch) -> None:
+    async def run_server_and_crawler(paths, host, port, reporter) -> None:
+        del paths, host, port
+        reporter("Crawler started for 2 accounts: Claude, Codex.")
+    # end def
+
+    monkeypatch.setattr(ai_usage.api, "run_server_and_crawler", run_server_and_crawler)
+    result = CliRunner().invoke(main, ["run-all"])
+
+    assert result.exit_code == 0
+    assert "Crawler started for 2 accounts: Claude, Codex." in result.output
 # end def
