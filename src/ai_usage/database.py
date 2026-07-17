@@ -50,7 +50,9 @@ class Database:
 
     async def migrate(self) -> None:
         self.paths.ensure()
-        config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
+        installed_config = Path(__file__).resolve().parent / "alembic.ini"
+        source_config = Path(__file__).resolve().parents[2] / "alembic.ini"
+        config = Config(str(installed_config if installed_config.exists() else source_config))
         config.set_main_option("sqlalchemy.url", f"sqlite:///{self.paths.database}")
         command.upgrade(config, "head")
         os.chmod(self.paths.database, 0o600)
