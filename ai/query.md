@@ -203,3 +203,138 @@ fetch and crawl do not log them working. That would be helpful to see progress r
 › Running `uv run ai-usage run-all`, I don't see logs of the `crawler`.
 Additionally, the `vue` app stays blank.
 
+› I need to bundle the registration commands. `ai-usage provider {discover,add,new,list,ls,remove,del,rm,info,status}`.
+Omitting `service` and `provider` will be giving you choices (interactive: select from possible option list as TUI, non-interactive: print possible option list and exit).
+This should be based on the `discovery` command's possibilty to figure out what's available to `add`.
+Also this adds some aliases (`new` = `add`; `ls` = `list`, `del` & `rm` = `remove`, `info` = `status`).
+Obviously the commands `list`, `remove` and `status` needs to be newly implemented.
+
+› Question answered.
+> <details><summary>
+>
+>> 1. What should `provider list` and `provider status` operate on?
+>> 2. When removing a configured account, what should be deleted?
+>> 3. What should happen to the existing top-level `add`, `discover`, and `providers` commands?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **List/status** (1/3) <kbd>Single Select</kbd><br>
+>> What should `provider list` and `provider status` operate on?
+> - [x] 1\. Configured accounts (Recommended)
+>   - _List shows registered accounts; status shows config, latest usage, last fetch result, and next crawl for one selected account._
+> - [ ] 2\. Adapter catalog
+>   - _List shows available collector implementations; status describes a selected implementation rather than an account._
+> - [ ] 3\. Both levels
+>   - _List combines adapters and accounts, while status accepts either and changes its output accordingly._
+> - [ ] 4\. _Type something._
+>
+>> **Removal** (2/3) <kbd>Single Select</kbd><br>
+>> When removing a configured account, what should be deleted?
+> - [x] 1\. Config and secrets (Recommended)
+>   - _Remove account YAML, encrypted credential, crawl state, and Claude relay integration while preserving historical usage._
+>   - > Ask if it should remove historical data too (non-interactive: flag — this means you can repeatedly delete the same config as long as you don't delete the history — it's a bit of a soft-delete until the history is gone too.)
+> - [ ] 2\. Configuration only
+>   - _Remove only the account YAML and leave credentials, local state, relay configuration, and history untouched._
+> - [ ] 3\. Everything
+>   - _Also delete the account's JSONL history and indexed samples, making removal destructive._
+> - [ ] 4\. _Type something._
+>
+>> **Compatibility** (3/3) <kbd>Single Select</kbd><br>
+>> What should happen to the existing top-level `add`, `discover`, and `providers` commands?
+> - [ ] 1\. Keep aliases (Recommended)
+>   - _Add the grouped commands while retaining old spellings as compatibility aliases with deprecation guidance._
+> - [x] 2\. Remove old commands
+>   - _Expose registration only through `ai-usage provider ...` immediately._
+> - [ ] 3\. Hidden aliases
+>   - _Keep old commands working but omit them from help and completion output._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+› Question answered.
+> <details><summary>
+>
+>> 1. How should commands select among multiple configured accounts using the same service/provider?
+>> 2. What should no-argument `provider add` offer?
+>> 3. How should a history-preserving removal remain selectable for a later history purge?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Targeting** (1/3) <kbd>Single Select</kbd><br>
+>> How should commands select among multiple configured accounts using the same service/provider?
+> - [x] 1\. Optional account argument (Recommended)
+>   - _Use `[SERVICE] [PROVIDER] [ACCOUNT]`; interactive mode prompts at each omitted level, while non-interactive mode prints matching choices and exits._
+>   - > Still, as the account should be unique, having `--account=…` can skip service and provider.
+> - [ ] 2\. Account option
+>   - _Use `[SERVICE] [PROVIDER] --account ID`, with omitted positional levels handled interactively._
+> - [ ] 3\. Account ID only
+>   - _Make status/remove accept a globally unique account ID and use service/provider only as optional filters._
+> - [ ] 4\. _Type something._
+>
+>> **Add choices** (2/3) <kbd>Single Select</kbd><br>
+>> What should no-argument `provider add` offer?
+> - [x] 1\. Discovered plus manual (Recommended)
+>   - _Show discovered local accounts first, then every adapter as a manual configuration choice so Copilot and experimental providers remain reachable._
+>   - > The manual part is a separate sub-menu at the end though, along the lines of "Manually configure other…", to not spam the initial list.
+> - [ ] 2\. Discovered only
+>   - _Only offer accounts returned by discovery; manual providers require explicit service/provider arguments._
+> - [ ] 3\. Adapters first
+>   - _Choose an adapter first, then show discovered candidates for it or continue with manual configuration._
+> - [ ] 4\. _Type something._
+>
+>> **Soft delete** (3/3) <kbd>Single Select</kbd><br>
+>> How should a history-preserving removal remain selectable for a later history purge?
+> - [ ] 1\. Minimal tombstone (Recommended)
+>   - _Keep disabled YAML with ID/name/service/provider only; erase secrets, runtime state, options, colors, intervals, and relay integration._
+> - [x] 2\. Disabled full config
+>   - _Keep the full YAML disabled but clear only its credential reference and runtime integration._
+>   - > How would be best "disable" such `*.yml`?
+> - [ ] 3\. Infer from history
+>   - _Delete all YAML and reconstruct removable identities from JSONL history when listing removed accounts._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+› Question answered.
+> <details><summary>
+>
+>> 1. Should no-argument `discover` and `list` enumerate everything, or force a choice like action commands?
+>> 2. If discovery finds an account that was soft-removed, what should `provider add` do?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **No filters** (1/2) <kbd>Single Select</kbd><br>
+>> Should no-argument `discover` and `list` enumerate everything, or force a choice like action commands?
+> - [x] 1\. Enumerate all (Recommended)
+>   - _`discover` scans all adapters and `list` shows all configured accounts; only add/remove/status open selectors when their target is omitted._
+> - [ ] 2\. Always choose
+>   - _Every subcommand opens a service/provider selector when those arguments are omitted._
+> - [ ] 3\. Choose service
+>   - _Discover/list first select a service, then enumerate all matching providers/accounts._
+> - [ ] 4\. _Type something._
+>
+>> **Re-adding** (2/2) <kbd>Single Select</kbd><br>
+>> If discovery finds an account that was soft-removed, what should `provider add` do?
+> - [x] 1\. Restore same account (Recommended)
+>   - _Reuse its UUID and history, clear `removed_at`, enable it, recreate credentials if discovered, and reinstall integrations._
+> - [ ] 2\. Create new account
+>   - _Leave the tombstone/history untouched and register the discovery result under a new UUID._
+> - [ ] 3\. Ask each time
+>   - _Interactive mode chooses restore versus new; non-interactive mode requires an explicit flag._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+› Are those `*.yml` files supposed in the git-controlled part?
+
+> › Implement the [Plan](./plans/001_group-provider-registration-commands.md).
+
