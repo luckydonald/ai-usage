@@ -10,9 +10,41 @@ from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
-from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
+from ai_usage.models import AccountConfig, FetchStatus, Metric, ProviderFetchResult, Usage
 from ai_usage.providers import Provider, ProviderRegistry
 from tests.test_storage import temporary_paths
+
+
+class StaleProvider(Provider):
+    service = "test-service"
+    key = "stale"
+    display_name = "Stale test provider"
+
+    async def fetch(
+        self,
+        account: AccountConfig,
+        credential: dict[str, Any] | None,
+    ) -> ProviderFetchResult:
+        del credential
+        now = datetime.now(UTC)
+        return ProviderFetchResult(
+            service=self.service,
+            provider=self.key,
+            account_id=account.id,
+            fetched_at=now,
+            status=FetchStatus.STALE,
+            error="no new statusline data yet (last update 3600s ago)",
+            metrics=[
+                Metric(
+                    key="five-hours",
+                    name="5-hour window",
+                    usage=Usage(percentage=42.0),
+                    observed_at=now,
+                )
+            ],
+        )
+    # end def
+# end class
 
 
 class ChangingProvider(Provider):
@@ -87,5 +119,43 @@ async def test_fetch_and_crawl_report_progress(tmp_path, monkeypatch) -> None:
 
     assert "Test account: decreasing crawl interval to 60 seconds after usage increased." in messages
     assert "Test account: next crawl in approximately 60 seconds." in messages
+    await database.close()
+# end def
+
+
+@pytest.mark.asyncio
+async def test_stale_result_is_not_treated_as_a_crawl_failure(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    database = Database(paths)
+    await database.migrate()
+    history = HistoryStore(paths, database)
+    config = ConfigStore(paths)
+    account = AccountConfig(
+        id="stale-account",
+        service="test-service",
+        provider="stale",
+        name="Stale account",
+    )
+    registry = ProviderRegistry()
+    registry.register(StaleProvider())
+    messages: list[str] = []
+    collector = Collector(config, database, history, registry, reporter=messages.append)
+
+    result = await collector.fetch_account(account, operation="crawling")
+    assert result.status == FetchStatus.STALE
+    assert any(
+        "no new statusline data yet" in message and "reusing last known values" in message
+        for message in messages
+    )
+    assert not any(message.startswith("Failed crawling") for message in messages)
+
+    crawler = Crawler(collector, config, database, reporter=messages.append)
+    await crawler.ensure_states([account])
+    now = datetime.now(UTC)
+    await crawler.update_state(account, result, now)
+
+    assert not any("backing off crawl interval" in message for message in messages)
     await database.close()
 # end def

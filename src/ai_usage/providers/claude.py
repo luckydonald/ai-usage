@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
+from ai_usage.models import AccountConfig, FetchStatus, Metric, ProviderFetchResult, Usage
 from ai_usage.providers.base import (
     ConfigurationField,
     DiscoveredAccount,
@@ -114,7 +114,8 @@ class ClaudeStatusProvider(Provider):
         if relay_file_value:
             relay_file = Path(str(relay_file_value)).expanduser()
             stale_seconds = int(account.options.get("stale_seconds", 120))
-            if relay_file.exists() and time.time() - relay_file.stat().st_mtime <= stale_seconds:
+            if relay_file.exists():
+                age = time.time() - relay_file.stat().st_mtime
                 payload = json.loads(relay_file.read_text(encoding="utf-8"))
                 metrics = parse_status_payload(payload, observed)
                 if metrics:
@@ -123,7 +124,13 @@ class ClaudeStatusProvider(Provider):
                         provider=self.key,
                         account_id=account.id,
                         fetched_at=observed,
+                        status=FetchStatus.SUCCESS if age <= stale_seconds else FetchStatus.STALE,
                         metrics=metrics,
+                        error=(
+                            None
+                            if age <= stale_seconds
+                            else f"no new statusline data yet (last update {age:.0f}s ago)"
+                        ),
                     )
                 # end if
             # end if

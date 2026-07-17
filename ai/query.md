@@ -352,3 +352,9 @@ Obviously the commands `list`, `remove` and `status` needs to be newly implement
 ❯ I think the "usual stale" case should be simply worded better - not as an error but an information that we don't got new data yet.
 Is the status line calling `ai-usage` in some way directly, hence actually writing changes in real time?
 
+› $commit-with-lplp-style but make sure to only include your ai commits / prompt updates when squashing them; Since (including) `bfbc7314220070ad5e527360c9ae8c426d14f36d`, there's another agent also planning work.
+
+› You **should** squash in your own ai stuff, please.
+
+❯ /commit-with-lplp-style but make sure to squash & rebase our AI stuff from between to after the two `Grouped discovery and account registration under \`provider\`` commits.
+
