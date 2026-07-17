@@ -197,3 +197,6 @@ The plan shall include all features, in a "crawl-data ASAP" prioritisation.
 
 › Document the tool for the `README.md` in a user friendly way; then continue implementing.
 
+› after commiting fix:
+fetch and crawl do not log them working. That would be helpful to see progress reports (i.e. _started crawling <...> <...>_; _done crawling <xxxx> <yyyy>_; _<xxx>'s 5-hour window got a new value to store (003% -> 099%)_, _decreasing interval to x seconds_.
+

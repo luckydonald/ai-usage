@@ -11,6 +11,7 @@ from ai_usage.config import ConfigStore
 from ai_usage.database import Database
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.orm import CrawlStateRecord
+from ai_usage.progress import ProgressReporter, quiet_reporter
 
 
 def aware(value: datetime | None) -> datetime | None:
@@ -22,10 +23,17 @@ def aware(value: datetime | None) -> datetime | None:
 
 
 class Crawler:
-    def __init__(self, collector: Collector, config: ConfigStore, database: Database):
+    def __init__(
+        self,
+        collector: Collector,
+        config: ConfigStore,
+        database: Database,
+        reporter: ProgressReporter = quiet_reporter,
+    ):
         self.collector = collector
         self.config = config
         self.database = database
+        self.report = reporter
         self.scheduler: FastScheduler | None = None
     # end def
 
@@ -58,7 +66,7 @@ class Crawler:
         if not due:
             return
         # end if
-        results = await self.collector.fetch_all(due)
+        results = await self.collector.fetch_all(due, operation="crawling")
         for account, result in zip(due, results, strict=True):
             await self.update_state(account, result, now)
         # end for
@@ -85,9 +93,16 @@ class Crawler:
                 )
                 state.next_run_at = now + timedelta(seconds=backoff)
                 state.last_error = result.error
+                self.report(
+                    f"{account.name}: backing off crawl interval to {backoff} seconds "
+                    f"after failure {state.failure_count}."
+                )
             else:
+                previous_active_until = aware(state.active_until)
+                was_active = previous_active_until is not None and previous_active_until > now
                 percentage = max((metric.usage.percentage for metric in result.metrics), default=0.0)
-                if state.last_percentage is not None and percentage > state.last_percentage:
+                usage_increased = state.last_percentage is not None and percentage > state.last_percentage
+                if usage_increased:
                     state.active_until = now + timedelta(seconds=intervals["active_for_seconds"])
                 # end if
                 active_until = aware(state.active_until)
@@ -101,12 +116,32 @@ class Crawler:
                 state.last_percentage = percentage
                 state.failure_count = 0
                 state.last_error = None
+                if usage_increased and not was_active:
+                    self.report(
+                        f"{account.name}: decreasing crawl interval to "
+                        f"{intervals['active_seconds']} seconds after usage increased."
+                    )
+                elif not usage_increased and not was_active and previous_active_until is not None:
+                    self.report(
+                        f"{account.name}: restoring crawl interval to "
+                        f"{intervals['normal_seconds']} seconds."
+                    )
+                    state.active_until = None
+                # end if
+                self.report(f"{account.name}: next crawl in approximately {interval} seconds.")
             # end if
             await session.commit()
         # end with
     # end def
 
     async def run(self) -> None:
+        accounts = self.config.list_accounts()
+        if accounts:
+            names = ", ".join(account.name for account in accounts)
+            self.report(f"Crawler started for {len(accounts)} accounts: {names}.")
+        else:
+            self.report("Crawler started with no enabled accounts; waiting for configuration.")
+        # end if
         state_file = str(self.database.paths.local / "fastscheduler.json")
         self.scheduler = FastScheduler(state_file=state_file, quiet=True)
         self.scheduler.every(1).seconds.no_catch_up().do(self.tick)
@@ -120,4 +155,3 @@ class Crawler:
         # end try
     # end def
 # end class
-

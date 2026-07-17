@@ -33,7 +33,13 @@ class Runtime:
         self.config = ConfigStore(paths)
         self.history = HistoryStore(paths, self.database)
         self.providers = built_in_registry()
-        self.collector = Collector(self.config, self.database, self.history, self.providers)
+        self.collector = Collector(
+            self.config,
+            self.database,
+            self.history,
+            self.providers,
+            reporter=click.echo,
+        )
     # end def
 
     async def initialize(self) -> None:
@@ -268,7 +274,12 @@ def crawl(detach_mode: bool) -> None:
         runtime = Runtime(paths)
         try:
             await runtime.initialize()
-            crawler = Crawler(runtime.collector, runtime.config, runtime.database)
+            crawler = Crawler(
+                runtime.collector,
+                runtime.config,
+                runtime.database,
+                reporter=click.echo,
+            )
             await crawler.run()
         finally:
             await runtime.close()

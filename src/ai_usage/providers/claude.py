@@ -173,12 +173,22 @@ async def run_claude_usage(command: str, profile_dir: str | None) -> str:
             environment["CLAUDE_CONFIG_DIR"] = str(Path(profile_dir).expanduser())
         # end if
         child = pexpect.spawn(command, encoding="utf-8", timeout=30, env=environment)
-        child.sendline("/usage")
-        child.expect("Current session", timeout=30)
-        time.sleep(1)
-        child.sendline("/exit")
-        child.expect(pexpect.EOF, timeout=10)
-        return child.before
+        try:
+            child.sendline("/usage")
+            child.expect("Current session", timeout=30)
+            time.sleep(1)
+            child.sendline("/exit")
+            child.expect(pexpect.EOF, timeout=10)
+            return child.before
+        except (pexpect.TIMEOUT, pexpect.EOF) as exception:
+            raise ProviderError(
+                "Claude /usage did not become ready; use Claude once to refresh the status relay"
+            ) from exception
+        finally:
+            if child.isalive():
+                child.close(force=True)
+            # end if
+        # end try
     # end def
 
     return await asyncio.to_thread(run_terminal)
