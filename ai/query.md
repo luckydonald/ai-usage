@@ -195,3 +195,5 @@ The plan shall include all features, in a "crawl-data ASAP" prioritisation.
 
 › as a step for inbetween: configure a crawler for claude and codex and let it fetch
 
+› Document the tool for the `README.md` in a user friendly way; then continue implementing.
+
