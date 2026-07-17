@@ -14,7 +14,7 @@ from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
-from ai_usage.models import AccountConfig
+from ai_usage.models import AccountConfig, FetchStatus
 from ai_usage.provider_accounts import (
     AccountStatus,
     account_status,
@@ -726,16 +726,20 @@ def fetch(account_ids: tuple[str, ...]) -> None:
             # end if
             results = await runtime.collector.fetch_all(accounts)
             for result in results:
-                if result.error:
+                if result.status == FetchStatus.ERROR:
                     click.echo(f"ERROR {result.service}/{result.account_id}: {result.error}", err=True)
                 else:
                     values = ", ".join(
                         f"{metric.name}={metric.usage.percentage:.1f}%" for metric in result.metrics
                     )
-                    click.echo(f"{result.service}/{result.account_id}: {values}")
+                    if result.status == FetchStatus.STALE:
+                        click.echo(f"{result.service}/{result.account_id}: {values} ({result.error})")
+                    else:
+                        click.echo(f"{result.service}/{result.account_id}: {values}")
+                    # end if
                 # end if
             # end for
-            if results and all(result.error for result in results):
+            if results and all(result.status == FetchStatus.ERROR for result in results):
                 raise click.ClickException("every configured provider failed")
             # end if
         finally:

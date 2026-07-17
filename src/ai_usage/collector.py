@@ -100,7 +100,9 @@ class Collector:
                 # end if
             # end with
             elapsed = time.monotonic() - started_clock
-            if success:
+            if success and result.status == FetchStatus.STALE:
+                self.report(f"{account.name}: {result.error} — reusing last known values.")
+            elif success:
                 self.report(
                     f"Done {operation} {account.name} in {elapsed:.1f}s "
                     f"({len(result.metrics)} metrics)."

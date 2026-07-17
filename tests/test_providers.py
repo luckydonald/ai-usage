@@ -1,11 +1,16 @@
+import json
+import os
+import time
 from datetime import UTC, datetime
 
 import httpx
 import pytest
 import respx
 
-from ai_usage.models import AccountConfig
+from ai_usage.models import AccountConfig, FetchStatus
+from ai_usage.providers.base import ProviderError
 from ai_usage.providers.claude import (
+    ClaudeStatusProvider,
     install_status_relay,
     parse_status_payload,
     parse_usage_output,
@@ -108,6 +113,77 @@ async def test_copilot_billing_provider() -> None:
     result = await CopilotBillingProvider().fetch(account, {"token": "github_pat_test"})
     assert route.called
     assert result.metrics[0].usage.percentage == 20
+# end def
+
+
+def relay_account(relay_file, **options) -> AccountConfig:
+    return AccountConfig(
+        id="relay-account",
+        service="claude",
+        provider="statusline",
+        name="Claude",
+        options={"relay_file": str(relay_file), **options},
+    )
+# end def
+
+
+def write_relay(path, five_hour_percentage=23.5) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "rate_limits": {
+                    "five_hour": {"used_percentage": five_hour_percentage, "resets_at": 1784300000},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_status_fresh_relay_is_success(tmp_path) -> None:
+    relay_file = tmp_path / "relay.json"
+    write_relay(relay_file)
+    account = relay_account(relay_file, stale_seconds=120)
+    result = await ClaudeStatusProvider().fetch(account, None)
+    assert result.status == FetchStatus.SUCCESS
+    assert result.metrics[0].usage.percentage == 23.5
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_status_stale_relay_skips_pexpect_fallback(tmp_path, monkeypatch) -> None:
+    relay_file = tmp_path / "relay.json"
+    write_relay(relay_file)
+    old = time.time() - 3600
+    os.utime(relay_file, (old, old))
+    account = relay_account(relay_file, stale_seconds=120)
+
+    async def fail_if_called(*args, **kwargs):
+        raise AssertionError("run_claude_usage should not be called when relay data exists")
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", fail_if_called)
+    result = await ClaudeStatusProvider().fetch(account, None)
+    assert result.status == FetchStatus.STALE
+    assert result.metrics[0].usage.percentage == 23.5
+    assert "no new statusline data" in result.error
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_status_missing_relay_falls_back_and_raises(tmp_path, monkeypatch) -> None:
+    account = relay_account(tmp_path / "missing.json")
+
+    async def raise_provider_error(*args, **kwargs):
+        raise ProviderError("Claude /usage did not become ready; use Claude once to refresh the status relay")
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", raise_provider_error)
+    with pytest.raises(ProviderError, match="did not become ready"):
+        await ClaudeStatusProvider().fetch(account, None)
 # end def
 
 
