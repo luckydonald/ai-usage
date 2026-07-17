@@ -262,24 +262,33 @@ if command:
 def remove_status_relay(account: AccountConfig, local_root: Path) -> None:
     profile = Path(str(account.options.get("profile_dir", Path.home() / ".claude"))).expanduser()
     settings_path = profile / "settings.json"
-    if not settings_path.exists():
-        return
-    # end if
-    settings = json.loads(settings_path.read_text(encoding="utf-8"))
     marker = f"ai-usage-relay-{account.id}"
-    current = settings.get("statusLine")
-    if not isinstance(current, dict) or marker not in str(current.get("command", "")):
-        return
-    # end if
     relay_root = local_root / "claude-relay"
     original_path = relay_root / f"{account.id}.original.json"
-    original = json.loads(original_path.read_text(encoding="utf-8")) if original_path.exists() else None
-    if original is None:
-        settings.pop("statusLine", None)
-    else:
-        settings["statusLine"] = original
+    script_path = relay_root / f"{marker}.py"
+    relay_file = local_root / "relay" / f"{account.id}.json"
+    if settings_path.exists():
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        current = settings.get("statusLine")
+        if isinstance(current, dict) and marker in str(current.get("command", "")):
+            original = (
+                json.loads(original_path.read_text(encoding="utf-8"))
+                if original_path.exists()
+                else None
+            )
+            if original is None:
+                settings.pop("statusLine", None)
+            else:
+                settings["statusLine"] = original
+            # end if
+            temporary = settings_path.with_suffix(".tmp")
+            temporary.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+            temporary.replace(settings_path)
+        # end if
     # end if
-    temporary = settings_path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(settings_path)
+    for path in (script_path, original_path, relay_file):
+        if path.exists():
+            path.unlink()
+        # end if
+    # end for
 # end def

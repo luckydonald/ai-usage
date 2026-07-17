@@ -31,7 +31,7 @@ def test_credential_payload_rejects_two_sources(tmp_path: Path) -> None:
 
 def test_discovery_does_not_create_runtime_directory(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
-    result = CliRunner().invoke(main, ["discover", "codex", "app-server"])
+    result = CliRunner().invoke(main, ["provider", "discover", "codex", "app-server"])
 
     assert result.exit_code == 0
     assert not (tmp_path / ".ai-usage").exists()
