@@ -105,7 +105,7 @@ Parts 1–3 and 6 are backend-only, independent, low-risk — good to do first a
 - [x] Git autocommit as toggleable global setting
 - [x] Group CLI --help and separate internal tooling
 - [x] Graph: force 0% after window ends
-- [ ] Custom date range picker
+- [ ] Custom date range picker *(in progress)*
 - [ ] Frontend rebuild: strip to graphs-only + new palette
 - [x] Shell completion staleness detection + versioned hashes
 - [x] Claude/Codex web login via pywebview
