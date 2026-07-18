@@ -9,6 +9,7 @@ from fastscheduler import FastScheduler
 from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
 from ai_usage.database import Database
+from ai_usage.git_backup import maybe_run_git_backup
 from ai_usage.host_identity import account_allows_host
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.orm import CrawlStateRecord
@@ -80,6 +81,7 @@ class Crawler:
         for account, result in zip(due, results, strict=True):
             await self.update_state(account, result, now)
         # end for
+        await asyncio.to_thread(maybe_run_git_backup, self.database.paths, self.config, now)
     # end def
 
     async def update_state(
