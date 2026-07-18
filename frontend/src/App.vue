@@ -9,10 +9,11 @@ import type { Catalog, Filters, GraphSeries, LatestMetric } from "./types";
 const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280" });
 const latest = ref<LatestMetric[]>([]);
 const series = ref<GraphSeries[]>([]);
-const preset = ref<TimePreset>("day");
+const preset = ref<TimePreset>("auto");
 const loading = ref(true);
 const error = ref("");
 const filters = reactive<Filters>({ services: [], providers: [], accounts: [], metrics: [] });
+const hiddenSeriesKeys = ref<string[]>([]);
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localStorage.getItem("ai-usage-theme") && systemDark.matches));
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
@@ -34,6 +35,7 @@ async function load(autoWiden = false): Promise<void> {
     const [start, end] = rangeForPreset(preset.value);
     series.value = await fetchSeries(start, end, filters);
     latest.value = await fetchLatest();
+    pruneHiddenSeriesKeys();
     if (autoWiden && series.value.every((item) => item.points.length === 0)) {
       const next = wideningOrder[wideningOrder.indexOf(preset.value) + 1];
       if (next) {
@@ -47,6 +49,31 @@ async function load(autoWiden = false): Promise<void> {
   } finally {
     loading.value = false;
   }
+}
+
+function pruneHiddenSeriesKeys(): void {
+  const validKeys = new Set(series.value.map((item) => `${item.account_id}::${item.metric_key}`));
+  hiddenSeriesKeys.value = hiddenSeriesKeys.value.filter((key) => validKeys.has(key));
+}
+
+function toggleSeries(key: string, visible: boolean): void {
+  hiddenSeriesKeys.value = visible
+    ? hiddenSeriesKeys.value.filter((existing) => existing !== key)
+    : [...new Set([...hiddenSeriesKeys.value, key])];
+
+  const [accountId, metricKey] = key.split("::");
+  const accountKeys = series.value.filter((item) => item.account_id === accountId);
+  const metricKeys = series.value.filter((item) => item.metric_key === metricKey);
+  const accountFullyHidden = accountKeys.length > 0
+    && accountKeys.every((item) => hiddenSeriesKeys.value.includes(`${item.account_id}::${item.metric_key}`));
+  const metricFullyHidden = metricKeys.length > 0
+    && metricKeys.every((item) => hiddenSeriesKeys.value.includes(`${item.account_id}::${item.metric_key}`));
+
+  const allAccountIds = [...new Set(series.value.map((item) => item.account_id))];
+  const allMetricKeys = [...new Set(series.value.map((item) => item.metric_key))];
+  filters.accounts = allAccountIds.filter((id) => id !== accountId || !accountFullyHidden);
+  filters.metrics = allMetricKeys.filter((metric) => metric !== metricKey || !metricFullyHidden);
+  void load();
 }
 
 function toggleTheme(): void {
@@ -96,7 +123,14 @@ onBeforeUnmount(() => events?.close());
           <p v-if="loading" class="state">Loading usage history…</p>
           <p v-else-if="error" class="state error">{{ error }}</p>
           <p v-else-if="!series.length" class="state">No usage samples in this range.</p>
-          <UsageChart v-else :series="series" :dark="dark" :exhausted-color="catalog.exhausted_color" />
+          <UsageChart
+            v-else
+            :series="series"
+            :dark="dark"
+            :exhausted-color="catalog.exhausted_color"
+            :hidden-series-keys="hiddenSeriesKeys"
+            @toggle-series="toggleSeries"
+          />
         </section>
       </section>
     </main>
