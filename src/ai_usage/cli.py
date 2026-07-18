@@ -905,10 +905,14 @@ def db_upgrade() -> None:
 
 @main.command("up")
 @click.option("--host", default="localhost")
-@click.option("--port", default=4458, type=int)
+@click.option("--port", default=None, type=int)
 @click.option("--detach", "detach_mode", "-d", is_flag=True)
-def run_all(host: str, port: int, detach_mode: bool) -> None:
+def run_all(host: str, port: int | None, detach_mode: bool) -> None:
     """Run crawling and the dashboard server together."""
+    from ai_usage.api import DEFAULT_PORT
+
+    explicit_port = port is not None
+    port = port if port is not None else DEFAULT_PORT
     paths = default_paths()
     if detach_mode:
         click.echo(f"Detached as PID {detach(['up', '--host', host, '--port', str(port)], paths)}")
@@ -919,7 +923,7 @@ def run_all(host: str, port: int, detach_mode: bool) -> None:
     except ImportError as exception:
         raise click.ClickException("the API server has not been installed") from exception
     # end try
-    asyncio.run(run_server_and_crawler(paths, host, port, reporter=click.echo))
+    asyncio.run(run_server_and_crawler(paths, host, port, reporter=click.echo, explicit_port=explicit_port))
 # end def
 
 
@@ -928,12 +932,12 @@ main.add_command(run_all, "start")
 
 @main.command()
 @click.option("--host", default="localhost")
-@click.option("--port", default=4458, type=int)
-def serve(host: str, port: int) -> None:
+@click.option("--port", default=None, type=int)
+def serve(host: str, port: int | None) -> None:
     """Serve the usage API and dashboard without crawling."""
     import uvicorn
 
-    from ai_usage.api import create_app, exposed_host
+    from ai_usage.api import DEFAULT_PORT, create_app, exposed_host, resolve_port
 
     if exposed_host(host):
         click.echo(
@@ -941,7 +945,17 @@ def serve(host: str, port: int) -> None:
             err=True,
         )
     # end if
-    uvicorn.run(create_app(default_paths()), host=host, port=port)
+    explicit_port = port is not None
+    port = resolve_port(host, port if port is not None else DEFAULT_PORT, explicit_port)
+
+    async def execute() -> None:
+        app = create_app(default_paths())
+        server = uvicorn.Server(uvicorn.Config(app, host=host, port=port))
+        app.state.runtime.server = server
+        await server.serve()
+    # end def
+
+    asyncio.run(execute())
 # end def
 
 
