@@ -14,6 +14,8 @@ const loading = ref(true);
 const error = ref("");
 const filters = reactive<Filters>({ services: [], providers: [], accounts: [], metrics: [] });
 const hiddenSeriesKeys = ref<string[]>([]);
+const rangeStart = ref<Date>(new Date());
+const rangeEnd = ref<Date>(new Date());
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localStorage.getItem("ai-usage-theme") && systemDark.matches));
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
@@ -33,6 +35,8 @@ async function load(autoWiden = false): Promise<void> {
   error.value = "";
   try {
     const [start, end] = rangeForPreset(preset.value);
+    rangeStart.value = start;
+    rangeEnd.value = end;
     series.value = await fetchSeries(start, end, filters);
     latest.value = await fetchLatest();
     pruneHiddenSeriesKeys();
@@ -60,20 +64,6 @@ function toggleSeries(key: string, visible: boolean): void {
   hiddenSeriesKeys.value = visible
     ? hiddenSeriesKeys.value.filter((existing) => existing !== key)
     : [...new Set([...hiddenSeriesKeys.value, key])];
-
-  const [accountId, metricKey] = key.split("::");
-  const accountKeys = series.value.filter((item) => item.account_id === accountId);
-  const metricKeys = series.value.filter((item) => item.metric_key === metricKey);
-  const accountFullyHidden = accountKeys.length > 0
-    && accountKeys.every((item) => hiddenSeriesKeys.value.includes(`${item.account_id}::${item.metric_key}`));
-  const metricFullyHidden = metricKeys.length > 0
-    && metricKeys.every((item) => hiddenSeriesKeys.value.includes(`${item.account_id}::${item.metric_key}`));
-
-  const allAccountIds = [...new Set(series.value.map((item) => item.account_id))];
-  const allMetricKeys = [...new Set(series.value.map((item) => item.metric_key))];
-  filters.accounts = allAccountIds.filter((id) => id !== accountId || !accountFullyHidden);
-  filters.metrics = allMetricKeys.filter((metric) => metric !== metricKey || !metricFullyHidden);
-  void load();
 }
 
 function toggleTheme(): void {
@@ -129,6 +119,8 @@ onBeforeUnmount(() => events?.close());
             :dark="dark"
             :exhausted-color="catalog.exhausted_color"
             :hidden-series-keys="hiddenSeriesKeys"
+            :range-start="rangeStart"
+            :range-end="rangeEnd"
             @toggle-series="toggleSeries"
           />
         </section>

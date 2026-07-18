@@ -50,3 +50,26 @@ Three unrelated fixes/changes requested together:
 - Backend: `uv run pytest -q` after the Typer migration (expect all current tests green after fixing any help-format assertions).
 - CLI manual smoke: `uv run ai-usage --help`, `uv run ai-usage provider --help`, `uv run ai-usage provider hosts --help`, exercise a couple of aliases (`uv run ai-usage provider ls`, `uv run ai-usage provider mv ...`), confirm `uv run ai-usage completion --shell bash` still renders a script.
 - Frontend: `cd frontend && yarn test && yarn type-check && yarn build`; extend `frontend/src/chart.test.ts` with a case asserting `xAxis.min`/`xAxis.max` equal the passed `start`/`end` when provided. Manually verify in a browser (`yarn dev` or `ai-usage serve` against seeded data, per this session's established pattern): pick "3h", confirm the chart's visible x-axis spans the full 3 hours even with sparse data; click a legend entry off and back on, confirm the series fades/reappears instantly with no network refetch and the legend entry never disappears.
+
+## Todos
+
+- [x] Phase A1: provider merge command
+- [x] Phase A2: provider rename command
+- [x] Phase A3: multi-computer host allow/deny list
+- [x] Phase B1: UUIDv7 for new IDs
+- [x] Phase B2: move credential.key under local/
+- [x] Phase B3: fix CLI help text truncation
+- [x] Phase B4: bare `ai-usage` shows help + status
+- [x] Phase B5: rename run-all to up (alias start)
+- [x] Phase C1: fix Ctrl+C hang
+- [x] Phase C2: port fallback on default port occupied
+- [x] Phase D1: history log dedup cleanup command
+- [x] Phase D2: auto git commit/push for ~/.ai-usage
+- [x] Phase E1: frontend dropdown presets auto/1h/3h/6h/12h
+- [x] Phase E2: incremental chart redraw (no full reanimate)
+- [x] Phase E3: vertical red dashed "now" line
+- [x] Phase E4: prediction line legend + window-reset fixes
+- [x] Phase E5: two-way legend/filter sync
+- [x] Fix legend-hide bug (Part 3)
+- [x] Fix chart axis range (Part 2)
+- [ ] Migrate CLI from Click to Typer (Part 1) *(in progress)*
