@@ -81,6 +81,7 @@ class AccountConfig(BaseModel):
     options: dict[str, Any] = Field(default_factory=dict)
     colors: dict[str, str] = Field(default_factory=dict)
     intervals: dict[str, int] = Field(default_factory=dict)
+    hosts: list[tuple[str, str]] | None = None
 # end class
 
 

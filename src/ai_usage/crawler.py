@@ -9,6 +9,7 @@ from fastscheduler import FastScheduler
 from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
 from ai_usage.database import Database
+from ai_usage.host_identity import account_allows_host
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.orm import CrawlStateRecord
 from ai_usage.progress import ProgressReporter, quiet_reporter
@@ -29,12 +30,21 @@ class Crawler:
         config: ConfigStore,
         database: Database,
         reporter: ProgressReporter = quiet_reporter,
+        host_id: str | None = None,
     ):
         self.collector = collector
         self.config = config
         self.database = database
         self.report = reporter
+        self.host_id = host_id
         self.scheduler: FastScheduler | None = None
+    # end def
+
+    def accounts_for_this_host(self, accounts: list[AccountConfig]) -> list[AccountConfig]:
+        if self.host_id is None:
+            return accounts
+        # end if
+        return [account for account in accounts if account_allows_host(account, self.host_id)]
     # end def
 
     async def ensure_states(self, accounts: list[AccountConfig]) -> None:
@@ -51,7 +61,7 @@ class Crawler:
     # end def
 
     async def tick(self) -> None:
-        accounts = self.config.list_accounts()
+        accounts = self.accounts_for_this_host(self.config.list_accounts())
         await self.ensure_states(accounts)
         now = datetime.now(UTC)
         due: list[AccountConfig] = []
@@ -135,7 +145,7 @@ class Crawler:
     # end def
 
     async def run(self) -> None:
-        accounts = self.config.list_accounts()
+        accounts = self.accounts_for_this_host(self.config.list_accounts())
         if accounts:
             names = ", ".join(account.name for account in accounts)
             self.report(f"Crawler started for {len(accounts)} accounts: {names}.")

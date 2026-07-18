@@ -444,3 +444,38 @@ def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> 
 
     assert asyncio.run(source_state_counts()) == (0, 0)
 # end def
+
+
+def test_hosts_add_and_remove_round_trip(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    account = ConfigStore(paths).create_account("codex", "app-server", "Personal", None, {})
+
+    added = CliRunner().invoke(
+        main,
+        [
+            "provider", "hosts", "add",
+            "--account", account.id,
+            "--hostname", "laptop",
+            "--host-id", "host-1",
+            "--no-input",
+        ],
+    )
+    assert added.exit_code == 0
+    assert "Added host laptop (host-1)" in added.output
+    with_host = ConfigStore(paths).get_account(account.id)
+    assert with_host.hosts == [("laptop", "host-1")]
+
+    removed = CliRunner().invoke(
+        main,
+        [
+            "provider", "hosts", "rm",
+            "--account", account.id,
+            "--hostname", "laptop",
+            "--host-id", "host-1",
+            "--no-input",
+        ],
+    )
+    assert removed.exit_code == 0
+    assert ConfigStore(paths).get_account(account.id).hosts is None
+# end def

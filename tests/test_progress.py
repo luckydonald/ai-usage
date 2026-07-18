@@ -159,3 +159,29 @@ async def test_stale_result_is_not_treated_as_a_crawl_failure(tmp_path, monkeypa
     assert not any("backing off crawl interval" in message for message in messages)
     await database.close()
 # end def
+
+
+def test_crawler_filters_accounts_restricted_to_other_hosts() -> None:
+    unrestricted = AccountConfig(id="a", service="s", provider="p", name="Unrestricted")
+    allowed = AccountConfig(
+        id="b", service="s", provider="p", name="Allowed", hosts=[("laptop", "this-host")]
+    )
+    disallowed = AccountConfig(
+        id="c", service="s", provider="p", name="Disallowed", hosts=[("desktop", "other-host")]
+    )
+    crawler = Crawler.__new__(Crawler)
+    crawler.host_id = "this-host"
+
+    filtered = crawler.accounts_for_this_host([unrestricted, allowed, disallowed])
+
+    assert [account.id for account in filtered] == ["a", "b"]
+# end def
+
+
+def test_crawler_without_host_id_applies_no_filtering() -> None:
+    restricted = AccountConfig(id="a", service="s", provider="p", name="Restricted", hosts=[("x", "y")])
+    crawler = Crawler.__new__(Crawler)
+    crawler.host_id = None
+
+    assert crawler.accounts_for_this_host([restricted]) == [restricted]
+# end def
