@@ -3,13 +3,15 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { fetchCatalog, fetchLatest, fetchSeries } from "./api";
 import UsageChart from "./components/UsageChart.vue";
-import { presetLabels, rangeForPreset, wideningOrder, type TimePreset } from "./time";
+import { customRange, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
 import type { Catalog, Filters, GraphSeries, LatestMetric } from "./types";
 
 const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280" });
 const latest = ref<LatestMetric[]>([]);
 const series = ref<GraphSeries[]>([]);
 const preset = ref<TimePreset>("auto");
+const customStartText = ref(toDateInputValue(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
+const customEndText = ref(toDateInputValue(new Date()));
 const loading = ref(true);
 const error = ref("");
 const filters = reactive<Filters>({ services: [], providers: [], accounts: [], metrics: [] });
@@ -39,13 +41,16 @@ async function load(autoWiden = false): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const [start, end] = rangeForPreset(preset.value);
+    const [start, end] =
+      preset.value === "custom"
+        ? customRange(customStartText.value, customEndText.value)
+        : rangeForPreset(preset.value);
     rangeStart.value = start;
     rangeEnd.value = end;
     series.value = await fetchSeries(start, end, filters);
     latest.value = await fetchLatest();
     pruneHiddenSeriesKeys();
-    if (autoWiden && series.value.every((item) => item.points.length === 0)) {
+    if (autoWiden && preset.value !== "custom" && series.value.every((item) => item.points.length === 0)) {
       const next = wideningOrder[wideningOrder.indexOf(preset.value) + 1];
       if (next) {
         preset.value = next;
@@ -109,6 +114,10 @@ onBeforeUnmount(() => events?.close());
       <section class="workspace">
         <aside aria-label="Graph filters">
           <label>Range<select v-model="preset" @change="load()"><option v-for="(label, key) in presetLabels" :key="key" :value="key">{{ label }}</option></select></label>
+          <template v-if="preset === 'custom'">
+            <label>From<input type="date" v-model="customStartText" :max="customEndText" @change="load()" /></label>
+            <label>To<input type="date" v-model="customEndText" :min="customStartText" @change="load()" /></label>
+          </template>
           <label>Services<select multiple @change="filters.services = selectedValues($event); load()"><option v-for="item in services" :key="item">{{ item }}</option></select></label>
           <label>Providers<select multiple @change="filters.providers = selectedValues($event); load()"><option v-for="item in providers" :key="item">{{ item }}</option></select></label>
           <label>Accounts<select multiple @change="filters.accounts = selectedValues($event); load()"><option v-for="item in accounts" :key="item.id" :value="item.id">{{ accountLabel(item) }}</option></select></label>
