@@ -51,6 +51,9 @@ def maybe_run_git_backup(
     Never raises: a missing repo, a failed commit, or a failed push are all logged and skipped —
     the next call (next debounce window) tries again.
     """
+    # uvicorn's default logging config disables pre-existing loggers (disable_existing_loggers=True)
+    # if `serve`/`up` ran earlier in this process — re-enable so our log lines aren't dropped.
+    LOGGER.disabled = False
     if not git_backup_enabled(config):
         return
     # end if
@@ -84,11 +87,14 @@ def maybe_run_git_backup(
         if commit.returncode == 1:
             return
         # end if
+        LOGGER.info("git backup: committed changes in %s.", paths.root)
         push = subprocess.run(["git", "-C", str(paths.root), "push"], capture_output=True)
         if push.returncode != 0:
             LOGGER.warning(
                 "git push failed (will retry next cycle): %s", push.stderr.decode(errors="replace")
             )
+        else:
+            LOGGER.info("git backup: pushed successfully.")
         # end if
     except OSError as exception:
         LOGGER.warning("git backup failed: %s", exception)

@@ -974,3 +974,5 @@ Try to build models for those too.
 
 ❯ Does the autocommit log that it commited once, and push status as second log.
 
+❯ squash-cleanup all the commits since last push following LPLP style.
+
