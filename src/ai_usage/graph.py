@@ -63,6 +63,7 @@ def build_series(
             for sample in metric_samples
         ]
         windows = build_windows(metric_samples, current_time)
+        points = with_window_reset_zeros(points, windows)
         color = configured_colors.get((account_id, metric_key)) or generated_color("/".join(identity))
         result.append(
             GraphSeries(
@@ -78,6 +79,28 @@ def build_series(
         )
     # end for
     return result
+# end def
+
+
+def with_window_reset_zeros(
+    points: list[GraphPoint], windows: list[GraphWindow]
+) -> list[GraphPoint]:
+    """Inject a synthetic 0% point at the end of every window that has already ended.
+
+    Without this, the last real sample before a window's reset just sits at its last known
+    percentage until the next window's first sample arrives, drawing a misleading gradual
+    slope through the reset instead of the abrupt drop that actually happened.
+    """
+    existing_timestamps = {point.at for point in points}
+    zero_points = [
+        GraphPoint(at=window.end, percentage=0.0)
+        for window in windows
+        if not window.current and window.end not in existing_timestamps
+    ]
+    if not zero_points:
+        return points
+    # end if
+    return sorted((*points, *zero_points), key=lambda point: point.at)
 # end def
 
 
