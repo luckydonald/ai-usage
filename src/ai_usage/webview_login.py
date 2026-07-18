@@ -60,8 +60,14 @@ def capture_cookies_via_webview(
     captured: dict[str, str] = {}
 
     def snapshot_cookies() -> None:
+        # `get_cookies()`'s return shape differs across pywebview's backends: GTK returns a list
+        # of single-entry `SimpleCookie`s, others a single `SimpleCookie` with one entry per
+        # cookie — handle both rather than assuming one.
         cookies = window.get_cookies()
-        captured.update({morsel.key: morsel.value for morsel in cookies.values()})
+        jars = cookies if isinstance(cookies, list) else [cookies]
+        for jar in jars:
+            captured.update({morsel.key: morsel.value for morsel in jar.values()})
+        # end for
     # end def
 
     def on_loaded() -> None:
