@@ -8,6 +8,11 @@ from ai_usage.providers.base import ProviderError
 from ai_usage.webview_login import capture_cookies_via_webview
 
 
+class FakeWebViewException(Exception):
+    pass
+# end class
+
+
 class FakeEventSlot:
     def __init__(self) -> None:
         self.handlers: list = []
@@ -39,13 +44,15 @@ class FakeWindow:
 # end class
 
 
-def install_fake_webview(monkeypatch, cookies: SimpleCookie) -> FakeWindow:
+def install_fake_webview(monkeypatch, cookies: SimpleCookie, start=None) -> FakeWindow:
     window = FakeWindow(cookies)
     fake_module = types.SimpleNamespace(
         create_window=lambda title, url: window,
-        start=lambda: [handler() for handler in window.events.closing.handlers],
+        start=start or (lambda: [handler() for handler in window.events.closing.handlers]),
     )
+    fake_errors_module = types.SimpleNamespace(WebViewException=FakeWebViewException)
     monkeypatch.setitem(sys.modules, "webview", fake_module)
+    monkeypatch.setitem(sys.modules, "webview.errors", fake_errors_module)
     return window
 # end def
 
@@ -74,8 +81,24 @@ def test_capture_cookies_via_webview_raises_a_clear_error_when_pywebview_is_miss
     monkeypatch,
 ) -> None:
     monkeypatch.setitem(sys.modules, "webview", None)
+    monkeypatch.setitem(sys.modules, "webview.errors", None)
 
     with pytest.raises(ProviderError, match="browser' extra"):
+        capture_cookies_via_webview("https://example.test/login", "Example")
+    # end with
+# end def
+
+
+def test_capture_cookies_via_webview_raises_a_clear_error_without_a_gui_toolkit(
+    monkeypatch,
+) -> None:
+    def raise_no_toolkit() -> None:
+        raise FakeWebViewException("You must have either QT or GTK...")
+    # end def
+
+    install_fake_webview(monkeypatch, SimpleCookie(), start=raise_no_toolkit)
+
+    with pytest.raises(ProviderError, match="WebKitGTK"):
         capture_cookies_via_webview("https://example.test/login", "Example")
     # end with
 # end def
