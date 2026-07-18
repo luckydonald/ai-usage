@@ -1,3 +1,5 @@
+import os
+import signal
 import sys
 import types
 from http.cookies import SimpleCookie
@@ -216,6 +218,28 @@ def test_capture_cookies_via_webview_tolerates_a_blocked_click(monkeypatch) -> N
 
     assert result == {"session": "clicked-anyway"}
     assert window.destroyed
+# end def
+
+
+def test_capture_cookies_via_webview_closes_the_window_on_sigint(monkeypatch) -> None:
+    cookies = SimpleCookie()
+    cookies["session"] = "abc123"
+    window = install_fake_webview(monkeypatch, cookies, urls=["https://example.test/login"])
+    original_handler = signal.getsignal(signal.SIGINT)
+
+    def start_and_send_sigint(**kwargs) -> None:
+        del kwargs
+        window.simulate_navigation()
+        os.kill(os.getpid(), signal.SIGINT)
+    # end def
+
+    monkeypatch.setattr(sys.modules["webview"], "start", start_and_send_sigint)
+
+    result = capture_cookies_via_webview("https://example.test/login", "Example")
+
+    assert result == {"session": "abc123"}
+    assert window.destroyed
+    assert signal.getsignal(signal.SIGINT) is original_handler
 # end def
 
 
