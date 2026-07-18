@@ -82,8 +82,8 @@ def install_fake_webview(
 ) -> FakeWindow:
     window = FakeWindow(cookies, urls or [])
 
-    def default_start(user_agent=None) -> None:
-        del user_agent
+    def default_start(**kwargs) -> None:
+        del kwargs
         window.simulate_navigation()
     # end def
 
@@ -234,8 +234,8 @@ def test_capture_cookies_via_webview_raises_a_clear_error_when_pywebview_is_miss
 def test_capture_cookies_via_webview_raises_a_clear_error_without_a_gui_toolkit(
     monkeypatch,
 ) -> None:
-    def raise_no_toolkit(user_agent=None) -> None:
-        del user_agent
+    def raise_no_toolkit(**kwargs) -> None:
+        del kwargs
         raise FakeWebViewException("You must have either QT or GTK...")
     # end def
 
