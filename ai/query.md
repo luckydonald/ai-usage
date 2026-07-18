@@ -990,15 +990,15 @@ ModuleNotFoundError: No module named 'webview'
 
 ❯ Apparently the tests don't run `ai-usage provider add claude web`.
 
-❯ It shows a not allowed there @ai/errors/4.json 
+❯ It shows a not allowed there @ai/errors/4.json
 You should obviously open the login URL, not the api endpoints for the user to login, lol.
 Then, after login (navigation change) extract the needed cookies.
 - https://claude.ai/login
 - https://chatgpt.com/ , then click `<button data-testid="login-button" …>` for the user.
 - https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fsettings%2Fcopilot%2Ffeatures
 
-❯ codex-web is on the right webpage, needs to click 'Log in' button still, see @ai/errors/5.txt 
-claude is still showing the @ai/errors/4.json 
+❯ codex-web is on the right webpage, needs to click 'Log in' button still, see @ai/errors/5.txt
+claude is still showing the @ai/errors/4.json
 Neither stops if I click close on the window.
 
 ❯ Question answered.
@@ -1027,4 +1027,6 @@ Neither stops if I click close on the window.
 ❯ Codex still doesn't click the login button; claude shows white the first frame, then a different shade of gray, never the login page.
 
 ❯ Now it spawned with a network debugger, which logged an error `TypeError: undefined is not an object (evaluating 'window.localStorage.getItem')`
+
+❯ The codex-web login button click does not work yet (but I confirmed in the console there that `document.querySelector('button[data-testid="login-button"]').click()` works), and the browsers are not `^C`-able, see @ai/errors/7.txt
 
