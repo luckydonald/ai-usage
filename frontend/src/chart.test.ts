@@ -63,4 +63,16 @@ describe("chart rendering contract", () => {
     expect(projection).toBeDefined();
     expect((projection as { data: [string, number][] }).data[0]).toEqual(["2026-07-17T10:00:00Z", 20]);
   });
+
+  it("fixes the x-axis to the requested range instead of the data extent", () => {
+    const start = new Date("2026-07-17T00:00:00Z");
+    const end = new Date("2026-07-17T03:00:00Z");
+    const option = chartOption([series], false, "#6b7280", { start, end });
+    expect(option.xAxis).toMatchObject({ min: start.getTime(), max: end.getTime() });
+  });
+
+  it("leaves the x-axis auto-scaling when no range is given", () => {
+    const option = chartOption([series], false, "#6b7280");
+    expect(option.xAxis).toMatchObject({ min: undefined, max: undefined });
+  });
 });

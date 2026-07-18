@@ -13,6 +13,8 @@ export function seriesKey(item: GraphSeries): string {
 export interface ChartOptions {
   now?: Date;
   legendSelected?: Record<string, boolean>;
+  start?: Date;
+  end?: Date;
 }
 
 export function chartOption(
@@ -125,7 +127,12 @@ export function chartOption(
       selected: options.legendSelected,
     },
     grid: { left: 50, right: 28, top: 52, bottom: 48 },
-    xAxis: { type: "time", axisLabel: { color: dark ? "#9ca3af" : "#4b5563" } },
+    xAxis: {
+      type: "time",
+      min: options.start ? options.start.getTime() : undefined,
+      max: options.end ? options.end.getTime() : undefined,
+      axisLabel: { color: dark ? "#9ca3af" : "#4b5563" },
+    },
     yAxis: {
       type: "value",
       min: 0,

@@ -10,6 +10,8 @@ const props = defineProps<{
   dark: boolean;
   exhaustedColor: string;
   hiddenSeriesKeys: string[];
+  rangeStart: Date;
+  rangeEnd: Date;
 }>();
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
@@ -32,7 +34,11 @@ function render(recreate: boolean): void {
   const isNew = !chart;
   chart ??= echarts.init(container.value, props.dark ? "dark" : undefined);
   chart.setOption(
-    chartOption(props.series, props.dark, props.exhaustedColor, { legendSelected: legendSelected() }),
+    chartOption(props.series, props.dark, props.exhaustedColor, {
+      legendSelected: legendSelected(),
+      start: props.rangeStart,
+      end: props.rangeEnd,
+    }),
     recreate || isNew,
   );
   if (isNew) {
@@ -54,7 +60,11 @@ onMounted(() => {
   window.addEventListener("resize", resize);
 });
 watch(() => props.dark, () => render(true));
-watch(() => [props.series, props.exhaustedColor, props.hiddenSeriesKeys], () => render(false), { deep: true });
+watch(
+  () => [props.series, props.exhaustedColor, props.hiddenSeriesKeys, props.rangeStart, props.rangeEnd],
+  () => render(false),
+  { deep: true },
+);
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resize);
   chart?.dispose();
