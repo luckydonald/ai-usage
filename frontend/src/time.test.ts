@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { rangeForPreset, subtractCalendarMonth, wideningOrder } from "./time";
+import { customRange, rangeForPreset, subtractCalendarMonth, toDateInputValue, wideningOrder } from "./time";
 
 describe("calendar month range", () => {
   it("uses the same day in the preceding month", () => {
@@ -31,6 +31,35 @@ describe("calendar month range", () => {
   it("does not include auto in the widening cascade", () => {
     expect(wideningOrder).not.toContain("auto");
     expect(wideningOrder[0]).toBe("1h");
+  });
+});
+
+describe("custom range", () => {
+  it("includes both the start and end day in full", () => {
+    const [start, end] = customRange("2026-07-01", "2026-07-03");
+    expect(start.getFullYear()).toBe(2026);
+    expect(start.getMonth()).toBe(6);
+    expect(start.getDate()).toBe(1);
+    expect(start.getHours()).toBe(0);
+    expect(start.getMinutes()).toBe(0);
+    expect(end.getDate()).toBe(3);
+    expect(end.getHours()).toBe(23);
+    expect(end.getMinutes()).toBe(59);
+  });
+
+  it("supports a single-day range", () => {
+    const [start, end] = customRange("2026-07-01", "2026-07-01");
+    expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000 - 1);
+  });
+
+  it("round-trips through toDateInputValue", () => {
+    const date = new Date(2026, 6, 5);
+    expect(toDateInputValue(date)).toBe("2026-07-05");
+  });
+
+  it("pads single-digit months and days", () => {
+    const date = new Date(2026, 0, 9);
+    expect(toDateInputValue(date)).toBe("2026-01-09");
   });
 });
 

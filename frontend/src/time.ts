@@ -1,4 +1,4 @@
-export type TimePreset = "auto" | "1h" | "3h" | "6h" | "12h" | "day" | "week" | "month" | "year" | "all";
+export type TimePreset = "auto" | "1h" | "3h" | "6h" | "12h" | "day" | "week" | "month" | "year" | "all" | "custom";
 
 export const presetLabels: Record<TimePreset, string> = {
   auto: "Auto",
@@ -11,6 +11,7 @@ export const presetLabels: Record<TimePreset, string> = {
   month: "Since this day last month",
   year: "1 year",
   all: "All time",
+  custom: "Custom range",
 };
 
 export function subtractCalendarMonth(now: Date): Date {
@@ -40,3 +41,15 @@ export function rangeForPreset(preset: TimePreset, now = new Date()): [Date, Dat
 }
 
 export const wideningOrder: TimePreset[] = ["1h", "3h", "6h", "12h", "day", "week", "month", "year", "all"];
+
+// Both dates are inclusive: `startText`'s whole day through `endText`'s whole day, in local time.
+export function customRange(startText: string, endText: string): [Date, Date] {
+  return [new Date(`${startText}T00:00:00`), new Date(`${endText}T23:59:59.999`)];
+}
+
+export function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}

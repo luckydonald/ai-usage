@@ -938,3 +938,32 @@ Try to build models for those too.
 > </details>
 >
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. For the frontend rebuild — how much of the current structure should survive?
+>> 2. Any layout preference for the rebuilt page, or should I decide?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Rebuild scope** (1/2) <kbd>Single Select</kbd><br>
+>> For the frontend rebuild — how much of the current structure should survive?
+> - [ ] 1\. Keep data plumbing, redesign the rest (Recommended)
+>   - _Keep api.ts/chart.ts/UsageChart.vue and the filter logic (services/providers/accounts/metrics, range picker) as-is, but throw out App.vue's current layout/markup/styling and rebuild the page shell, nav, and visual design from scratch with the 5 semantic colors._
+> - [x] 2\. Literal from-scratch
+>   - _Also reconsider the filter/interaction model itself (not just visuals) — e.g. different ways to pick which series show, not necessarily five multi-selects._
+> - [ ] 3\. _Type something._
+>
+>> **Layout style** (2/2) <kbd>Single Select</kbd><br>
+>> Any layout preference for the rebuilt page, or should I decide?
+> - [x] 1\. Let me decide (Recommended)
+>   - _I'll design a clean single-page layout: header, filter bar, chart area — optimized for one thing (reading the graphs), using the primary/secondary/misc/success/error colors purposefully rather than decoratively._
+> - [ ] 2\. I have specific layout ideas
+>   - _Describe what you want and I'll build to that instead._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
