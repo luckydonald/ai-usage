@@ -47,6 +47,20 @@ def test_provider_group_exposes_aliases_and_removes_flat_commands() -> None:
 # end def
 
 
+def test_root_help_groups_commands_into_sections() -> None:
+    root_help = CliRunner().invoke(main, ["--help"])
+
+    assert root_help.exit_code == 0
+    sections = ["Provider management:", "Operate:", "Setup:", "Internal tooling:"]
+    positions = [root_help.output.index(section) for section in sections]
+    assert positions == sorted(positions)
+    internal_tooling_start = positions[-1]
+    for internal_command in ("ingest-claude", "claude-relay-install", "claude-relay-remove"):
+        assert root_help.output.index(internal_command) > internal_tooling_start
+    # end for
+# end def
+
+
 def test_no_input_add_lists_choices_without_creating_runtime(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
