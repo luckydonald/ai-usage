@@ -1026,3 +1026,5 @@ Neither stops if I click close on the window.
 
 ❯ Codex still doesn't click the login button; claude shows white the first frame, then a different shade of gray, never the login page.
 
+❯ Now it spawned with a network debugger, which logged an error `TypeError: undefined is not an object (evaluating 'window.localStorage.getItem')`
+
