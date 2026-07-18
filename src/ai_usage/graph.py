@@ -1,5 +1,6 @@
 """Turn indexed samples into render-ready graph series."""
 
+import colorsys
 import hashlib
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
@@ -18,6 +19,19 @@ PALETTE = (
     "#6366f1",
 )
 
+# One base brand color per service — every account/metric of that service is a deterministic
+# lightness variant of this hue, so multiple accounts stay visually grouped by brand while still
+# being distinguishable. Only a single shade per brand is used for now; the fuller brand palettes
+# (e.g. codex's `#ee5091,#199fd7,#99bd3c,#fc7942,#8a50d8`) are reserved for later.
+SERVICE_BASE_COLORS: dict[str, str] = {
+    "codex": "#99bd3c",
+    "claude": "#DE7356",
+    "gemini": "#9177C7",
+    "perplexity": "#21808D",
+    "cursor": "#72716D",
+}
+LIGHTNESS_OFFSETS = (-0.18, -0.09, 0.0, 0.09, 0.18)
+
 
 def aware(value: datetime | None) -> datetime | None:
     if value is None:
@@ -27,7 +41,36 @@ def aware(value: datetime | None) -> datetime | None:
 # end def
 
 
-def generated_color(identity: str) -> str:
+def hex_to_rgb01(hex_color: str) -> tuple[float, float, float]:
+    value = hex_color.lstrip("#")
+    r, g, b = (int(value[index : index + 2], 16) / 255 for index in (0, 2, 4))
+    return r, g, b
+# end def
+
+
+def rgb01_to_hex(rgb: tuple[float, float, float]) -> str:
+    return "#" + "".join(f"{round(max(0.0, min(1.0, channel)) * 255):02x}" for channel in rgb)
+# end def
+
+
+def brand_color_variant(service: str, identity: str) -> str | None:
+    base = SERVICE_BASE_COLORS.get(service)
+    if base is None:
+        return None
+    # end if
+    hue, lightness, saturation = colorsys.rgb_to_hls(*hex_to_rgb01(base))
+    digest = hashlib.sha256(identity.encode()).digest()
+    offset = LIGHTNESS_OFFSETS[digest[0] % len(LIGHTNESS_OFFSETS)]
+    varied_lightness = min(0.92, max(0.08, lightness + offset))
+    return rgb01_to_hex(colorsys.hls_to_rgb(hue, varied_lightness, saturation))
+# end def
+
+
+def generated_color(service: str, identity: str) -> str:
+    variant = brand_color_variant(service, identity)
+    if variant is not None:
+        return variant
+    # end if
     digest = hashlib.sha256(identity.encode()).digest()
     return PALETTE[int.from_bytes(digest[:2]) % len(PALETTE)]
 # end def
@@ -64,7 +107,9 @@ def build_series(
         ]
         windows = build_windows(metric_samples, current_time)
         points = with_window_reset_zeros(points, windows)
-        color = configured_colors.get((account_id, metric_key)) or generated_color("/".join(identity))
+        color = configured_colors.get((account_id, metric_key)) or generated_color(
+            service, "/".join(identity)
+        )
         result.append(
             GraphSeries(
                 service=service,
