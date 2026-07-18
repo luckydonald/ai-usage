@@ -967,3 +967,8 @@ Try to build models for those too.
 > </details>
 >
 
+❯ - Where will it autocommit? That should be part of fetch & crawl, and with that also up/start.
+- the text of `ai-usage config` is not helpful, and of all the substeps neither. I don't want to apply `--help` to every single one of those.
+  - also the options shall be loaded already in the `config` help, so you'd get a list with (now a single item) `git status|enable|disable`.
+    - if possible automatic
+
