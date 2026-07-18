@@ -39,7 +39,7 @@ class FakeEvents:
 
 
 class FakeWindow:
-    def __init__(self, cookies: SimpleCookie, urls: list[str]) -> None:
+    def __init__(self, cookies: SimpleCookie | list[SimpleCookie], urls: list[str]) -> None:
         self.events = FakeEvents()
         self._cookies = cookies
         self._urls = urls
@@ -112,8 +112,23 @@ def test_capture_cookies_via_webview_snapshots_cookies_on_every_load(monkeypatch
 # end def
 
 
+def test_capture_cookies_via_webview_handles_gtk_style_list_of_single_entry_cookies(
+    monkeypatch,
+) -> None:
+    session = SimpleCookie()
+    session["session"] = "abc"
+    theme = SimpleCookie()
+    theme["theme"] = "dark"
+    install_fake_webview(monkeypatch, [session, theme], urls=["https://example.test/login"])
+
+    result = capture_cookies_via_webview("https://example.test/login", "Example")
+
+    assert result == {"session": "abc", "theme": "dark"}
+# end def
+
+
 def test_capture_cookies_via_webview_returns_empty_dict_without_cookies(monkeypatch) -> None:
-    install_fake_webview(monkeypatch, SimpleCookie(), urls=["https://example.test/login"])
+    install_fake_webview(monkeypatch, [], urls=["https://example.test/login"])
 
     result = capture_cookies_via_webview("https://example.test/login", "Example")
 
