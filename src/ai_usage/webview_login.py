@@ -5,6 +5,7 @@ base install doesn't need a system webview toolkit (WebKitGTK/WKWebView/WebView2
 """
 
 import logging
+import signal
 from urllib.parse import urlsplit
 
 from ai_usage.providers.base import ProviderError
@@ -101,6 +102,17 @@ def capture_cookies_via_webview(
 
     window = webview.create_window(title, url)
     window.events.loaded += on_loaded
+
+    def handle_sigint(signum, frame) -> None:
+        # webview.start() blocks in GTK's C-level main loop, which doesn't return control to
+        # Python's interpreter (and thus its signal handling) between iterations quickly — the
+        # default asyncio SIGINT handler just raises KeyboardInterrupt repeatedly with no effect.
+        # Closing the window directly from here actually breaks the loop.
+        del signum, frame
+        window.destroy()
+    # end def
+
+    previous_handler = signal.signal(signal.SIGINT, handle_sigint)
     try:
         # debug=True enables right-click "Inspect Element" devtools, so a stuck/blank page can
         # be diagnosed (console errors, network responses) instead of guessed at blind.
@@ -112,6 +124,8 @@ def capture_cookies_via_webview(
         webview.start(user_agent=USER_AGENT, debug=True, private_mode=False)
     except WebViewException as exception:
         raise ProviderError(NO_TOOLKIT_HINT) from exception
+    finally:
+        signal.signal(signal.SIGINT, previous_handler)
     # end try
     return captured
 # end def
