@@ -4,6 +4,7 @@ import asyncio
 import json
 import socket
 import sys
+import types
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -1392,7 +1393,55 @@ def serve(
 # end def
 
 
+COMMAND_SECTIONS: dict[str, str] = {
+    "provider": "Provider management",
+    "fetch": "Operate",
+    "crawl": "Operate",
+    "up": "Operate",
+    "start": "Operate",
+    "serve": "Operate",
+    "config": "Setup",
+    "install": "Setup",
+    "uninstall": "Setup",
+    "deinstall": "Setup",
+    "completion": "Setup",
+    "db-upgrade": "Setup",
+    "history-cleanup": "Setup",
+    "ingest-claude": "Internal tooling",
+    "claude-relay-install": "Internal tooling",
+    "claude-relay-remove": "Internal tooling",
+}
+SECTION_ORDER = ["Provider management", "Operate", "Setup", "Internal tooling"]
+
+
+def format_commands_by_section(self: click.Group, ctx: click.Context, formatter) -> None:
+    """Same as Click's default `format_commands`, but split into `SECTION_ORDER` sections."""
+    sections: dict[str, list[tuple[str, click.Command]]] = {}
+    for name in self.list_commands(ctx):
+        command = self.get_command(ctx, name)
+        if command is None or command.hidden:
+            continue
+        # end if
+        section = COMMAND_SECTIONS.get(name, "Other")
+        sections.setdefault(section, []).append((name, command))
+    # end for
+    remaining = [section for section in sections if section not in SECTION_ORDER]
+    for section in [*SECTION_ORDER, *remaining]:
+        commands = sections.get(section)
+        if not commands:
+            continue
+        # end if
+        limit = formatter.width - 6 - max(len(name) for name, _ in commands)
+        rows = [(name, command.get_short_help_str(limit)) for name, command in commands]
+        with formatter.section(section):
+            formatter.write_dl(rows)
+        # end with
+    # end for
+# end def
+
+
 main = typer.main.get_command(app)
+main.format_commands = types.MethodType(format_commands_by_section, main)
 main.add_command(main.commands["up"], "start")
 main.add_command(main.commands["uninstall"], "deinstall")
 
