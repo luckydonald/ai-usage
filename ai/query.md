@@ -1030,3 +1030,5 @@ Neither stops if I click close on the window.
 
 ❯ The codex-web login button click does not work yet (but I confirmed in the console there that `document.querySelector('button[data-testid="login-button"]').click()` works), and the browsers are not `^C`-able, see @ai/errors/7.txt
 
+❯ Can we turn off CSP?
+
