@@ -21,11 +21,13 @@ NO_TOOLKIT_HINT = (
     "library itself is a system package — e.g. on Fedora: `sudo dnf install webkit2gtk4.1`, "
     "on Debian/Ubuntu: `sudo apt install gir1.2-webkit2-4.1`."
 )
-# Some sites WAF-block pywebview's default (non-browser-looking) user agent. Presenting as a
-# normal desktop Chrome avoids that without changing anything about the actual login flow.
+# Some sites WAF-block pywebview's default (non-browser-looking) user agent. Spoofing as Safari
+# rather than Chrome/V8 matters here: the underlying engine actually IS WebKit, so a Safari UA
+# gets feature-detected/served content much closer to what the engine can actually render,
+# whereas a Chrome UA can make sites serve Chrome-only code paths that silently fail on WebKit.
 USER_AGENT = (
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/128.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/17.4 Safari/605.1.15"
 )
 
 
@@ -82,9 +84,14 @@ def capture_cookies_via_webview(
             try:
                 window.evaluate_js(f"document.querySelector({click_selector!r})?.click();")
             except Exception as exception:  # noqa: BLE001
-                # some sites' CSP blocks eval-based JS injection entirely — the user can still
-                # click the button themselves, the window is visible to them.
-                LOGGER.debug("could not auto-click %r: %s", click_selector, exception)
+                # some sites' CSP forbids 'unsafe-eval', which is exactly how pywebview injects
+                # JS — there is no workaround via pywebview's public API. The user can still
+                # click the button themselves; the window is visible to them.
+                LOGGER.warning(
+                    "could not auto-click %r (%s) — please click it yourself in the window.",
+                    click_selector,
+                    exception,
+                )
             # end try
         # end if
         if state["left_initial_domain"] or current.path.rstrip("/") != initial.path.rstrip("/"):
@@ -95,7 +102,9 @@ def capture_cookies_via_webview(
     window = webview.create_window(title, url)
     window.events.loaded += on_loaded
     try:
-        webview.start(user_agent=USER_AGENT)
+        # debug=True enables right-click "Inspect Element" devtools, so a stuck/blank page can
+        # be diagnosed (console errors, network responses) instead of guessed at blind.
+        webview.start(user_agent=USER_AGENT, debug=True)
     except WebViewException as exception:
         raise ProviderError(NO_TOOLKIT_HINT) from exception
     # end try

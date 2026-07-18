@@ -460,6 +460,9 @@ def provider_add(
             provider = runtime.providers.get(resolved_service, resolved_provider)
             if credential is None and provider.login_url and interactive_terminal(no_input):
                 click.echo(f"Opening a login window for {provider.display_name}...")
+                if provider.login_hint:
+                    click.echo(provider.login_hint)
+                # end if
                 try:
                     credential = await provider.authenticate(dynamic_options)
                 except ProviderError as exception:
@@ -528,6 +531,10 @@ def provider_login(
             await runtime.initialize()
             account = runtime.config.get_account(account_id)
             provider = runtime.providers.get(account.service, account.provider)
+            click.echo(f"Opening a login window for {provider.display_name}...")
+            if provider.login_hint:
+                click.echo(provider.login_hint)
+            # end if
             try:
                 credential = await provider.authenticate(account.options)
             except ProviderError as exception:

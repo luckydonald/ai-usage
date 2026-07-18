@@ -172,6 +172,10 @@ class CodexWebUsageProvider(Provider):
     display_name = "Codex private web API"
     login_url = "https://chatgpt.com/"
     login_button_selector = '[data-testid="login-button"]'
+    # chatgpt.com's CSP forbids 'unsafe-eval', which is exactly how pywebview injects JS — the
+    # auto-click attempt (below) always fails there, so tell the user up front rather than let
+    # them wonder why nothing happens.
+    login_hint = "Click \"Log in\" once the page loads."
 
     async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
         del options
