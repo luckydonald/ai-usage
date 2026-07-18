@@ -186,7 +186,11 @@ class ClaudeWebUsageProvider(Provider):
     key = "web"
     display_name = "Claude private web API"
     configuration_fields = (
-        ConfigurationField(key="org_id", label="Claude organization UUID", required=True),
+        ConfigurationField(
+            key="org_id",
+            label="Claude organization UUID",
+            help="Auto-detected after login when the account belongs to a single organization.",
+        ),
     )
     login_url = "https://claude.ai/login"
 
@@ -196,6 +200,36 @@ class ClaudeWebUsageProvider(Provider):
             capture_cookies_via_webview, self.login_url, self.display_name
         )
         return {"cookies": cookies} if cookies else None
+    # end def
+
+    async def discover_options(self, credential: dict[str, Any] | None) -> dict[str, Any]:
+        cookies = (credential or {}).get("cookies") or {}
+        if not cookies:
+            return {}
+        # end if
+        try:
+            async with httpx.AsyncClient(
+                timeout=20, cookies=cookies, base_url="https://claude.ai"
+            ) as client:
+                response = await client.get("/api/organizations")
+                response.raise_for_status()
+                organizations = response.json()
+            # end async with
+        except Exception as exception:  # noqa: BLE001
+            LOGGER.warning("could not auto-detect Claude organization: %s", exception)
+            return {}
+        # end try
+        if len(organizations) == 1:
+            return {"org_id": organizations[0]["uuid"]}
+        # end if
+        if len(organizations) > 1:
+            LOGGER.warning(
+                "found %d Claude organizations; pass --org-id explicitly (%s)",
+                len(organizations),
+                ", ".join(f"{org.get('name')}={org.get('uuid')}" for org in organizations),
+            )
+        # end if
+        return {}
     # end def
 
     async def fetch(
