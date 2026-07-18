@@ -16,7 +16,7 @@ from ai_usage.providers.claude import (
     parse_usage_output,
     remove_status_relay,
 )
-from ai_usage.providers.codex import parse_codex_status, parse_rate_limits
+from ai_usage.providers.codex import CodexStatusProvider, parse_codex_status, parse_rate_limits
 from ai_usage.providers.copilot import CopilotBillingProvider, next_billing_reset
 
 
@@ -49,6 +49,29 @@ def test_codex_status_converts_remaining_to_used() -> None:
     metrics = parse_codex_status(output, datetime.now(UTC))
     assert len(metrics) == 1
     assert metrics[0].usage.percentage == 6
+# end def
+
+
+@pytest.mark.asyncio
+async def test_codex_status_provider_flags_stale_warning(monkeypatch) -> None:
+    output = (
+        "Weekly limit: [████░] 94% left (resets 12:36 on 24 Jul)\n"
+        "Warning:              limits may be stale - run /status again shortly."
+    )
+
+    async def fake_run_codex_status(command: str) -> str:
+        del command
+        return output
+    # end def
+
+    monkeypatch.setattr(
+        "ai_usage.providers.codex.run_codex_status", fake_run_codex_status
+    )
+    account = AccountConfig(id="a", service="codex", provider="cli-status", name="Codex")
+    result = await CodexStatusProvider().fetch(account, None)
+    assert result.status == FetchStatus.STALE
+    assert result.error == "codex reported limits may be stale"
+    assert len(result.metrics) == 1
 # end def
 
 

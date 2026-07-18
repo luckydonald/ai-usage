@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
+from ai_usage.models import AccountConfig, FetchStatus, Metric, ProviderFetchResult, Usage
 from ai_usage.providers.base import ConfigurationField, DiscoveredAccount, Provider, ProviderError
 
 STATUS_PATTERN = re.compile(
@@ -17,6 +17,8 @@ STATUS_PATTERN = re.compile(
     r"\(resets\s+(?P<reset>[^)]+)\)",
     re.IGNORECASE,
 )
+
+STALE_WARNING_PATTERN = re.compile(r"limits may be stale", re.IGNORECASE)
 
 
 def window_key(minutes: int) -> str:
@@ -241,11 +243,14 @@ class CodexStatusProvider(Provider):
         if not metrics:
             raise ProviderError("Codex /status output did not contain usage limits")
         # end if
+        is_stale = STALE_WARNING_PATTERN.search(output) is not None
         return ProviderFetchResult(
             service=self.service,
             provider=self.key,
             account_id=account.id,
             fetched_at=observed,
+            status=FetchStatus.STALE if is_stale else FetchStatus.SUCCESS,
+            error="codex reported limits may be stale" if is_stale else None,
             metrics=metrics,
         )
     # end def

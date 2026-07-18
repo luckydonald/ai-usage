@@ -1,13 +1,13 @@
 import base64
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
 
 from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
-from ai_usage.crawler import Crawler
+from ai_usage.crawler import STALE_RECHECK_SECONDS, Crawler
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
 from ai_usage.models import AccountConfig, FetchStatus, Metric, ProviderFetchResult, Usage
@@ -157,6 +157,16 @@ async def test_stale_result_is_not_treated_as_a_crawl_failure(tmp_path, monkeypa
     await crawler.update_state(account, result, now)
 
     assert not any("backing off crawl interval" in message for message in messages)
+
+    async with database.sessions() as session:
+        from ai_usage.orm import CrawlStateRecord
+
+        state = await session.get(CrawlStateRecord, account.id)
+        assert state is not None
+        expected = now + timedelta(seconds=STALE_RECHECK_SECONDS)
+        assert abs((state.next_run_at.replace(tzinfo=UTC) - expected).total_seconds()) < 1
+        assert state.failure_count == 0
+    # end with
     await database.close()
 # end def
 
