@@ -23,6 +23,7 @@ from ai_usage.models import (
     Usage,
 )
 from ai_usage.providers.base import ConfigurationField, DiscoveredAccount, Provider, ProviderError
+from ai_usage.webview_login import capture_cookies_via_webview
 
 LOGGER = logging.getLogger(__name__)
 
@@ -169,6 +170,15 @@ class CodexWebUsageProvider(Provider):
     service = "codex"
     key = "web"
     display_name = "Codex private web API"
+    login_url = "https://chatgpt.com/auth/login"
+
+    async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
+        del options
+        cookies = await asyncio.to_thread(
+            capture_cookies_via_webview, self.login_url, self.display_name
+        )
+        return {"cookies": cookies} if cookies else None
+    # end def
 
     async def fetch(
         self,

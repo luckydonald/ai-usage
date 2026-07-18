@@ -36,6 +36,7 @@ class Provider(ABC):
     display_name: str
     experimental: bool = False
     configuration_fields: tuple[ConfigurationField, ...] = ()
+    login_url: str | None = None
 
     async def discover(self) -> list[DiscoveredAccount]:
         return []

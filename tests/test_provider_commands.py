@@ -481,6 +481,51 @@ def test_hosts_add_and_remove_round_trip(tmp_path: Path, monkeypatch) -> None:
 # end def
 
 
+def test_provider_login_stores_captured_cookies_as_credential(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    account = ConfigStore(paths).create_account(
+        "claude", "web", "Claude", None, {"org_id": "org-1"}
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.capture_cookies_via_webview",
+        lambda url, title: {"session": "abc123"},
+    )
+
+    result = CliRunner().invoke(main, ["provider", "login", "--account", account.id])
+
+    assert result.exit_code == 0
+    assert "Stored refreshed credentials for Claude." in result.output
+    updated = ConfigStore(paths).get_account(account.id)
+    assert updated.credential_id is not None
+
+    async def load_credential() -> dict:
+        database = Database(paths)
+        try:
+            return await database.get_credential(updated.credential_id)
+        finally:
+            await database.close()
+        # end try
+    # end def
+
+    assert asyncio.run(load_credential()) == {"cookies": {"session": "abc123"}}
+# end def
+
+
+def test_provider_login_rejects_providers_without_interactive_login(
+    tmp_path: Path, monkeypatch
+) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    account = ConfigStore(paths).create_account("codex", "app-server", "Codex", None, {})
+
+    result = CliRunner().invoke(main, ["provider", "login", "--account", account.id])
+
+    assert result.exit_code != 0
+    assert "does not support interactive login" in str(result.exception)
+# end def
+
+
 def test_config_git_enable_disable_status_round_trip(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
     runner = CliRunner()
