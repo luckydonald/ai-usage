@@ -16,7 +16,7 @@ TRACKED_PATHS = (".gitignore", "history", "services")
 
 
 def git_backup_enabled(config: ConfigStore) -> bool:
-    return bool(config.global_config().get("git", {}).get("enabled"))
+    return config.structured_global_config().git.enabled
 # end def
 
 

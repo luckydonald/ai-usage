@@ -85,6 +85,22 @@ class SubscriptionStatus(BaseModel):
 # end class
 
 
+class GitBackupConfig(BaseModel):
+    """Shared setting controlling the debounced git commit/push of the data directory."""
+
+    enabled: bool = False
+# end class
+
+
+class GlobalConfig(BaseModel):
+    """Structured view of `config.yml`'s known sections; unknown keys are preserved via `extra`."""
+
+    model_config = {"extra": "allow"}
+
+    git: GitBackupConfig = Field(default_factory=GitBackupConfig)
+# end class
+
+
 class ProviderFetchResult(BaseModel):
     service: str
     provider: str

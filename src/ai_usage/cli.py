@@ -66,6 +66,14 @@ hosts_app = typer.Typer(rich_markup_mode=None)
 provider_app.add_typer(
     hosts_app, name="hosts", help="Manage which machines are allowed to crawl an account."
 )
+config_app = typer.Typer(rich_markup_mode=None)
+app.add_typer(
+    config_app, name="config", help="View and change shared settings stored in config.yml."
+)
+config_git_app = typer.Typer(rich_markup_mode=None)
+config_app.add_typer(
+    config_git_app, name="git", help="Enable/disable the debounced git commit/push of the data directory."
+)
 
 
 class Runtime:
@@ -1207,6 +1215,36 @@ def uninstall() -> None:
     """Remove the user-level startup service without deleting data."""
     uninstall_service(default_paths())
     click.echo("Startup service removed")
+# end def
+
+
+@config_git_app.command("enable")
+def config_git_enable() -> None:
+    """Turn on the debounced git commit/push of the data directory."""
+    paths = default_paths()
+    paths.ensure()
+    ConfigStore(paths).save_global_config({"git": {"enabled": True}})
+    click.echo("Git backup enabled.")
+# end def
+
+
+@config_git_app.command("disable")
+def config_git_disable() -> None:
+    """Turn off the debounced git commit/push of the data directory."""
+    paths = default_paths()
+    paths.ensure()
+    ConfigStore(paths).save_global_config({"git": {"enabled": False}})
+    click.echo("Git backup disabled.")
+# end def
+
+
+@config_git_app.command("status")
+def config_git_status() -> None:
+    """Show whether git backup is currently enabled."""
+    paths = default_paths()
+    paths.ensure()
+    state = "enabled" if ConfigStore(paths).structured_global_config().git.enabled else "disabled"
+    click.echo(f"Git backup is {state}.")
 # end def
 
 

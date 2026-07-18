@@ -479,3 +479,23 @@ def test_hosts_add_and_remove_round_trip(tmp_path: Path, monkeypatch) -> None:
     assert removed.exit_code == 0
     assert ConfigStore(paths).get_account(account.id).hosts is None
 # end def
+
+
+def test_config_git_enable_disable_status_round_trip(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    runner = CliRunner()
+
+    default_status = runner.invoke(main, ["config", "git", "status"])
+    assert default_status.exit_code == 0
+    assert "disabled" in default_status.output
+
+    enabled = runner.invoke(main, ["config", "git", "enable"])
+    assert enabled.exit_code == 0
+    assert "enabled" in enabled.output
+    assert ConfigStore(paths).structured_global_config().git.enabled is True
+
+    disabled = runner.invoke(main, ["config", "git", "disable"])
+    assert disabled.exit_code == 0
+    assert "disabled" in disabled.output
+    assert ConfigStore(paths).structured_global_config().git.enabled is False
+# end def
