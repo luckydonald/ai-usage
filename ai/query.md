@@ -1024,3 +1024,5 @@ Neither stops if I click close on the window.
 > </details>
 >
 
+❯ Codex still doesn't click the login button; claude shows white the first frame, then a different shade of gray, never the login page.
+
