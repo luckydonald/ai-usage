@@ -328,3 +328,119 @@ def test_status_and_two_stage_removal(tmp_path: Path, monkeypatch) -> None:
         raise AssertionError("purged account configuration still exists")
     # end try
 # end def
+
+
+def test_rename_updates_only_the_display_name(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    account = ConfigStore(paths).create_account("codex", "app-server", "Old name", None, {})
+
+    result = CliRunner().invoke(
+        main, ["provider", "rename", "--account", account.id, "--name", "New name", "--no-input"]
+    )
+
+    assert result.exit_code == 0
+    assert "Renamed Old name to New name." in result.output
+    renamed = ConfigStore(paths).get_account(account.id)
+    assert renamed.name == "New name"
+    assert renamed.id == account.id
+# end def
+
+
+def test_mv_is_an_alias_for_rename(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    account = ConfigStore(paths).create_account("codex", "app-server", "Old name", None, {})
+
+    result = CliRunner().invoke(
+        main, ["provider", "mv", "--account", account.id, "--name", "New name", "--no-input"]
+    )
+
+    assert result.exit_code == 0
+    assert ConfigStore(paths).get_account(account.id).name == "New name"
+# end def
+
+
+def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+
+    async def prepare() -> tuple[AccountConfig, AccountConfig]:
+        paths.ensure()
+        database = Database(paths)
+        await database.migrate()
+        credential_id = await database.put_credential("codex", "Source", {"token": "secret"})
+        config = ConfigStore(paths)
+        source = config.create_account("codex", "app-server", "Source", credential_id, {})
+        target = config.create_account("codex", "app-server", "Target", None, {})
+        now = datetime.now(UTC)
+        history = HistoryStore(paths, database)
+        await history.append_result(
+            ProviderFetchResult(
+                service=source.service,
+                provider=source.provider,
+                account_id=source.id,
+                fetched_at=now,
+                metrics=[
+                    Metric(key="five-hours", name="Five hours", usage=Usage(percentage=42), observed_at=now)
+                ],
+            )
+        )
+        async with database.sessions() as session:
+            session.add(
+                CrawlStateRecord(account_id=source.id, next_run_at=now + timedelta(minutes=10))
+            )
+            await session.commit()
+        # end with
+        await database.close()
+        return source, target
+    # end def
+
+    source, target = asyncio.run(prepare())
+    result = CliRunner().invoke(
+        main,
+        ["provider", "merge", "--source", source.id, "--target", target.id, "--no-input"],
+    )
+
+    assert result.exit_code == 0
+    assert "Merged Source into Target and deleted Source." in result.output
+
+    try:
+        ConfigStore(paths).get_account(source.id)
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("merged source account configuration still exists")
+    # end try
+
+    async def moved_sample_count() -> int:
+        database = Database(paths)
+        async with database.sessions() as session:
+            from ai_usage.orm import MetricSampleRecord
+
+            count = await session.scalar(
+                select(func.count())
+                .select_from(MetricSampleRecord)
+                .where(MetricSampleRecord.account_id == target.id)
+            )
+        # end with
+        await database.close()
+        return int(count or 0)
+    # end def
+
+    assert asyncio.run(moved_sample_count()) == 1
+    assert not paths.history.joinpath("v1", source.service, source.id).exists()
+
+    async def source_state_counts() -> tuple[int, int]:
+        database = Database(paths)
+        async with database.sessions() as session:
+            credentials = await session.scalar(select(func.count()).select_from(CredentialRecord))
+            crawl_states = await session.scalar(
+                select(func.count()).select_from(CrawlStateRecord).where(CrawlStateRecord.account_id == source.id)
+            )
+        # end with
+        await database.close()
+        return int(credentials or 0), int(crawl_states or 0)
+    # end def
+
+    assert asyncio.run(source_state_counts()) == (0, 0)
+# end def

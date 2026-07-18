@@ -101,8 +101,8 @@ Phase A/B (backend/CLI) and Phase E (frontend) are independent — can be built 
 
 ## Todos
 
-- [ ] Phase A1: provider merge command
-- [ ] Phase A2: provider rename command
+- [x] Phase A1: provider merge command
+- [x] Phase A2: provider rename command
 - [ ] Phase A3: multi-computer host allow/deny list
 - [x] Phase B1: UUIDv7 for new IDs
 - [x] Phase B2: move credential.key under local/
