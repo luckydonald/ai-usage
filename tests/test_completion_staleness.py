@@ -1,3 +1,5 @@
+import pytest
+
 from ai_usage.cli import main
 from ai_usage.completion_staleness import (
     HASH_VERSIONS,
@@ -8,6 +10,14 @@ from ai_usage.completion_staleness import (
 )
 from ai_usage.shell_completion import install_completion, installed_completion_hash
 from tests.test_storage import temporary_paths
+
+
+@pytest.fixture(autouse=True)
+def isolated_home(tmp_path, monkeypatch):
+    """`install_completion()` writes to the real `~/.bashrc`/`~/.zshrc`/fish config by design —
+    isolate `HOME` so these tests never touch the actual developer's shell startup files."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+# end def
 
 
 def test_every_currently_rendered_hash_is_in_the_version_registry() -> None:

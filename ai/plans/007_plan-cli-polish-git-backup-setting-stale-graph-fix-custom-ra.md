@@ -109,4 +109,4 @@ Parts 1–3 and 6 are backend-only, independent, low-risk — good to do first a
 - [ ] Frontend rebuild: strip to graphs-only + new palette
 - [x] Shell completion staleness detection + versioned hashes
 - [x] Claude/Codex web login via pywebview
-- [ ] Brand color generator per service
+- [x] Brand color generator per service
