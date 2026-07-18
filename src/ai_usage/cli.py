@@ -49,6 +49,7 @@ from ai_usage.provider_discovery import (
 )
 from ai_usage.provider_tui import SelectionChoice, select_choice
 from ai_usage.providers import Provider, ProviderRegistry, built_in_registry
+from ai_usage.providers.base import ProviderError
 from ai_usage.providers.claude import (
     install_status_relay,
     remove_status_relay,
@@ -459,7 +460,11 @@ def provider_add(
             provider = runtime.providers.get(resolved_service, resolved_provider)
             if credential is None and provider.login_url and interactive_terminal(no_input):
                 click.echo(f"Opening a login window for {provider.display_name}...")
-                credential = await provider.authenticate(dynamic_options)
+                try:
+                    credential = await provider.authenticate(dynamic_options)
+                except ProviderError as exception:
+                    raise click.ClickException(str(exception)) from exception
+                # end try
                 if credential is None:
                     raise click.ClickException(
                         f"login for {provider.display_name} did not complete"
@@ -523,7 +528,11 @@ def provider_login(
             await runtime.initialize()
             account = runtime.config.get_account(account_id)
             provider = runtime.providers.get(account.service, account.provider)
-            credential = await provider.authenticate(account.options)
+            try:
+                credential = await provider.authenticate(account.options)
+            except ProviderError as exception:
+                raise click.ClickException(str(exception)) from exception
+            # end try
             if not credential:
                 raise click.ClickException(
                     f"{provider.display_name} does not support interactive login"
