@@ -4,6 +4,7 @@ import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import click
 from click.testing import CliRunner
 from sqlalchemy import func, select
 
@@ -13,11 +14,11 @@ from ai_usage.config import ConfigStore
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
 from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
-from ai_usage.orm import CredentialRecord, CrawlStateRecord, FetchRunRecord
+from ai_usage.orm import CrawlStateRecord, CredentialRecord, FetchRunRecord
 from ai_usage.provider_discovery import DiscoveryChoice
 from ai_usage.provider_tui import SelectionChoice
 from ai_usage.providers import built_in_registry
-from ai_usage.providers.base import DiscoveredAccount
+from ai_usage.providers.base import DiscoveredAccount, ProviderError
 from ai_usage.settings import Paths
 
 
@@ -588,6 +589,27 @@ def test_add_fails_clearly_when_browser_login_does_not_complete(
 
     assert result.exit_code != 0
     assert "did not complete" in str(result.exception)
+# end def
+
+
+def test_add_reports_missing_browser_extra_as_a_clean_error(
+    tmp_path: Path, monkeypatch
+) -> None:
+    configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
+
+    async def authenticate(self, options):
+        del self, options
+        raise ProviderError("Interactive browser login requires the 'browser' extra.")
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+
+    result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
+
+    assert result.exit_code != 0
+    assert isinstance(result.exception, click.ClickException)
+    assert "browser' extra" in str(result.exception)
 # end def
 
 

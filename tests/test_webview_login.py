@@ -2,6 +2,9 @@ import sys
 import types
 from http.cookies import SimpleCookie
 
+import pytest
+
+from ai_usage.providers.base import ProviderError
 from ai_usage.webview_login import capture_cookies_via_webview
 
 
@@ -64,4 +67,15 @@ def test_capture_cookies_via_webview_returns_empty_dict_without_cookies(monkeypa
     result = capture_cookies_via_webview("https://example.test/login", "Example")
 
     assert result == {}
+# end def
+
+
+def test_capture_cookies_via_webview_raises_a_clear_error_when_pywebview_is_missing(
+    monkeypatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "webview", None)
+
+    with pytest.raises(ProviderError, match="browser' extra"):
+        capture_cookies_via_webview("https://example.test/login", "Example")
+    # end with
 # end def
