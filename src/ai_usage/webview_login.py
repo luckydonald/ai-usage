@@ -4,9 +4,12 @@ Requires the optional `pywebview` dependency (the `browser` extra) — imported 
 base install doesn't need a system webview toolkit (WebKitGTK/WKWebView/WebView2) at all.
 """
 
+import logging
 from urllib.parse import urlsplit
 
 from ai_usage.providers.base import ProviderError
+
+LOGGER = logging.getLogger(__name__)
 
 INSTALL_HINT = (
     "Interactive browser login requires the 'browser' extra. Install it with "
@@ -18,6 +21,12 @@ NO_TOOLKIT_HINT = (
     "library itself is a system package — e.g. on Fedora: `sudo dnf install webkit2gtk4.1`, "
     "on Debian/Ubuntu: `sudo apt install gir1.2-webkit2-4.1`."
 )
+# Some sites WAF-block pywebview's default (non-browser-looking) user agent. Presenting as a
+# normal desktop Chrome avoids that without changing anything about the actual login flow.
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/128.0.0.0 Safari/537.36"
+)
 
 
 def capture_cookies_via_webview(
@@ -28,14 +37,16 @@ def capture_cookies_via_webview(
     `url` should be the site's actual login page (or homepage, with `click_selector` pointing at
     its login button) — not an API endpoint; API endpoints often reject direct browser navigation.
 
-    Detects a successful login from navigation alone (no need for the user to close the window):
-    either the browser briefly left `url`'s domain (an SSO/OAuth hop) and came back, or it stayed
-    on the same domain but moved off the initial path (e.g. `/login` -> `/`). Falls back to
-    capturing cookies when the user closes the window themselves, in case that heuristic doesn't
-    fire (already logged in, unusual redirect chain, etc).
+    Cookies are snapshotted on every page load while still on `url`'s domain (safe: `loaded`
+    handlers run off the main thread) rather than when the window closes — `get_cookies()` uses a
+    blocking main-thread round trip internally, which would deadlock GTK's close handler (`closing`
+    handlers run *on* the main thread) if called from there. So by the time the window closes for
+    any reason — the login-detection heuristic below, or the user closing it manually — the latest
+    snapshot is already captured; `closing` itself does no work.
 
-    Uses `window.get_cookies()` (not `document.cookie`) so httpOnly session cookies — which is
-    what auth cookies normally are — are captured too, not just JS-readable ones.
+    Login is detected from navigation alone (no need to close the window): either the browser
+    briefly left `url`'s domain (an SSO/OAuth hop) and came back, or it stayed on the same domain
+    but moved off the initial path (e.g. `/login` -> `/`).
     """
     try:
         import webview
@@ -45,50 +56,40 @@ def capture_cookies_via_webview(
     # end try
 
     initial = urlsplit(url)
-    state = {"left_initial_domain": False, "clicked": False, "done": False}
+    state = {"left_initial_domain": False, "clicked": False}
     captured: dict[str, str] = {}
 
-    def grab_cookies() -> None:
+    def snapshot_cookies() -> None:
         cookies = window.get_cookies()
         captured.update({morsel.key: morsel.value for morsel in cookies.values()})
     # end def
 
-    def grab_and_close() -> None:
-        if state["done"]:
-            return
-        # end if
-        state["done"] = True
-        grab_cookies()
-        window.destroy()
-    # end def
-
-    def on_closing() -> None:
-        if not state["done"]:
-            grab_cookies()
-        # end if
-    # end def
-
     def on_loaded() -> None:
         current = urlsplit(window.get_current_url() or "")
-        if click_selector and not state["clicked"] and current.netloc == initial.netloc:
-            window.evaluate_js(f"document.querySelector({click_selector!r})?.click();")
-            state["clicked"] = True
-            return
-        # end if
         if current.netloc != initial.netloc:
             state["left_initial_domain"] = True
             return
         # end if
+        snapshot_cookies()
+        if click_selector and not state["clicked"]:
+            state["clicked"] = True
+            try:
+                window.evaluate_js(f"document.querySelector({click_selector!r})?.click();")
+            except Exception as exception:  # noqa: BLE001
+                # some sites' CSP blocks eval-based JS injection entirely — the user can still
+                # click the button themselves, the window is visible to them.
+                LOGGER.debug("could not auto-click %r: %s", click_selector, exception)
+            # end try
+        # end if
         if state["left_initial_domain"] or current.path.rstrip("/") != initial.path.rstrip("/"):
-            grab_and_close()
+            window.destroy()
         # end if
     # end def
 
     window = webview.create_window(title, url)
-    window.events.closing += on_closing
     window.events.loaded += on_loaded
     try:
-        webview.start()
+        webview.start(user_agent=USER_AGENT)
     except WebViewException as exception:
         raise ProviderError(NO_TOOLKIT_HINT) from exception
     # end try
