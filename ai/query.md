@@ -988,3 +988,5 @@ ModuleNotFoundError: No module named 'webview'
 
 ❯ You added tests? what's the next error i'm now getting at `webview.start()`, huh?
 
+❯ Apparently the tests don't run `ai-usage provider add claude web`.
+
