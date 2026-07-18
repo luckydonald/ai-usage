@@ -1,1 +1,4 @@
 - [Test HOME isolation](feedback_test_home_isolation.md) — tests touching real dotfiles/rc-files must isolate HOME, not just pass a tmp Paths object
+- [Todo commits are auto-commits](feedback_todo_commits_are_auto_commits.md) — `[todo]`/`ai: Todo *` commits are unlisted-but-real lplp auto-commit noise
+- [Squash cleanup at scale](feedback_squash_cleanup_at_scale.md) — fold by chronological adjacency, not precise slug matching, above ~dozens of commits
+- [Native GUI needs a real run](feedback_native_gui_needs_real_run.md) — pywebview/native-GUI code needs a genuine-tty smoke test, mocks can't catch thread/toolkit failures
