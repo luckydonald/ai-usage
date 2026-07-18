@@ -990,3 +990,10 @@ ModuleNotFoundError: No module named 'webview'
 
 ❯ Apparently the tests don't run `ai-usage provider add claude web`.
 
+❯ It shows a not allowed there @ai/errors/4.json 
+You should obviously open the login URL, not the api endpoints for the user to login, lol.
+Then, after login (navigation change) extract the needed cookies.
+- https://claude.ai/login
+- https://chatgpt.com/ , then click `<button data-testid="login-button" …>` for the user.
+- https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fsettings%2Fcopilot%2Ffeatures
+
