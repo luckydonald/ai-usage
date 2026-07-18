@@ -572,6 +572,87 @@ def test_add_triggers_browser_login_for_web_providers(tmp_path: Path, monkeypatc
 # end def
 
 
+def test_add_via_tui_manual_selection_triggers_login_for_codex_web(
+    tmp_path: Path, monkeypatch
+) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
+    monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
+
+    async def choose(title, choices):
+        if title == "Choose an account to add":
+            return "manual"
+        # end if
+        assert title == "Choose a provider adapter"
+        match = next(choice for choice in choices if choice.label == "codex/web")
+        return match.key
+    # end def
+
+    monkeypatch.setattr(ai_usage.cli, "select_choice", choose)
+
+    async def authenticate(self, options):
+        del self, options
+        return {"cookies": {"session": "abc123"}}
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+
+    result = CliRunner().invoke(main, ["provider", "add"])
+
+    assert result.exit_code == 0
+    assert "Opening a login window" in result.output
+    account = ConfigStore(paths).list_accounts()[0]
+    assert (account.service, account.provider) == ("codex", "web")
+    assert account.credential_id is not None
+# end def
+
+
+def test_add_via_tui_manual_selection_triggers_login_for_claude_web(
+    tmp_path: Path, monkeypatch
+) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
+    monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
+
+    async def choose(title, choices):
+        if title == "Choose an account to add":
+            return "manual"
+        # end if
+        assert title == "Choose a provider adapter"
+        match = next(choice for choice in choices if choice.label == "claude/web")
+        return match.key
+    # end def
+
+    monkeypatch.setattr(ai_usage.cli, "select_choice", choose)
+
+    async def authenticate(self, options):
+        del self, options
+        return {"cookies": {"session": "abc123"}}
+    # end def
+
+    async def discover_options(self, credential):
+        del self, credential
+        return {"org_id": "org-1"}
+    # end def
+
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.ClaudeWebUsageProvider.authenticate", authenticate
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.ClaudeWebUsageProvider.discover_options", discover_options
+    )
+
+    result = CliRunner().invoke(main, ["provider", "add"])
+
+    assert result.exit_code == 0
+    assert "Opening a login window" in result.output
+    account = ConfigStore(paths).list_accounts()[0]
+    assert (account.service, account.provider) == ("claude", "web")
+    assert account.options["org_id"] == "org-1"
+    assert account.credential_id is not None
+# end def
+
+
 def test_add_fails_clearly_when_browser_login_does_not_complete(
     tmp_path: Path, monkeypatch
 ) -> None:
