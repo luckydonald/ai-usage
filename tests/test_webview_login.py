@@ -33,7 +33,6 @@ class FakeEventSlot:
 
 class FakeEvents:
     def __init__(self) -> None:
-        self.closing = FakeEventSlot()
         self.loaded = FakeEventSlot()
     # end def
 # end class
@@ -68,11 +67,11 @@ class FakeWindow:
     def simulate_navigation(self) -> None:
         """Step through `self._urls` firing `loaded` after each, like real navigation would."""
         for index in range(len(self._urls)):
-            self._url_index = index
-            self.events.loaded.fire()
             if self.destroyed:
                 return
             # end if
+            self._url_index = index
+            self.events.loaded.fire()
         # end for
     # end def
 # end class
@@ -83,11 +82,9 @@ def install_fake_webview(
 ) -> FakeWindow:
     window = FakeWindow(cookies, urls or [])
 
-    def default_start() -> None:
+    def default_start(user_agent=None) -> None:
+        del user_agent
         window.simulate_navigation()
-        if not window.destroyed:
-            window.events.closing.fire()
-        # end if
     # end def
 
     fake_module = types.SimpleNamespace(
@@ -101,21 +98,22 @@ def install_fake_webview(
 # end def
 
 
-def test_capture_cookies_via_webview_returns_cookies_after_close_with_no_navigation(
-    monkeypatch,
-) -> None:
+def test_capture_cookies_via_webview_snapshots_cookies_on_every_load(monkeypatch) -> None:
     cookies = SimpleCookie()
     cookies["session"] = "abc123"
-    install_fake_webview(monkeypatch, cookies)
+    window = install_fake_webview(
+        monkeypatch, cookies, urls=["https://example.test/login"]
+    )
 
     result = capture_cookies_via_webview("https://example.test/login", "Example")
 
     assert result == {"session": "abc123"}
+    assert not window.destroyed
 # end def
 
 
 def test_capture_cookies_via_webview_returns_empty_dict_without_cookies(monkeypatch) -> None:
-    install_fake_webview(monkeypatch, SimpleCookie())
+    install_fake_webview(monkeypatch, SimpleCookie(), urls=["https://example.test/login"])
 
     result = capture_cookies_via_webview("https://example.test/login", "Example")
 
@@ -150,7 +148,8 @@ def test_capture_cookies_via_webview_does_not_close_on_same_page_reload(monkeypa
 
     result = capture_cookies_via_webview("https://claude.ai/login", "Claude")
 
-    # never navigated away from /login — falls back to the manual-close path
+    # never navigated away from /login — cookies are still captured (snapshotted every load),
+    # just never auto-closed
     assert result == {"session": "still-on-login"}
     assert not window.destroyed
 # end def
@@ -183,6 +182,28 @@ def test_capture_cookies_via_webview_detects_cross_domain_round_trip_and_clicks_
 # end def
 
 
+def test_capture_cookies_via_webview_tolerates_a_blocked_click(monkeypatch) -> None:
+    cookies = SimpleCookie()
+    cookies["session"] = "clicked-anyway"
+    window = install_fake_webview(
+        monkeypatch, cookies, urls=["https://chatgpt.com/", "https://chatgpt.com/chat"]
+    )
+
+    def raise_js_exception(code: str) -> None:
+        raise RuntimeError("CSP blocked eval")
+    # end def
+
+    window.evaluate_js = raise_js_exception
+
+    result = capture_cookies_via_webview(
+        "https://chatgpt.com/", "Codex", click_selector='[data-testid="login-button"]'
+    )
+
+    assert result == {"session": "clicked-anyway"}
+    assert window.destroyed
+# end def
+
+
 def test_capture_cookies_via_webview_raises_a_clear_error_when_pywebview_is_missing(
     monkeypatch,
 ) -> None:
@@ -198,7 +219,8 @@ def test_capture_cookies_via_webview_raises_a_clear_error_when_pywebview_is_miss
 def test_capture_cookies_via_webview_raises_a_clear_error_without_a_gui_toolkit(
     monkeypatch,
 ) -> None:
-    def raise_no_toolkit() -> None:
+    def raise_no_toolkit(user_agent=None) -> None:
+        del user_agent
         raise FakeWebViewException("You must have either QT or GTK...")
     # end def
 
