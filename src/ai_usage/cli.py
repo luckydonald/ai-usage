@@ -17,6 +17,7 @@ from ai_usage.completion_staleness import check_completion_staleness
 from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
 from ai_usage.database import Database
+from ai_usage.git_backup import maybe_run_git_backup
 from ai_usage.history import HistoryStore
 from ai_usage.host_identity import (
     HostIdentity,
@@ -1136,6 +1137,9 @@ def fetch(
                     # end if
                 # end if
             # end for
+            await asyncio.to_thread(
+                maybe_run_git_backup, runtime.paths, runtime.config, datetime.now(UTC)
+            )
             if results and all(result.status == FetchStatus.ERROR for result in results):
                 raise click.ClickException("every configured provider failed")
             # end if
@@ -1460,6 +1464,12 @@ _provider_click.add_command(_provider_click.commands["rename"], "mv")
 
 _hosts_click = _provider_click.commands["hosts"]
 _hosts_click.add_command(_hosts_click.commands["remove"], "rm")
+
+for _group_command in main.commands["config"].commands.values():
+    if hasattr(_group_command, "commands"):
+        _group_command.short_help = "|".join(sorted(_group_command.commands))
+    # end if
+# end for
 
 
 if __name__ == "__main__":

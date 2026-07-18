@@ -972,3 +972,5 @@ Try to build models for those too.
   - also the options shall be loaded already in the `config` help, so you'd get a list with (now a single item) `git status|enable|disable`.
     - if possible automatic
 
+❯ Does the autocommit log that it commited once, and push status as second log.
+
