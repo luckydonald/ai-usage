@@ -1,0 +1,6 @@
+{
+  "error": {
+    "type": "forbidden",
+    "message": "Request not allowed"
+  }
+}
