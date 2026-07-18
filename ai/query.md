@@ -360,3 +360,170 @@ Is the status line calling `ai-usage` in some way directly, hence actually writi
 
 ❯ fix the first few commits after `base/base` having the wrong author/commiter (leaking data); use the `--local` configured git settings instead `--global` ones for those commits.
 
+❯ /plan
+- manually merge the data fetched by the now disabled providers into the active variants, and perma-delete them.
+  - investigate if we can have an automating `ai-usage provider merge` command for merging some provider A into B.
+- add `ai-usage provider rename` (aliases: `name`, `mv`)
+- use `UUIDv7`
+- `credential.key` should be inside `local/` to simplify the `.gitignore`.
+- add `auto`, `1h`, `3h`, `6h`, `12h` to the dropdown options in the frontend.
+- when the frontend data reloads, currently it has a complete redraw animation for the full graph, it should only "draw animate" the newly added data.
+- `ai-usage` shall no longer be an alias to `run-all`, but list the subcommands and exit.
+- The CLI command descriptions should not be cut off (`...`).
+- Rename `run-all` to something better (give a few fitting naming options)
+- It can hang on `Waiting for connections to close. (CTRL+C to force quit)`, ignoring `^C` completely. See @ai/errors/2.txt — I had to terminate the terminal.
+- Have a cleanup for log files older than last week (or last remote push/pull if `~/.ai-usage` has `git` enabled). Cleanup removes log entries which don't change any values (i.e. it stays at `20%`) - keep the first and last event with that duplicate data, but not everything unchanged between. I.e. 8 duplicate rows -> 2 duplicate rows.
+- Have an auto commit & push option for `~/.ai-usage/` if it has `git` enabled. Basically `git add .gitignore history/ services/ && git commit -m 'YYYY-MM-DD HH:MM:SS: Updated crawl results' && git push`, which will be triggered after every write. (or debounced to 10 minutes?)
+- If the port is default (not set; `4458`) but occupied, try: `6900`, `6969`, `6699`, `8698`, `8008`, `8690`, `8699`, `869x`, `8404` followed by `44xx`, then just random ports.
+- If the port is specified via flag `--port=4458` it being occupied is an error preventing start (needed for startup script usage)
+- Add a vertical dashed line for the current time, color red.
+- Add a `provider config` command (same get-there-by-choosing system as `provider rm`) to set settings of that provider
+  - `provider config … <metric> get|set name|color`
+- For commands like `ai-usage provider status`, the logger shall be on `stderr`, so `stdout` is free for the data.
+- `ai-usage provider status` shall have a `--json` flag.
+- The dashed future prediction line is not hidden if I deselect the graph on the graph legend.
+- The dashed future prediction line does not stop at the window reset.
+- Disabling/enabling a graph legend entry does not sync with the filters.
+- utilize `yarn@4` aka `yarn berry`.
+
+
+
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. 20 backlog items span backend, frontend, infra. Big to plan/build as one shot. How split?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Scope split** (1/1) <kbd>Single Select</kbd><br>
+>> 20 backlog items span backend, frontend, infra. Big to plan/build as one shot. How split?
+> - [x] 1\. One combined plan, phased (Recommended)
+>   - _Single plan file grouping items into logical phases (backend data/CLI, frontend chart, ops/infra). Implement phase by phase, review between._
+> - [ ] 2\. Separate plan per item
+>   - _Each backlog line gets its own /plan cycle. Slower but each is reviewable standalone._
+> - [ ] 3\. Pick top N now, defer rest
+>   - _You tell me which items matter most right now; plan only those, log rest in ai/query.md or a backlog file for later._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+❯ Fiture out how we can actually enable multi computer usage, relying on the `enabled: bool` would be conflicting.
+Give me some options.
+
+❯ Keep `enabled: bool` but _also_ add host allow/deny list on the account itself: `hosts: list[str] | None` on `AccountConfig`.
+I don't 100% trust hostnames to be unique, hence we should generate a uuid7 into our local folder and have `hosts: list[tuple[str, UUIDv7]]`.
+
+
+1. If no local id exists (file missing, i.e. directly after checkout on a fresh install)
+   1. but hostname matches exactly one `(hostname, uuid)` pair: ask to restore that
+   2. multiple matches: ask which one to use, with option for none (= generate a new one) (TUI only, otherwise error, pointing to the missing file and a description what it is for)
+   3. no matches: generate a new one
+2. else (if local file exist)
+   1. use that
+
+Also for the pending question, please ask them now, use the ask dialog thing.
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Rename `run-all` to what?
+>> 2. Bare `ai-usage` (no subcommand) currently auto-runs `run-all`. Change to just print help/command list — anything else it should show instead?
+>> 3. Legend/filter sync (E5): two-way sync between echarts legend and sidebar filter selects, or drop sidebar selects in favor of legend-only?
+>> 4. D2 git auto-commit/push for `~/.ai-usage`: confirm debounce window, and behavior on push failure (no remote/auth issue)?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **run-all rename** (1/4) <kbd>Single Select</kbd><br>
+>> Rename `run-all` to what?
+> - [ ] 1\. serve-all
+>   - _Keeps 'serve' verb consistent with existing `serve` (API-only) command; `serve-all` = serve + crawl._
+> - [ ] 2\. start
+>   - _Short, generic 'start everything' verb._
+> - [ ] 3\. up
+>   - _docker-compose-style 'bring everything up'._
+> - [ ] 4\. daemon
+>   - _Emphasizes long-running background nature._
+> - [x] 5\. _Type something:_
+>   - > `up`, with alias `start`.
+>
+>> **Bare invocation** (2/4) <kbd>Single Select</kbd><br>
+>> Bare `ai-usage` (no subcommand) currently auto-runs `run-all`. Change to just print help/command list — anything else it should show instead?
+> - [ ] 1\. Just help/command list (Recommended)
+>   - _Matches click's default group behavior. No auto-run of anything._
+> - [x] 2\. Help list + short status
+>   - _Help text plus a one-line summary (e.g. account count, last crawl time) before the command list._
+> - [ ] 3\. _Type something._
+>
+>> **Legend/filter sync** (3/4) <kbd>Single Select</kbd><br>
+>> Legend/filter sync (E5): two-way sync between echarts legend and sidebar filter selects, or drop sidebar selects in favor of legend-only?
+> - [x] 1\. Two-way sync (Recommended)
+>   - _Keep both UIs, wire legendselectchanged to update filters reactive state and vice versa. More code, but keeps existing sidebar filter UX (services/providers/accounts/metrics selects)._
+> - [ ] 2\. Legend-only, drop sidebar selects
+>   - _Simplify: remove the 4 multi-select filter dropdowns, rely solely on chart legend clicks to show/hide series. Less UI, less state to keep in sync, but loses the sidebar's ability to filter server-side (legend is client-side only after data fetch)._
+> - [ ] 3\. _Type something._
+>
+>> **Git auto-commit** (4/4) <kbd>Single Select</kbd><br>
+>> D2 git auto-commit/push for `~/.ai-usage`: confirm debounce window, and behavior on push failure (no remote/auth issue)?
+> - [x] 1\. 10 min debounce, log-and-skip on push failure (Recommended)
+>   - _Matches original ask. Commit still happens locally even if push fails; push failure just logged, retried next debounce cycle._
+> - [ ] 2\. Different debounce interval
+>   - _Specify a different window (e.g. 1 min, 30 min, 1 hour) instead of 10._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
+❯ Keep asking me with the user question thingo until all questions are resolved.
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. A3: new machine's host_id getting added to an account's `hosts` list — automatic or manual?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Host list add** (1/1) <kbd>Single Select</kbd><br>
+>> A3: new machine's host_id getting added to an account's `hosts` list — automatic or manual?
+> - [ ] 1\. Confirm prompt on first crawl (Recommended)
+>   - _First time a machine without host restrictions crawls an account whose `hosts` list is non-empty and doesn't contain it, ask (interactive) whether to add this machine. Non-interactive: skip, log why._
+> - [ ] 2\. Manual `provider hosts add/remove` command only
+>   - _No automatic prompting ever. User must explicitly run a new command to add/remove host entries from an account's list._
+> - [x] 3\. _Type something:_
+>   - > Both:
+- `provider hosts add|remove` (with the common aliases)
+- checking on crawl if there's no match at all for any service (= definition of first crawl)
+  - if interactive on first crawl, ask, otherwise error with good explaination.
+  - for interactive, the menu starts with 2 options:
+     1. enable existing providers
+        - aka. add ourselves to their host
+        - second menu:
+           1. `« back`
+           2. service 1
+           3. service 2
+           4. …
+        - once done, you're back on the root 2 options menu, so you can enable/add another
+     2. create new
+        - similar to submenu **1.** with back to main menu
+        - basically guides you through the `add`/`new` interactive run
+        - then back to the main menu.
+     3. done
+        - if nothing is configured yet, has the label `exit` instead of `done` and the subtext `exit without creating/selecting any service`.
+        - oops, now it's not a 2 options menu any longer.
+>
+> </details>
+>
+
+❯ Change labels:
+- _add ourselves to their host list_ → _enable existing service on this device_
+- _run the `provider add` wizard_
+- Done: _finish and resume {crawl/serve/…}_
+Remove the 2-option misscount.
+

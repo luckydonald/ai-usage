@@ -44,7 +44,7 @@ class Collector:
                 f"Started {operation} {account.name} "
                 f"({account.service}/{account.provider}, {account.id})."
             )
-            run_id = str(uuid.uuid4())
+            run_id = str(uuid.uuid7())
             async with self.database.sessions() as session:
                 session.add(
                     FetchRunRecord(

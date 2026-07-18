@@ -5,9 +5,9 @@ from tests.test_storage import temporary_paths
 
 
 def test_systemd_unit_has_marker_and_command() -> None:
-    unit = systemd_unit("/venv/bin/ai-usage", ["run-all", "--port", "4458"])
+    unit = systemd_unit("/venv/bin/ai-usage", ["up", "--port", "4458"])
     assert SERVICE_MARKER in unit
-    assert "ExecStart=/venv/bin/ai-usage run-all --port 4458" in unit
+    assert "ExecStart=/venv/bin/ai-usage up --port 4458" in unit
 # end def
 
 

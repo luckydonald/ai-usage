@@ -70,10 +70,10 @@ ai-usage fetch
 Then start the crawler and dashboard together:
 
 ```shell
-ai-usage run-all
+ai-usage up
 ```
 
-Open <http://localhost:4458>. Running `ai-usage` without a subcommand is the same as `ai-usage run-all`.
+Open <http://localhost:4458>. Running `ai-usage` without a subcommand prints a short status summary and the command list.
 
 ## Add GitHub Copilot
 
@@ -109,7 +109,7 @@ Delete the plaintext credential file after confirming `ai-usage fetch` works. AI
 | `ai-usage fetch [--account ID]` | Collect one sample now. Repeat `--account` to limit the run. |
 | `ai-usage crawl [-d]` | Run the adaptive collector loop, optionally detached. |
 | `ai-usage serve [--host HOST] [--port PORT]` | Serve the dashboard and API without crawling. |
-| `ai-usage run-all [-d]` | Crawl and serve together. |
+| `ai-usage up [-d]` (alias `start`) | Crawl and serve together. |
 | `ai-usage install [--serve/--no-serve]` | Install and start a user-level startup service. |
 | `ai-usage uninstall` / `deinstall` | Remove the startup service without deleting data. |
 | `ai-usage completion [--shell ...]` | Install shell completion for Bash, Zsh, or Fish. |
@@ -229,7 +229,7 @@ Use `--no-serve` for collection only. The installer uses a systemd user unit on 
 Detached runs are also available without installing a startup service:
 
 ```shell
-ai-usage run-all --detach
+ai-usage up --detach
 ```
 
 Their output is written beneath `~/.ai-usage/local/logs/`.
