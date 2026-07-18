@@ -15,6 +15,8 @@ from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.orm import CrawlStateRecord
 from ai_usage.progress import ProgressReporter, quiet_reporter
 
+STALE_RECHECK_SECONDS = 10
+
 
 def aware(value: datetime | None) -> datetime | None:
     if value is None:
@@ -108,6 +110,14 @@ class Crawler:
                 self.report(
                     f"{account.name}: backing off crawl interval to {backoff} seconds "
                     f"after failure {state.failure_count}."
+                )
+            elif result.status == FetchStatus.STALE:
+                state.next_run_at = now + timedelta(seconds=STALE_RECHECK_SECONDS)
+                state.failure_count = 0
+                state.last_error = None
+                self.report(
+                    f"{account.name}: limits reported as stale, rechecking in "
+                    f"{STALE_RECHECK_SECONDS} seconds."
                 )
             else:
                 previous_active_until = aware(state.active_until)

@@ -1,0 +1,11 @@
+Repo /home/user/git/luckydonald/ai-usage. Read-only research.
+
+Context: implementing a feature where each provider fetch can also return structured "account identity + subscription" info (name, email, plan_type, renewal/reset date, billing status — common schema across all providers, not provider-specific). Decision made: the structured/common fields get written into the account's config (a shared YAML, git-backed per this app's "git auto-backup" feature from prior work), and the DB may cache it too. Raw/full provider payloads (which may contain sensitive data) should go into a "private" location, not the shared/git-backed one, until reviewed.
+
+Investigate and report:
+1. `src/ai_usage/paths.py` (or wherever `Paths`/`default_paths()` is defined) — full field list. Is there already a "shared root" (git-backed, e.g. what `git_backup.py` commits) vs a "private/local" directory distinction (I recall `host_identity.py` uses `paths.root / "local" / "host_id.json"` from earlier research — confirm exact field names)? Report exactly which directories/files `git_backup.py` stages/commits vs which are excluded (check its `.gitignore` handling or explicit file list).
+2. `src/ai_usage/config.py` (`ConfigStore`) — how are accounts currently stored (one YAML file? one file per account? read/write functions)? Show `AccountConfig`'s exact current fields (models.py) once more precisely with types, and show how `ConfigStore` reads/writes the YAML so I know where to add new structured fields.
+3. Is there a natural "private" YAML/JSON sibling already used for anything account-scoped (e.g. credentials are encrypted separately — where do encrypted credential files live vs the plain YAML config)? I want to mirror whatever precedent already exists for "shared config file" vs "private/sensitive file" rather than invent a new directory layout.
+4. `orm.py` — is there a lightweight way an existing table (e.g. `CrawlStateRecord` or a new one) could cache the same structured fields for fast API reads, matching this app's existing DB-as-cache-over-YAML-source-of-truth pattern (if such a pattern exists — check how `AccountConfig` relates to any DB table, e.g. is account config itself ever mirrored into SQL, or is SQL only used for metrics/crawl-state?).
+
+Report tight, file:line citations, under 300 lines. Pure research, no code changes.
