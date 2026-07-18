@@ -874,3 +874,67 @@ Try to build models for those too.
 > </details>
 >
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Order/scope for the frontend work?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Frontend plan** (1/1) <kbd>Single Select</kbd><br>
+>> Order/scope for the frontend work?
+> - [x] 1\. Small fixes first, rebuild last (Recommended)
+>   - _#23 (0% after window end) and #29 (brand colors) are small, mostly backend (graph.py), low-risk — do those plus #24 (custom range) first. Then #25's full strip-and-rebuild last, once the data/color plumbing underneath it is already solid._
+> - [ ] 2\. Rebuild first, then wire in the fixes
+>   - _Strip App.vue down and rebuild the UI shell first (#25), then layer #23/#24/#29 on top of the new structure directly._
+> - [ ] 3\. All four as one pass
+>   - _Treat it as a single combined frontend task instead of sequencing — I do them together and report back once the whole thing is done._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Apply the cleaned .bashrc (removes only the 54 stray test-artifact source lines, /tmp/bashrc.cleaned)?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Fix .bashrc** (1/1) <kbd>Single Select</kbd><br>
+>> Apply the cleaned .bashrc (removes only the 54 stray test-artifact source lines, /tmp/bashrc.cleaned)?
+> - [ ] 1\. Yes, apply it (Recommended)
+>   - _Replace ~/.bashrc with the cleaned version now._
+> - [ ] 2\. No, I'll do it myself
+>   - _Leave it as-is; you'll clean it up yourself._
+> - [x] 3\. _Type something:_
+>   - > show me the diff command
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Apply /tmp/bashrc.cleaned over ~/.bashrc now that you've seen the exact diff?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Apply fix** (1/1) <kbd>Single Select</kbd><br>
+>> Apply /tmp/bashrc.cleaned over ~/.bashrc now that you've seen the exact diff?
+> - [ ] 1\. Yes, apply it (Recommended)
+>   - _I'll copy /tmp/bashrc.cleaned to ~/.bashrc._
+> - [ ] 2\. No, I'll run it myself
+>   - _You'll run `cp /tmp/bashrc.cleaned ~/.bashrc` yourself._
+> - [x] 3\. _Type something:_
+>   - > yes, apply, and make sure the tests don't end up there again?
+>
+> </details>
+>
+

@@ -1,6 +1,8 @@
 """Idempotent shell tab-completion installation."""
 
+import hashlib
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,6 +18,38 @@ RC_FILES = {
     "bash": "~/.bashrc",
     "zsh": "~/.zshrc",
 }
+
+SHELLS = ("bash", "zsh", "fish")
+HASH_MARKER_PREFIX = "# ai-usage-completion-hash: "
+HASH_MARKER_PATTERN = re.compile(re.escape(HASH_MARKER_PREFIX) + r"([0-9a-f]{64})")
+
+
+def hash_script(script: str) -> str:
+    return hashlib.sha256(script.encode("utf-8")).hexdigest()
+# end def
+
+
+def completion_script_path(paths: Paths, shell: str) -> Path:
+    if shell == "fish":
+        return Path("~/.config/fish/completions/ai-usage.fish").expanduser()
+    # end if
+    return paths.root / "completions" / f"ai-usage.{shell}"
+# end def
+
+
+def installed_completion_shells(paths: Paths) -> list[str]:
+    return [shell for shell in SHELLS if completion_script_path(paths, shell).exists()]
+# end def
+
+
+def installed_completion_hash(paths: Paths, shell: str) -> str | None:
+    path = completion_script_path(paths, shell)
+    if not path.exists():
+        return None
+    # end if
+    match = HASH_MARKER_PATTERN.search(path.read_text(encoding="utf-8"))
+    return match.group(1) if match else None
+# end def
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,11 +83,12 @@ def render_script(main: click.BaseCommand, shell: str) -> str:
 def install_completion(paths: Paths, main: click.BaseCommand, shell: str | None) -> CompletionResult:
     resolved_shell = shell or detect_shell()
     script = render_script(main, resolved_shell)
+    tagged_script = f"{HASH_MARKER_PREFIX}{hash_script(script)}\n{script}"
 
     if resolved_shell == "fish":
-        script_path = Path("~/.config/fish/completions/ai-usage.fish").expanduser()
+        script_path = completion_script_path(paths, resolved_shell)
         script_path.parent.mkdir(parents=True, exist_ok=True)
-        script_path.write_text(script, encoding="utf-8")
+        script_path.write_text(tagged_script, encoding="utf-8")
         return CompletionResult(shell=resolved_shell, script_path=script_path, rc_path=None)
     # end if
 
@@ -61,10 +96,9 @@ def install_completion(paths: Paths, main: click.BaseCommand, shell: str | None)
         raise click.ClickException(f"unsupported shell: {resolved_shell}")
     # end if
 
-    completions_dir = paths.root / "completions"
-    completions_dir.mkdir(parents=True, exist_ok=True)
-    script_path = completions_dir / f"ai-usage.{resolved_shell}"
-    script_path.write_text(script, encoding="utf-8")
+    script_path = completion_script_path(paths, resolved_shell)
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    script_path.write_text(tagged_script, encoding="utf-8")
 
     rc_path = Path(RC_FILES[resolved_shell]).expanduser()
     source_line = f"source '{script_path}'"

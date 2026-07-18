@@ -13,6 +13,7 @@ import click
 import typer
 
 from ai_usage.collector import Collector
+from ai_usage.completion_staleness import check_completion_staleness
 from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
 from ai_usage.database import Database
@@ -231,6 +232,9 @@ async def create_account(
 @app.callback(invoke_without_command=True)
 def main_callback(ctx: typer.Context) -> None:
     """Collect and visualize AI service usage."""
+    if ctx.invoked_subcommand != "completion":
+        check_completion_staleness(default_paths(), main, interactive_terminal(False))
+    # end if
     if ctx.invoked_subcommand is None:
         click.echo(status_summary())
         click.echo()
