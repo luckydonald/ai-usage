@@ -19,6 +19,7 @@ from ai_usage.provider_accounts import (
     AccountStatus,
     account_status,
     matching_accounts,
+    merge_account_history,
     purge_history,
     remove_local_state,
 )
@@ -742,6 +743,114 @@ provider_group.add_command(provider_list, "ls")
 provider_group.add_command(provider_status, "info")
 provider_group.add_command(provider_remove, "del")
 provider_group.add_command(provider_remove, "rm")
+
+
+@provider_group.command("rename")
+@click.argument("service", required=False)
+@click.argument("provider_key", required=False)
+@click.argument("account", required=False)
+@click.option("--account", "account_option")
+@click.option("--name", "new_name", required=True)
+@click.option("--no-input", is_flag=True)
+def provider_rename(
+    service: str | None,
+    provider_key: str | None,
+    account: str | None,
+    account_option: str | None,
+    new_name: str,
+    no_input: bool,
+) -> None:
+    """Rename a configured account's display name."""
+    target_id = requested_account_id(account, account_option)
+    candidates = matching_accounts(ConfigStore(default_paths()), service, provider_key)
+    if (
+        target_id is None
+        and not interactive_terminal(no_input)
+        and not (service is not None and provider_key is not None and len(candidates) == 1)
+    ):
+        print_accounts(candidates)
+        return
+    # end if
+
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            account = await resolve_account(runtime, service, provider_key, target_id, no_input, "rename")
+            if account is None:
+                return
+            # end if
+            old_name = account.name
+            renamed = account.model_copy(update={"name": new_name})
+            runtime.config.save_account(renamed)
+            click.echo(f"Renamed {old_name} to {new_name}.")
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
+
+
+provider_group.add_command(provider_rename, "name")
+provider_group.add_command(provider_rename, "mv")
+
+
+@provider_group.command("merge")
+@click.argument("source", required=False)
+@click.argument("target", required=False)
+@click.option("--source", "source_option")
+@click.option("--target", "target_option")
+@click.option("--no-input", is_flag=True)
+def provider_merge(
+    source: str | None,
+    target: str | None,
+    source_option: str | None,
+    target_option: str | None,
+    no_input: bool,
+) -> None:
+    """Merge one account's history into another, then delete the source account."""
+    source_id = requested_account_id(source, source_option)
+    target_id = requested_account_id(target, target_option)
+
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            source_account = await resolve_account(runtime, None, None, source_id, no_input, "merge from")
+            if source_account is None:
+                return
+            # end if
+            target_account = await resolve_account(
+                runtime, source_account.service, None, target_id, no_input, "merge into"
+            )
+            if target_account is None:
+                return
+            # end if
+            if target_account.id == source_account.id:
+                raise click.ClickException("source and target accounts must be different")
+            # end if
+            if interactive_terminal(no_input) and not click.confirm(
+                f"Merge {source_account.name}'s history into {target_account.name} "
+                f"and delete {source_account.name}?",
+                default=False,
+            ):
+                return
+            # end if
+            await merge_account_history(runtime.paths, runtime.database, source_account, target_account)
+            if source_account.service == "claude" and source_account.provider == "statusline":
+                remove_status_relay(source_account, runtime.paths.local)
+            # end if
+            runtime.config.delete_account(source_account)
+            click.echo(f"Merged {source_account.name} into {target_account.name} and deleted {source_account.name}.")
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
 
 
 @main.command()
