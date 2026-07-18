@@ -28,7 +28,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-browser = ["browser-cookie3>=0.20", "playwright>=1.54"]
+browser = ["browser-cookie3>=0.20", "playwright>=1.54", "pywebview>=5.4"]
 test = [
     "hypothesis>=6.136",
     "pytest>=8.4",

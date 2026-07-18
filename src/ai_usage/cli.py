@@ -491,6 +491,37 @@ def provider_discover(
 # end def
 
 
+@provider_app.command("login")
+def provider_login(
+    account_id: Annotated[str, typer.Option("--account")],
+) -> None:
+    """Open an interactive login window to refresh a provider's session cookies."""
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            account = runtime.config.get_account(account_id)
+            provider = runtime.providers.get(account.service, account.provider)
+            credential = await provider.authenticate(account.options)
+            if not credential:
+                raise click.ClickException(
+                    f"{provider.display_name} does not support interactive login"
+                )
+            # end if
+            credential_id = await runtime.database.put_credential(
+                account.provider, account.name, credential
+            )
+            runtime.config.save_account(account.model_copy(update={"credential_id": credential_id}))
+            click.echo(f"Stored refreshed credentials for {account.name}.")
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
+
+
 async def ensure_host_identity(runtime: "Runtime", no_input: bool) -> HostIdentity:
     """Resolve (and persist) this machine's host identity, prompting when the choice is ambiguous."""
     interactive = interactive_terminal(no_input)

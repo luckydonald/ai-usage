@@ -240,6 +240,37 @@ async def test_codex_web_usage_provider_collects_identity_and_subscription() -> 
 # end def
 
 
+@pytest.mark.asyncio
+async def test_claude_web_usage_provider_authenticate_captures_cookies(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.capture_cookies_via_webview",
+        lambda url, title: {"session": "abc"},
+    )
+    credential = await ClaudeWebUsageProvider().authenticate({})
+    assert credential == {"cookies": {"session": "abc"}}
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_web_usage_provider_authenticate_returns_none_without_cookies(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.capture_cookies_via_webview", lambda url, title: {}
+    )
+    assert await ClaudeWebUsageProvider().authenticate({}) is None
+# end def
+
+
+@pytest.mark.asyncio
+async def test_codex_web_usage_provider_authenticate_captures_cookies(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "ai_usage.providers.codex.capture_cookies_via_webview",
+        lambda url, title: {"session": "xyz"},
+    )
+    credential = await CodexWebUsageProvider().authenticate({})
+    assert credential == {"cookies": {"session": "xyz"}}
+# end def
+
+
 def test_billing_reset_clamps_short_month() -> None:
     reset = next_billing_reset(datetime(2026, 2, 20, tzinfo=UTC), 31)
     assert reset == datetime(2026, 2, 28, tzinfo=UTC)

@@ -103,7 +103,7 @@ Parts 1–3 and 6 are backend-only, independent, low-risk — good to do first a
 ## Todos
 
 - [x] Git autocommit as toggleable global setting
-- [ ] Group CLI --help and separate internal tooling
+- [x] Group CLI --help and separate internal tooling
 - [ ] Graph: force 0% after window ends
 - [ ] Custom date range picker
 - [ ] Frontend rebuild: strip to graphs-only + new palette

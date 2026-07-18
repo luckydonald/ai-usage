@@ -30,6 +30,7 @@ from ai_usage.providers.base import (
     Provider,
     ProviderError,
 )
+from ai_usage.webview_login import capture_cookies_via_webview
 
 LOGGER = logging.getLogger(__name__)
 
@@ -187,6 +188,15 @@ class ClaudeWebUsageProvider(Provider):
     configuration_fields = (
         ConfigurationField(key="org_id", label="Claude organization UUID", required=True),
     )
+    login_url = "https://claude.ai/login"
+
+    async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
+        del options
+        cookies = await asyncio.to_thread(
+            capture_cookies_via_webview, self.login_url, self.display_name
+        )
+        return {"cookies": cookies} if cookies else None
+    # end def
 
     async def fetch(
         self,
