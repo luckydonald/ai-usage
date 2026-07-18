@@ -979,3 +979,8 @@ Try to build models for those too.
 ❯ - I don't want to be asked for a claude organisation uuid for claude-web, this need to be fetched from api after login via user in the browser window. This auth is still missing, too.
 - `provider add` with codex adds a provider without login, too.
 
+❯   File "/home/user/git/luckydonald/ai-usage/src/ai_usage/webview_login.py", line 14, in capture_cookies_via_webview
+    import webview
+ModuleNotFoundError: No module named 'webview'
+
+
