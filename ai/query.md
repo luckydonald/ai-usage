@@ -1001,3 +1001,26 @@ Then, after login (navigation change) extract the needed cookies.
 claude is still showing the @ai/errors/4.json 
 Neither stops if I click close on the window.
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. What did the empty window look like — and which provider (claude/codex)?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Empty window** (1/1) <kbd>Single Select</kbd><br>
+>> What did the empty window look like — and which provider (claude/codex)?
+> - [ ] 1\. Blank/white window, never loaded anything
+>   - _Window opened but the page never rendered at all — likely a WebKitGTK/compositor rendering issue in this environment, not a code bug._
+> - [ ] 2\. Loaded briefly then went blank
+>   - _Page showed then went blank — could be the CSP-blocked click leaving the page in a broken state, or a redirect gone wrong._
+> - [ ] 3\. Something else / hard to describe
+>   - _I'll describe it in my own words instead._
+> - [x] 4\. _Type something:_
+>   - > codex was showing the public start page with the log in button; claude (which should not need a click, and I believe was working earlier) showed a white window while @ai/errors/6.txt happened
+>
+> </details>
+>
+
