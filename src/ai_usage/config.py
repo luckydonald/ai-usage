@@ -87,7 +87,7 @@ class ConfigStore:
         discovery_fingerprint: str | None = None,
     ) -> AccountConfig:
         account = AccountConfig(
-            id=str(uuid.uuid4()),
+            id=str(uuid.uuid7()),
             service=service,
             provider=provider,
             name=name,

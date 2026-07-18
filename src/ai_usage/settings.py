@@ -32,7 +32,7 @@ class Paths:
             history=root / "history",
             local=root / "local",
             database=root / "local" / "state.sqlite3",
-            credential_key=root / "credential.key",
+            credential_key=root / "local" / "credential.key",
             logs=root / "local" / "logs",
             frontend=frontend,
         )
@@ -43,9 +43,13 @@ class Paths:
             directory.mkdir(mode=0o700, parents=True, exist_ok=True)
             directory.chmod(0o700)
         # end for
+        legacy_credential_key = self.root / "credential.key"
+        if legacy_credential_key.exists() and not self.credential_key.exists():
+            legacy_credential_key.rename(self.credential_key)
+        # end if
         gitignore = self.root / ".gitignore"
         if not gitignore.exists():
-            gitignore.write_text("/local/\n/credential.key\n", encoding="utf-8")
+            gitignore.write_text("/local/\n", encoding="utf-8")
         # end if
     # end def
 # end class

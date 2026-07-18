@@ -191,13 +191,45 @@ async def create_account(
 # end def
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=True, context_settings={"max_content_width": 120})
 @click.pass_context
 def main(context: click.Context) -> None:
     """Collect and visualize AI service usage."""
     if context.invoked_subcommand is None:
-        context.invoke(run_all)
+        click.echo(status_summary())
+        click.echo()
+        click.echo(context.get_help())
     # end if
+# end def
+
+
+def status_summary() -> str:
+    async def collect() -> str:
+        paths = default_paths()
+        paths.ensure()
+        database = Database(paths)
+        config = ConfigStore(paths)
+        try:
+            await database.migrate()
+            accounts = config.list_accounts(enabled_only=True)
+            from sqlalchemy import func, select
+
+            from ai_usage.orm import FetchRunRecord
+
+            async with database.sessions() as session:
+                result = await session.execute(
+                    select(func.max(FetchRunRecord.finished_at)).where(FetchRunRecord.success.is_(True))
+                )
+                last_crawl = result.scalar_one_or_none()
+            # end async with
+        finally:
+            await database.close()
+        # end try
+        last_crawl_text = last_crawl.isoformat() if last_crawl else "never"
+        return f"{len(accounts)} account(s) configured. Last successful crawl: {last_crawl_text}."
+    # end def
+
+    return asyncio.run(collect())
 # end def
 
 
@@ -871,7 +903,7 @@ def db_upgrade() -> None:
 # end def
 
 
-@main.command("run-all")
+@main.command("up")
 @click.option("--host", default="localhost")
 @click.option("--port", default=4458, type=int)
 @click.option("--detach", "detach_mode", "-d", is_flag=True)
@@ -879,7 +911,7 @@ def run_all(host: str, port: int, detach_mode: bool) -> None:
     """Run crawling and the dashboard server together."""
     paths = default_paths()
     if detach_mode:
-        click.echo(f"Detached as PID {detach(['run-all', '--host', host, '--port', str(port)], paths)}")
+        click.echo(f"Detached as PID {detach(['up', '--host', host, '--port', str(port)], paths)}")
         return
     # end if
     try:
@@ -889,6 +921,9 @@ def run_all(host: str, port: int, detach_mode: bool) -> None:
     # end try
     asyncio.run(run_server_and_crawler(paths, host, port, reporter=click.echo))
 # end def
+
+
+main.add_command(run_all, "start")
 
 
 @main.command()

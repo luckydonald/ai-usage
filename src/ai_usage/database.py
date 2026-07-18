@@ -63,7 +63,7 @@ class Database:
             result = await session.scalars(select(SourceRecord).limit(1))
             source = result.first()
             if source is None:
-                source = SourceRecord(id=str(uuid.uuid4()), created_at=datetime.now(UTC))
+                source = SourceRecord(id=str(uuid.uuid7()), created_at=datetime.now(UTC))
                 session.add(source)
                 await session.commit()
             # end if
@@ -72,7 +72,7 @@ class Database:
     # end def
 
     async def put_credential(self, provider: str, name: str, value: dict[str, Any]) -> str:
-        credential_id = str(uuid.uuid4())
+        credential_id = str(uuid.uuid7())
         now = datetime.now(UTC)
         encrypted = self.cipher.encrypt(
             json.dumps(value, separators=(",", ":"), sort_keys=True).encode(),

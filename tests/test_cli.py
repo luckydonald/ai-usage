@@ -45,8 +45,33 @@ def test_run_all_passes_visible_progress_reporter(monkeypatch) -> None:
     # end def
 
     monkeypatch.setattr(ai_usage.api, "run_server_and_crawler", run_server_and_crawler)
-    result = CliRunner().invoke(main, ["run-all"])
+    result = CliRunner().invoke(main, ["up"])
 
     assert result.exit_code == 0
     assert "Crawler started for 2 accounts: Claude, Codex." in result.output
+# end def
+
+
+def test_start_is_an_alias_for_up(monkeypatch) -> None:
+    async def run_server_and_crawler(paths, host, port, reporter) -> None:
+        del paths, host, port
+        reporter("Crawler started for 2 accounts: Claude, Codex.")
+    # end def
+
+    monkeypatch.setattr(ai_usage.api, "run_server_and_crawler", run_server_and_crawler)
+    result = CliRunner().invoke(main, ["start"])
+
+    assert result.exit_code == 0
+    assert "Crawler started for 2 accounts: Claude, Codex." in result.output
+# end def
+
+
+def test_bare_invocation_prints_status_and_help_without_starting_anything(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_HOME", str(tmp_path))
+    result = CliRunner().invoke(main, [])
+
+    assert result.exit_code == 0
+    assert "account(s) configured" in result.output
+    assert "Last successful crawl:" in result.output
+    assert "Usage:" in result.output
 # end def
