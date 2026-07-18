@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import socket
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +15,19 @@ from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
+from ai_usage.host_identity import (
+    HostIdentity,
+    HostIdentityAmbiguous,
+    add_host_to_account,
+    any_account_restricts_hosts,
+    generate_host_id,
+    host_is_enabled_anywhere,
+    load_local_host_identity,
+    local_host_identity_path,
+    remove_host_from_account,
+    resolve_host_identity,
+    save_local_host_identity,
+)
 from ai_usage.models import AccountConfig, FetchStatus
 from ai_usage.provider_accounts import (
     AccountStatus,
@@ -464,6 +478,114 @@ def provider_discover(service: str | None, provider_key: str | None) -> None:
 provider_group.add_command(provider_add, "new")
 
 
+async def ensure_host_identity(runtime: "Runtime", no_input: bool) -> HostIdentity:
+    """Resolve (and persist) this machine's host identity, prompting when the choice is ambiguous."""
+    interactive = interactive_terminal(no_input)
+
+    async def confirm_restore(host_id: str) -> bool:
+        if not interactive:
+            return True
+        # end if
+        return click.confirm(f"Restore this machine's identity as host {host_id}?", default=True)
+    # end def
+
+    async def choose_among(candidates: list[str]) -> str | None:
+        options = [SelectionChoice(f"host-{index}", host_id) for index, host_id in enumerate(candidates)]
+        options.append(SelectionChoice("new", "None, generate new"))
+        selected = await select_choice(
+            "Multiple host ids are registered under this hostname — choose one", options
+        )
+        if selected is None or selected == "new":
+            return None
+        # end if
+        return candidates[int(selected.removeprefix("host-"))]
+    # end def
+
+    try:
+        return await resolve_host_identity(
+            runtime.paths,
+            runtime.config,
+            confirm_restore=confirm_restore,
+            choose_among=choose_among if interactive else None,
+        )
+    except HostIdentityAmbiguous as exception:
+        raise click.ClickException(
+            f"{exception} Run interactively to pick one, or edit "
+            f"{local_host_identity_path(runtime.paths)} manually to "
+            '{"hostname": "...", "host_id": "..."}.'
+        ) from exception
+    # end try
+# end def
+
+
+async def run_provider_add_wizard(runtime: "Runtime") -> None:
+    selected, selected_target = await select_discovered_account(runtime, None, None)
+    if selected:
+        resolved_service, resolved_provider = selected.service, selected.provider
+    elif selected_target:
+        resolved_service, resolved_provider = selected_target
+    else:
+        return
+    # end if
+    credential = selected.account.credential if selected else None
+    account, action = await create_account(
+        runtime, resolved_service, resolved_provider, None, credential, True, {}, discovered=selected
+    )
+    verb = {"added": "Added", "existing": "Already configured", "restored": "Restored"}[action]
+    click.echo(f"{verb} {account.name} ({account.id})")
+# end def
+
+
+async def run_first_crawl_wizard(runtime: "Runtime", identity: HostIdentity, resume_label: str) -> None:
+    """Guide onboarding a brand-new machine that isn't enabled for any host-restricted account yet."""
+    while True:
+        configured = runtime.config.list_accounts(False)
+        done_label = "Exit" if not configured else "Done: finish and resume " + resume_label
+        done_subtext = "exit without creating/selecting any service" if not configured else ""
+        options = [
+            SelectionChoice("enable", "Enable existing service on this device"),
+            SelectionChoice("create", "Create new"),
+            SelectionChoice("done", done_label, done_subtext),
+        ]
+        selected = await select_choice("This machine isn't enabled for any account yet", options)
+        if selected in (None, "done"):
+            return
+        # end if
+        if selected == "enable":
+            sub_options = [SelectionChoice("back", "« back")]
+            sub_options += [
+                SelectionChoice(f"account-{index}", f"{account.service}/{account.provider} — {account.name}")
+                for index, account in enumerate(configured)
+            ]
+            picked = await select_choice("Enable which account on this device?", sub_options)
+            if picked and picked != "back":
+                account = configured[int(picked.removeprefix("account-"))]
+                updated = add_host_to_account(runtime.config, account, identity)
+                click.echo(f"Enabled {updated.name} on this device.")
+            # end if
+        elif selected == "create":
+            await run_provider_add_wizard(runtime)
+        # end if
+    # end while
+# end def
+
+
+async def ensure_ready_to_crawl(runtime: "Runtime", no_input: bool, resume_label: str) -> HostIdentity:
+    identity = await ensure_host_identity(runtime, no_input)
+    accounts = runtime.config.list_accounts(False)
+    if any_account_restricts_hosts(accounts) and not host_is_enabled_anywhere(accounts, identity.host_id):
+        if not interactive_terminal(no_input):
+            raise click.ClickException(
+                "this machine is not enabled for any host-restricted account yet; "
+                "run interactively to onboard it, or use `ai-usage provider hosts add`."
+            )
+        # end if
+        await run_first_crawl_wizard(runtime, identity, resume_label)
+    # end if
+    return identity
+# end def
+
+
 def account_state(account: AccountConfig) -> str:
     if account.removed_at is not None:
         return "removed"
@@ -853,6 +975,133 @@ def provider_merge(
 # end def
 
 
+@provider_group.group("hosts")
+def provider_hosts_group() -> None:
+    """Manage which machines are allowed to crawl an account."""
+# end def
+
+
+def _default_host_identity(paths: Paths, hostname: str | None, host_id: str | None) -> HostIdentity:
+    if hostname and host_id:
+        return HostIdentity(hostname=hostname, host_id=host_id)
+    # end if
+    if hostname or host_id:
+        raise click.UsageError("--hostname and --host-id must be given together")
+    # end if
+    identity = load_local_host_identity(paths)
+    if identity is None:
+        identity = HostIdentity(hostname=socket.gethostname(), host_id=generate_host_id())
+        save_local_host_identity(paths, identity)
+    # end if
+    return identity
+# end def
+
+
+@provider_hosts_group.command("add")
+@click.argument("service", required=False)
+@click.argument("provider_key", required=False)
+@click.argument("account", required=False)
+@click.option("--account", "account_option")
+@click.option("--hostname", help="Defaults to this machine's hostname.")
+@click.option("--host-id", help="Defaults to this machine's local host id (generated if missing).")
+@click.option("--no-input", is_flag=True)
+def provider_hosts_add(
+    service: str | None,
+    provider_key: str | None,
+    account: str | None,
+    account_option: str | None,
+    hostname: str | None,
+    host_id: str | None,
+    no_input: bool,
+) -> None:
+    """Allow a machine to crawl this account (adds to its host allow-list)."""
+    target_id = requested_account_id(account, account_option)
+    candidates = matching_accounts(ConfigStore(default_paths()), service, provider_key)
+    if (
+        target_id is None
+        and not interactive_terminal(no_input)
+        and not (service is not None and provider_key is not None and len(candidates) == 1)
+    ):
+        print_accounts(candidates)
+        return
+    # end if
+
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            selected = await resolve_account(
+                runtime, service, provider_key, target_id, no_input, "add a host to"
+            )
+            if selected is None:
+                return
+            # end if
+            identity = _default_host_identity(runtime.paths, hostname, host_id)
+            updated = add_host_to_account(runtime.config, selected, identity)
+            click.echo(f"Added host {identity.hostname} ({identity.host_id}) to {updated.name}.")
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
+
+
+@provider_hosts_group.command("remove")
+@click.argument("service", required=False)
+@click.argument("provider_key", required=False)
+@click.argument("account", required=False)
+@click.option("--account", "account_option")
+@click.option("--hostname", help="Defaults to this machine's hostname.")
+@click.option("--host-id", help="Defaults to this machine's local host id.")
+@click.option("--no-input", is_flag=True)
+def provider_hosts_remove(
+    service: str | None,
+    provider_key: str | None,
+    account: str | None,
+    account_option: str | None,
+    hostname: str | None,
+    host_id: str | None,
+    no_input: bool,
+) -> None:
+    """Disallow a machine from crawling this account (removes it from the host allow-list)."""
+    target_id = requested_account_id(account, account_option)
+    candidates = matching_accounts(ConfigStore(default_paths()), service, provider_key)
+    if (
+        target_id is None
+        and not interactive_terminal(no_input)
+        and not (service is not None and provider_key is not None and len(candidates) == 1)
+    ):
+        print_accounts(candidates)
+        return
+    # end if
+
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            selected = await resolve_account(
+                runtime, service, provider_key, target_id, no_input, "remove a host from"
+            )
+            if selected is None:
+                return
+            # end if
+            identity = _default_host_identity(runtime.paths, hostname, host_id)
+            updated = remove_host_from_account(runtime.config, selected, identity.host_id)
+            click.echo(f"Removed host {identity.hostname} ({identity.host_id}) from {updated.name}.")
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
+
+
+provider_hosts_group.add_command(provider_hosts_remove, "rm")
+
+
 @main.command()
 @click.option("--account", "account_ids", multiple=True)
 def fetch(account_ids: tuple[str, ...]) -> None:
@@ -894,7 +1143,8 @@ def fetch(account_ids: tuple[str, ...]) -> None:
 
 @main.command()
 @click.option("--detach", "detach_mode", "-d", is_flag=True)
-def crawl(detach_mode: bool) -> None:
+@click.option("--no-input", is_flag=True)
+def crawl(detach_mode: bool, no_input: bool) -> None:
     """Continuously refresh configured providers."""
     paths = default_paths()
     if detach_mode:
@@ -906,11 +1156,13 @@ def crawl(detach_mode: bool) -> None:
         runtime = Runtime(paths)
         try:
             await runtime.initialize()
+            identity = await ensure_ready_to_crawl(runtime, no_input, "crawling")
             crawler = Crawler(
                 runtime.collector,
                 runtime.config,
                 runtime.database,
                 reporter=click.echo,
+                host_id=identity.host_id,
             )
             await crawler.run()
         finally:
@@ -1016,7 +1268,8 @@ def db_upgrade() -> None:
 @click.option("--host", default="localhost")
 @click.option("--port", default=None, type=int)
 @click.option("--detach", "detach_mode", "-d", is_flag=True)
-def run_all(host: str, port: int | None, detach_mode: bool) -> None:
+@click.option("--no-input", is_flag=True)
+def run_all(host: str, port: int | None, detach_mode: bool, no_input: bool) -> None:
     """Run crawling and the dashboard server together."""
     from ai_usage.api import DEFAULT_PORT
 
@@ -1032,7 +1285,26 @@ def run_all(host: str, port: int | None, detach_mode: bool) -> None:
     except ImportError as exception:
         raise click.ClickException("the API server has not been installed") from exception
     # end try
-    asyncio.run(run_server_and_crawler(paths, host, port, reporter=click.echo, explicit_port=explicit_port))
+
+    async def execute() -> None:
+        runtime = Runtime(paths)
+        try:
+            await runtime.initialize()
+            identity = await ensure_ready_to_crawl(runtime, no_input, "up")
+        finally:
+            await runtime.close()
+        # end try
+        await run_server_and_crawler(
+            paths,
+            host,
+            port,
+            reporter=click.echo,
+            explicit_port=explicit_port,
+            host_id=identity.host_id,
+        )
+    # end def
+
+    asyncio.run(execute())
 # end def
 
 

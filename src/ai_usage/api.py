@@ -282,6 +282,7 @@ async def run_server_and_crawler(
     port: int,
     reporter: ProgressReporter = LOGGER.info,
     explicit_port: bool = False,
+    host_id: str | None = None,
 ) -> None:
     if exposed_host(host):
         LOGGER.warning(
@@ -293,6 +294,7 @@ async def run_server_and_crawler(
     app = create_app(paths, reporter=reporter)
     runtime: ApplicationState = app.state.runtime
     await runtime.initialize()
+    runtime.crawler.host_id = host_id
     server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, lifespan="off"))
     runtime.server = server
     try:

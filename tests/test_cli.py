@@ -38,9 +38,11 @@ def test_discovery_does_not_create_runtime_directory(tmp_path: Path, monkeypatch
 # end def
 
 
-def test_run_all_passes_visible_progress_reporter(monkeypatch) -> None:
-    async def run_server_and_crawler(paths, host, port, reporter, explicit_port=False) -> None:
-        del paths, host, port, explicit_port
+def test_run_all_passes_visible_progress_reporter(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_HOME", str(tmp_path))
+
+    async def run_server_and_crawler(paths, host, port, reporter, explicit_port=False, host_id=None) -> None:
+        del paths, host, port, explicit_port, host_id
         reporter("Crawler started for 2 accounts: Claude, Codex.")
     # end def
 
@@ -52,9 +54,11 @@ def test_run_all_passes_visible_progress_reporter(monkeypatch) -> None:
 # end def
 
 
-def test_start_is_an_alias_for_up(monkeypatch) -> None:
-    async def run_server_and_crawler(paths, host, port, reporter, explicit_port=False) -> None:
-        del paths, host, port, explicit_port
+def test_start_is_an_alias_for_up(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_HOME", str(tmp_path))
+
+    async def run_server_and_crawler(paths, host, port, reporter, explicit_port=False, host_id=None) -> None:
+        del paths, host, port, explicit_port, host_id
         reporter("Crawler started for 2 accounts: Claude, Codex.")
     # end def
 
