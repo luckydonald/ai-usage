@@ -104,7 +104,12 @@ def capture_cookies_via_webview(
     try:
         # debug=True enables right-click "Inspect Element" devtools, so a stuck/blank page can
         # be diagnosed (console errors, network responses) instead of guessed at blind.
-        webview.start(user_agent=USER_AGENT, debug=True)
+        # private_mode=False: pywebview defaults to an ephemeral WebKit context, in which
+        # `window.localStorage` is `undefined` rather than a normal (even if empty) Storage
+        # object — modern SPAs (e.g. claude.ai) that unconditionally touch localStorage on
+        # startup crash outright and never render. A normal, non-ephemeral context behaves
+        # like a real browser profile here.
+        webview.start(user_agent=USER_AGENT, debug=True, private_mode=False)
     except WebViewException as exception:
         raise ProviderError(NO_TOOLKIT_HINT) from exception
     # end try
