@@ -30,6 +30,11 @@ function selectedValues(event: Event): string[] {
   return [...(event.target as HTMLSelectElement).selectedOptions].map((option) => option.value);
 }
 
+function accountLabel(account: Catalog["accounts"][number]): string {
+  const identityLabel = account.identity?.name ?? account.identity?.email;
+  return identityLabel ? `${account.name} (${identityLabel})` : account.name;
+}
+
 async function load(autoWiden = false): Promise<void> {
   loading.value = true;
   error.value = "";
@@ -106,7 +111,7 @@ onBeforeUnmount(() => events?.close());
           <label>Range<select v-model="preset" @change="load()"><option v-for="(label, key) in presetLabels" :key="key" :value="key">{{ label }}</option></select></label>
           <label>Services<select multiple @change="filters.services = selectedValues($event); load()"><option v-for="item in services" :key="item">{{ item }}</option></select></label>
           <label>Providers<select multiple @change="filters.providers = selectedValues($event); load()"><option v-for="item in providers" :key="item">{{ item }}</option></select></label>
-          <label>Accounts<select multiple @change="filters.accounts = selectedValues($event); load()"><option v-for="item in accounts" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
+          <label>Accounts<select multiple @change="filters.accounts = selectedValues($event); load()"><option v-for="item in accounts" :key="item.id" :value="item.id">{{ accountLabel(item) }}</option></select></label>
           <label>Metrics<select multiple @change="filters.metrics = selectedValues($event); load()"><option v-for="item in metrics" :key="`${item.account_id}/${item.metric_key}`" :value="item.metric_key">{{ item.metric_name }}</option></select></label>
         </aside>
         <section class="graph-panel">

@@ -11,12 +11,20 @@ from ai_usage.models import AccountConfig, FetchStatus
 from ai_usage.providers.base import ProviderError
 from ai_usage.providers.claude import (
     ClaudeStatusProvider,
+    ClaudeWebUsageProvider,
     install_status_relay,
+    parse_claude_web_usage,
     parse_status_payload,
     parse_usage_output,
     remove_status_relay,
 )
-from ai_usage.providers.codex import CodexStatusProvider, parse_codex_status, parse_rate_limits
+from ai_usage.providers.codex import (
+    CodexStatusProvider,
+    CodexWebUsageProvider,
+    parse_codex_status,
+    parse_codex_web_usage,
+    parse_rate_limits,
+)
 from ai_usage.providers.copilot import CopilotBillingProvider, next_billing_reset
 
 
@@ -106,6 +114,129 @@ Current week (Fable)
     metrics = parse_usage_output(output, datetime.now(UTC))
     assert [metric.key for metric in metrics] == ["five-hours", "seven-days", "seven-days-fable"]
     assert [metric.usage.percentage for metric in metrics] == [12, 8, 0]
+# end def
+
+
+def test_claude_web_usage_payload() -> None:
+    metrics = parse_claude_web_usage(
+        {
+            "five_hour": {"utilization": 16, "resets_at": "2026-07-18T14:40:00+00:00"},
+            "seven_day": {"utilization": 28, "resets_at": "2026-07-21T20:00:00+00:00"},
+        },
+        datetime.now(UTC),
+    )
+    assert [metric.key for metric in metrics] == ["five-hours", "seven-days"]
+    assert [metric.usage.percentage for metric in metrics] == [16, 28]
+# end def
+
+
+def test_claude_web_usage_payload_falls_back_on_schema_mismatch() -> None:
+    metrics = parse_claude_web_usage(
+        {"five_hour": {"utilization": "not-a-model-shape", "extra_nesting": {"x": 1}}},
+        datetime.now(UTC),
+    )
+    assert metrics == []
+# end def
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_claude_web_usage_provider_collects_identity_and_subscription() -> None:
+    org_id = "e9abf7bc-490f-4c12-8490-d5b2d204e699"
+    respx.get(f"https://claude.ai/api/organizations/{org_id}/usage").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "five_hour": {"utilization": 16, "resets_at": "2026-07-18T14:40:00+00:00"},
+                "seven_day": {"utilization": 28, "resets_at": "2026-07-21T20:00:00+00:00"},
+            },
+        )
+    )
+    respx.get("https://claude.ai/api/organizations").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "uuid": org_id,
+                    "name": "AbelmannConsulting",
+                    "billing_type": "stripe_subscription",
+                }
+            ],
+        )
+    )
+    respx.get("https://claude.ai/api/account").mock(
+        return_value=httpx.Response(200, json={"email_address": "user@example.com"})
+    )
+    respx.get(f"https://claude.ai/api/organizations/{org_id}/subscription_status").mock(
+        return_value=httpx.Response(200, json={"status": "active", "cancel_at_ts": None})
+    )
+    account = AccountConfig(
+        id="account", service="claude", provider="web", name="Claude", options={"org_id": org_id}
+    )
+    result = await ClaudeWebUsageProvider().fetch(account, {"cookies": {"session": "x"}})
+    assert [metric.usage.percentage for metric in result.metrics] == [16, 28]
+    assert result.identity is not None
+    assert result.identity.name == "AbelmannConsulting"
+    assert result.identity.email == "user@example.com"
+    assert result.subscription is not None
+    assert result.subscription.plan_type == "stripe_subscription"
+    assert result.subscription.status == "active"
+    assert result.raw_payload is not None and "usage" in result.raw_payload
+# end def
+
+
+def test_codex_web_usage_payload() -> None:
+    metrics = parse_codex_web_usage(
+        {
+            "rate_limit": {
+                "primary_window": {
+                    "used_percent": 0,
+                    "limit_window_seconds": 604800,
+                    "reset_at": 1784977190,
+                },
+                "secondary_window": None,
+            }
+        },
+        datetime.now(UTC),
+    )
+    assert [metric.key for metric in metrics] == ["seven-days"]
+    assert metrics[0].usage.percentage == 0
+# end def
+
+
+def test_codex_web_usage_payload_falls_back_on_schema_mismatch() -> None:
+    metrics = parse_codex_web_usage({"rate_limit": "not-an-object"}, datetime.now(UTC))
+    assert metrics == []
+# end def
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_codex_web_usage_provider_collects_identity_and_subscription() -> None:
+    respx.get("https://chatgpt.com/api/auth/session").mock(
+        return_value=httpx.Response(200, json={"accessToken": "token-abc"})
+    )
+    respx.get("https://chatgpt.com/backend-api/wham/usage").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "email": "user@example.com",
+                "plan_type": "team",
+                "rate_limit": {
+                    "primary_window": {
+                        "used_percent": 0,
+                        "limit_window_seconds": 604800,
+                        "reset_at": 1784977190,
+                    }
+                },
+            },
+        )
+    )
+    account = AccountConfig(id="account", service="codex", provider="web", name="Codex")
+    result = await CodexWebUsageProvider().fetch(account, {"cookies": {"session": "x"}})
+    assert len(result.metrics) == 1
+    assert result.identity is not None and result.identity.email == "user@example.com"
+    assert result.subscription is not None and result.subscription.plan_type == "team"
 # end def
 
 

@@ -3,10 +3,18 @@
 from importlib.metadata import entry_points
 
 from ai_usage.providers.base import Provider
-from ai_usage.providers.claude import ClaudeStatusProvider, ClaudeUsageProvider
-from ai_usage.providers.codex import CodexAppServerProvider, CodexStatusProvider
+from ai_usage.providers.claude import (
+    ClaudeStatusProvider,
+    ClaudeUsageProvider,
+    ClaudeWebUsageProvider,
+)
+from ai_usage.providers.codex import (
+    CodexAppServerProvider,
+    CodexStatusProvider,
+    CodexWebUsageProvider,
+)
 from ai_usage.providers.copilot import CopilotBillingProvider
-from ai_usage.providers.web import ClaudeWebProvider, CodexWebProvider, CopilotEntitlementsProvider
+from ai_usage.providers.web import CopilotEntitlementsProvider
 
 
 class ProviderRegistry:
@@ -48,8 +56,8 @@ def built_in_registry() -> ProviderRegistry:
         ClaudeStatusProvider(),
         ClaudeUsageProvider(),
         CopilotBillingProvider(),
-        CodexWebProvider(),
-        ClaudeWebProvider(),
+        CodexWebUsageProvider(),
+        ClaudeWebUsageProvider(),
         CopilotEntitlementsProvider(),
     ):
         registry.register(provider)

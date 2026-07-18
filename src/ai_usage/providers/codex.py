@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import os
 import re
 import tempfile
@@ -9,8 +10,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ai_usage.models import AccountConfig, FetchStatus, Metric, ProviderFetchResult, Usage
+import httpx
+from pydantic import BaseModel, ValidationError
+
+from ai_usage.models import (
+    AccountConfig,
+    AccountIdentity,
+    FetchStatus,
+    Metric,
+    ProviderFetchResult,
+    SubscriptionStatus,
+    Usage,
+)
 from ai_usage.providers.base import ConfigurationField, DiscoveredAccount, Provider, ProviderError
+
+LOGGER = logging.getLogger(__name__)
 
 STATUS_PATTERN = re.compile(
     r"(?P<name>Weekly|\d+\s*hour)\s+limit:\s+.*?(?P<remaining>\d+(?:\.\d+)?)%\s+left\s+"
@@ -62,6 +76,155 @@ def parse_rate_limits(payload: dict[str, Any], observed_at: datetime) -> list[Me
     # end for
     return metrics
 # end def
+
+
+class CodexRateWindowPayload(BaseModel):
+    used_percent: float | None = None
+    limit_window_seconds: int | None = None
+    reset_at: int | None = None
+# end class
+
+
+class CodexRateLimitPayload(BaseModel):
+    primary_window: CodexRateWindowPayload | None = None
+    secondary_window: CodexRateWindowPayload | None = None
+# end class
+
+
+class CodexWhamUsagePayload(BaseModel):
+    account_id: str | None = None
+    email: str | None = None
+    plan_type: str | None = None
+    rate_limit: CodexRateLimitPayload | None = None
+# end class
+
+
+def parse_codex_web_usage(payload: dict[str, Any], observed_at: datetime) -> list[Metric]:
+    try:
+        parsed = CodexWhamUsagePayload.model_validate(payload)
+        slots: dict[str, CodexRateWindowPayload | dict[str, Any] | None] = (
+            {
+                "primary": parsed.rate_limit.primary_window,
+                "secondary": parsed.rate_limit.secondary_window,
+            }
+            if parsed.rate_limit is not None
+            else {}
+        )
+    except ValidationError as exception:
+        LOGGER.warning(
+            "Codex usage payload did not match the expected schema, falling back to raw "
+            "field access: %s",
+            exception,
+        )
+        raw_rate_limit = payload.get("rate_limit")
+        raw_rate_limit = raw_rate_limit if isinstance(raw_rate_limit, dict) else {}
+        slots = {
+            "primary": raw_rate_limit.get("primary_window"),
+            "secondary": raw_rate_limit.get("secondary_window"),
+        }
+    # end try
+    metrics: list[Metric] = []
+    for slot, window in slots.items():
+        if window is None:
+            continue
+        # end if
+        try:
+            if isinstance(window, CodexRateWindowPayload):
+                used_percent, limit_window_seconds, reset_at = (
+                    window.used_percent,
+                    window.limit_window_seconds,
+                    window.reset_at,
+                )
+            elif isinstance(window, dict):
+                used_percent = window.get("used_percent")
+                limit_window_seconds = window.get("limit_window_seconds")
+                reset_at = window.get("reset_at")
+            else:
+                continue
+            # end if
+            if not isinstance(used_percent, int | float) or not limit_window_seconds:
+                continue
+            # end if
+            minutes = int(limit_window_seconds) // 60
+            metrics.append(
+                Metric(
+                    key=window_key(minutes),
+                    name=window_name(minutes),
+                    usage=Usage(percentage=float(used_percent)),
+                    observed_at=observed_at,
+                    reset_at=datetime.fromtimestamp(int(reset_at), UTC) if reset_at else None,
+                    window_seconds=minutes * 60,
+                    metadata={"slot": slot},
+                )
+            )
+        except (ValueError, TypeError) as exception:
+            LOGGER.warning("could not parse Codex %s rate limit window: %s", slot, exception)
+        # end try
+    # end for
+    return metrics
+# end def
+
+
+class CodexWebUsageProvider(Provider):
+    service = "codex"
+    key = "web"
+    display_name = "Codex private web API"
+
+    async def fetch(
+        self,
+        account: AccountConfig,
+        credential: dict[str, Any] | None,
+    ) -> ProviderFetchResult:
+        cookies = (credential or {}).get("cookies", {})
+        headers = (credential or {}).get("headers", {})
+        observed = datetime.now(UTC)
+        async with httpx.AsyncClient(
+            timeout=20, cookies=cookies, headers=headers, base_url="https://chatgpt.com"
+        ) as client:
+            session_response = await client.get("/api/auth/session")
+            if session_response.status_code != 200:
+                raise ProviderError(
+                    f"Codex session endpoint returned HTTP {session_response.status_code}"
+                )
+            # end if
+            session_payload = session_response.json()
+            access_token = session_payload.get("accessToken")
+            if not access_token:
+                raise ProviderError("Codex session response did not contain an access token")
+            # end if
+            usage_response = await client.get(
+                "/backend-api/wham/usage",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            if usage_response.status_code != 200:
+                raise ProviderError(
+                    f"Codex usage endpoint returned HTTP {usage_response.status_code}"
+                )
+            # end if
+            usage_payload = usage_response.json()
+        # end with
+        metrics = parse_codex_web_usage(usage_payload, observed)
+        if not metrics:
+            raise ProviderError("Codex usage response did not contain any rate limit windows")
+        # end if
+        identity = AccountIdentity(email=usage_payload.get("email"))
+        subscription = SubscriptionStatus(plan_type=usage_payload.get("plan_type"))
+        return ProviderFetchResult(
+            service=self.service,
+            provider=self.key,
+            account_id=account.id,
+            fetched_at=observed,
+            metrics=metrics,
+            identity=identity,
+            subscription=subscription,
+            raw_payload={
+                "session_user": session_payload.get("user"),
+                "session_account": session_payload.get("account"),
+                "usage": usage_payload,
+            },
+        )
+    # end def
+# end class
 
 
 class AppServerClient:

@@ -58,20 +58,6 @@ class PrivateWebProvider(Provider):
 # end class
 
 
-class CodexWebProvider(PrivateWebProvider):
-    service = "codex"
-    key = "web"
-    display_name = "Codex private web API"
-# end class
-
-
-class ClaudeWebProvider(PrivateWebProvider):
-    service = "claude"
-    key = "web"
-    display_name = "Claude private web API"
-# end class
-
-
 class CopilotEntitlementsProvider(PrivateWebProvider):
     service = "copilot"
     key = "entitlements"

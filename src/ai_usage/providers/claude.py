@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import os
 import re
 import shlex
@@ -11,13 +12,26 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ai_usage.models import AccountConfig, FetchStatus, Metric, ProviderFetchResult, Usage
+import httpx
+from pydantic import BaseModel, ValidationError
+
+from ai_usage.models import (
+    AccountConfig,
+    AccountIdentity,
+    FetchStatus,
+    Metric,
+    ProviderFetchResult,
+    SubscriptionStatus,
+    Usage,
+)
 from ai_usage.providers.base import (
     ConfigurationField,
     DiscoveredAccount,
     Provider,
     ProviderError,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 ANSI_PATTERN = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))")
 SECTION_PATTERN = re.compile(
@@ -82,6 +96,193 @@ def parse_usage_output(output: str, observed_at: datetime) -> list[Metric]:
     # end for
     return metrics
 # end def
+
+
+class ClaudeUsageWindowPayload(BaseModel):
+    utilization: float | None = None
+    resets_at: datetime | None = None
+# end class
+
+
+class ClaudeUsagePayload(BaseModel):
+    five_hour: ClaudeUsageWindowPayload | None = None
+    seven_day: ClaudeUsageWindowPayload | None = None
+# end class
+
+
+class ClaudeOrganizationPayload(BaseModel):
+    uuid: str
+    name: str | None = None
+    billing_type: str | None = None
+# end class
+
+
+class ClaudeAccountPayload(BaseModel):
+    email_address: str | None = None
+    full_name: str | None = None
+# end class
+
+
+class ClaudeSubscriptionStatusPayload(BaseModel):
+    status: str | None = None
+    cancel_at_ts: datetime | None = None
+# end class
+
+
+def parse_claude_web_usage(payload: dict[str, Any], observed_at: datetime) -> list[Metric]:
+    try:
+        windows = ClaudeUsagePayload.model_validate(payload)
+    except ValidationError as exception:
+        LOGGER.warning(
+            "Claude usage payload did not match the expected schema, falling back to raw "
+            "field access: %s",
+            exception,
+        )
+        windows = None
+    # end try
+    metrics: list[Metric] = []
+    for source_key, metric_key, name, seconds in (
+        ("five_hour", "five-hours", "Five hours", 5 * 3600),
+        ("seven_day", "seven-days", "Seven days", 7 * 86400),
+    ):
+        try:
+            if windows is not None:
+                window = getattr(windows, source_key)
+                utilization = window.utilization if window else None
+                reset_at = window.resets_at if window else None
+            else:
+                raw_window = payload.get(source_key)
+                raw_window = raw_window if isinstance(raw_window, dict) else {}
+                utilization = raw_window.get("utilization")
+                reset_text = raw_window.get("resets_at")
+                reset_at = (
+                    datetime.fromisoformat(reset_text) if isinstance(reset_text, str) else None
+                )
+            # end if
+            if not isinstance(utilization, int | float):
+                continue
+            # end if
+            metrics.append(
+                Metric(
+                    key=metric_key,
+                    name=name,
+                    usage=Usage(percentage=float(utilization)),
+                    observed_at=observed_at,
+                    reset_at=reset_at,
+                    window_seconds=seconds,
+                )
+            )
+        except (ValueError, TypeError) as exception:
+            LOGGER.warning("could not parse Claude %s usage window: %s", source_key, exception)
+        # end try
+    # end for
+    return metrics
+# end def
+
+
+class ClaudeWebUsageProvider(Provider):
+    service = "claude"
+    key = "web"
+    display_name = "Claude private web API"
+    configuration_fields = (
+        ConfigurationField(key="org_id", label="Claude organization UUID", required=True),
+    )
+
+    async def fetch(
+        self,
+        account: AccountConfig,
+        credential: dict[str, Any] | None,
+    ) -> ProviderFetchResult:
+        org_id = str(account.options.get("org_id") or "")
+        if not org_id:
+            raise ProviderError("Claude web provider requires an 'org_id' option")
+        # end if
+        cookies = (credential or {}).get("cookies", {})
+        headers = (credential or {}).get("headers", {})
+        observed = datetime.now(UTC)
+        raw_payload: dict[str, Any] = {}
+        async with httpx.AsyncClient(
+            timeout=20, cookies=cookies, headers=headers, base_url="https://claude.ai"
+        ) as client:
+            usage_response = await client.get(f"/api/organizations/{org_id}/usage")
+            if usage_response.status_code != 200:
+                raise ProviderError(f"Claude usage endpoint returned HTTP {usage_response.status_code}")
+            # end if
+            usage_payload = usage_response.json()
+            raw_payload["usage"] = usage_payload
+            metrics = parse_claude_web_usage(usage_payload, observed)
+            if not metrics:
+                raise ProviderError("Claude usage response did not contain any usage windows")
+            # end if
+
+            organization: ClaudeOrganizationPayload | None = None
+            try:
+                organizations_response = await client.get("/api/organizations")
+                organizations_response.raise_for_status()
+                organizations_payload = organizations_response.json()
+                raw_payload["organizations"] = organizations_payload
+                match = next(
+                    (org for org in organizations_payload if org.get("uuid") == org_id), None
+                )
+                organization = (
+                    ClaudeOrganizationPayload.model_validate(match) if match is not None else None
+                )
+            except Exception as exception:  # noqa: BLE001
+                LOGGER.warning("could not fetch Claude organization info: %s", exception)
+            # end try
+
+            account_info: ClaudeAccountPayload | None = None
+            try:
+                account_response = await client.get("/api/account")
+                account_response.raise_for_status()
+                account_payload = account_response.json()
+                raw_payload["account"] = account_payload
+                account_info = ClaudeAccountPayload.model_validate(account_payload)
+            except Exception as exception:  # noqa: BLE001
+                LOGGER.warning("could not fetch Claude account info: %s", exception)
+            # end try
+
+            subscription_info: ClaudeSubscriptionStatusPayload | None = None
+            try:
+                status_response = await client.get(
+                    f"/api/organizations/{org_id}/subscription_status"
+                )
+                status_response.raise_for_status()
+                status_payload = status_response.json()
+                raw_payload["subscription_status"] = status_payload
+                subscription_info = ClaudeSubscriptionStatusPayload.model_validate(status_payload)
+            except Exception as exception:  # noqa: BLE001
+                LOGGER.warning("could not fetch Claude subscription status: %s", exception)
+            # end try
+        # end with
+
+        identity = None
+        if organization is not None or account_info is not None:
+            identity = AccountIdentity(
+                name=organization.name if organization is not None else None,
+                email=account_info.email_address if account_info is not None else None,
+            )
+        # end if
+        subscription = None
+        if organization is not None or subscription_info is not None:
+            subscription = SubscriptionStatus(
+                plan_type=organization.billing_type if organization is not None else None,
+                status=subscription_info.status if subscription_info is not None else None,
+                cancel_at=subscription_info.cancel_at_ts if subscription_info is not None else None,
+            )
+        # end if
+        return ProviderFetchResult(
+            service=self.service,
+            provider=self.key,
+            account_id=account.id,
+            fetched_at=observed,
+            metrics=metrics,
+            identity=identity,
+            subscription=subscription,
+            raw_payload=raw_payload,
+        )
+    # end def
+# end class
 
 
 class ClaudeStatusProvider(Provider):

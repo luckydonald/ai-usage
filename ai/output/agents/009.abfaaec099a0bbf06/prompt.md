@@ -1,0 +1,10 @@
+Research-only, no edits. I'm scoping a plan for fixing Claude/Codex web providers hitting 403/missing-endpoint because we currently have no login flow — credentials/cookies presumably need to come from somewhere (user's real browser session, exported cookies, manual paste, OAuth device flow, etc.).
+
+Investigate:
+1. How does `credential` currently get passed into `Provider.fetch(account, credential)` for claude/web and codex/web providers (src/ai_usage/providers/claude.py, codex.py)? What shape is expected (`credential["cookies"]`, headers)?
+2. Where do credentials normally come from for OTHER providers (e.g. copilot github-api uses a token, claude statusline/cli providers use pexpect/relay) — src/ai_usage/providers/copilot.py, claude.py CLI parts, codex.py CLI parts. Is there a `credential.py` or similar central credential-store/CLI command (`ai-usage account add`, `ai-usage login`, etc.)?
+3. Is there any existing mechanism to import cookies from a real browser (browser_cookie3, manual paste, env var) anywhere in the repo? grep for "cookie" across src/.
+4. How is `paths.local / "credential.key"` used — src/ai_usage/settings.py and wherever credentials get encrypted/stored (probably `credential.py` or `config.py`).
+5. List the CLI commands currently defined (probably a Typer app in `src/ai_usage/cli.py` or `__main__.py`) — just enumerate command names/groups, don't analyze deeply (a separate research pass covers CLI structure in more depth).
+
+Report back (under 400 words): how credentials are currently supplied to providers today, what's missing for claude/web and codex/web to actually get real cookies, and 2-4 concrete options for how a login/cookie-import flow could work (e.g. manual cookie paste command, browser_cookie3 auto-import, Playwright-driven interactive login, claude-in-chrome-driven interactive login since we already have that MCP available). Note file:line refs for key spots.
