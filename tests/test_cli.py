@@ -39,8 +39,8 @@ def test_discovery_does_not_create_runtime_directory(tmp_path: Path, monkeypatch
 
 
 def test_run_all_passes_visible_progress_reporter(monkeypatch) -> None:
-    async def run_server_and_crawler(paths, host, port, reporter) -> None:
-        del paths, host, port
+    async def run_server_and_crawler(paths, host, port, reporter, explicit_port=False) -> None:
+        del paths, host, port, explicit_port
         reporter("Crawler started for 2 accounts: Claude, Codex.")
     # end def
 
@@ -53,8 +53,8 @@ def test_run_all_passes_visible_progress_reporter(monkeypatch) -> None:
 
 
 def test_start_is_an_alias_for_up(monkeypatch) -> None:
-    async def run_server_and_crawler(paths, host, port, reporter) -> None:
-        del paths, host, port
+    async def run_server_and_crawler(paths, host, port, reporter, explicit_port=False) -> None:
+        del paths, host, port, explicit_port
         reporter("Crawler started for 2 accounts: Claude, Codex.")
     # end def
 

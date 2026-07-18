@@ -4,6 +4,8 @@ import asyncio
 import json
 import logging
 import os
+import random
+import socket
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -46,6 +48,12 @@ class ApplicationState:
             reporter=reporter,
         )
         self.crawler = Crawler(self.collector, self.config, self.database, reporter=reporter)
+        self.shutdown_event = asyncio.Event()
+        self.server: uvicorn.Server | None = None
+    # end def
+
+    def shutting_down(self) -> bool:
+        return self.shutdown_event.is_set() or (self.server is not None and self.server.should_exit)
     # end def
 
     async def initialize(self) -> None:
@@ -153,7 +161,7 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
     async def events() -> StreamingResponse:
         async def stream() -> AsyncIterator[str]:
             last_event = ""
-            while True:
+            while not state.shutting_down():
                 async with state.database.sessions() as session:
                     record = await session.scalar(
                         select(MetricSampleRecord).order_by(MetricSampleRecord.observed_at.desc()).limit(1)
@@ -165,7 +173,11 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
                 else:
                     yield ": keepalive\n\n"
                 # end if
-                await asyncio.sleep(2)
+                try:
+                    await asyncio.wait_for(state.shutdown_event.wait(), timeout=2)
+                except TimeoutError:
+                    pass
+                # end try
             # end while
         # end def
 
@@ -226,11 +238,50 @@ def exposed_host(host: str) -> bool:
 # end def
 
 
+DEFAULT_PORT = 4458
+PORT_FALLBACK_CANDIDATES = [6900, 6969, 6699, 8698, 8008, 8690, 8699, 8404, *range(4400, 4500)]
+
+
+def _port_is_free(host: str, port: int) -> bool:
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as probe:
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            probe.bind((host, port))
+        # end with
+    except OSError:
+        return False
+    # end try
+    return True
+# end def
+
+
+def resolve_port(host: str, requested_port: int, explicit: bool) -> int:
+    """Pick a port to bind to, falling back to alternates when the unrequested default is taken."""
+    if explicit or requested_port != DEFAULT_PORT or _port_is_free(host, requested_port):
+        return requested_port
+    # end if
+    for candidate in PORT_FALLBACK_CANDIDATES:
+        if candidate != requested_port and _port_is_free(host, candidate):
+            return candidate
+        # end if
+    # end for
+    for _ in range(20):
+        candidate = random.randint(10000, 65000)
+        if _port_is_free(host, candidate):
+            return candidate
+        # end if
+    # end for
+    raise RuntimeError("could not find a free port to bind to")
+# end def
+
+
 async def run_server_and_crawler(
     paths: Paths,
     host: str,
     port: int,
     reporter: ProgressReporter = LOGGER.info,
+    explicit_port: bool = False,
 ) -> None:
     if exposed_host(host):
         LOGGER.warning(
@@ -238,10 +289,12 @@ async def run_server_and_crawler(
             host,
         )
     # end if
+    port = resolve_port(host, port, explicit_port)
     app = create_app(paths, reporter=reporter)
     runtime: ApplicationState = app.state.runtime
     await runtime.initialize()
     server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, lifespan="off"))
+    runtime.server = server
     try:
         async with asyncio.TaskGroup() as group:
             group.create_task(runtime.crawler.run())
