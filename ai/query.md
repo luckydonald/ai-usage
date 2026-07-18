@@ -527,3 +527,50 @@ Also for the pending question, please ask them now, use the ask dialog thing.
 - Done: _finish and resume {crawl/serve/…}_
 Remove the 2-option misscount.
 
+❯ /plan
+- switch to using typer for cli.
+- the range is not setting the graph's start/end, it's just filtering the data.
+- when I deselect a label, it's filtered, which in turn removes the data and hence the label.
+    - disabling a metric shall just hide it.
+
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Typer migration scope: full rewrite (typer.Typer app, Annotated options) or minimal wrapper that keeps most Click code as-is?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Typer scope** (1/1) <kbd>Single Select</kbd><br>
+>> Typer migration scope: full rewrite (typer.Typer app, Annotated options) or minimal wrapper that keeps most Click code as-is?
+> - [x] 1\. Full migration (Recommended)
+>   - _Rewrite cli.py's command/group definitions as typer.Typer()/typer.Typer(callback=...) with Annotated[..., typer.Option(...)] parameters. Idiomatic typer, best long-term ergonomics (autocompletion, richer help), but touches every command._
+> - [ ] 2\. Minimal/incremental
+>   - _Wrap the existing click.Group with typer.main.get_command or similar so typer becomes the entry point with least code churn; keep click.option/click.argument internals for now._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Fixing 'range should set the graph start/end': should the x-axis always span exactly the selected preset's [start,end] (fixed axis, empty space where no data), or should it still auto-fit but at least the recent/live end should anchor to 'now' instead of the last data point?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Axis range fix** (1/1) <kbd>Single Select</kbd><br>
+>> Fixing 'range should set the graph start/end': should the x-axis always span exactly the selected preset's [start,end] (fixed axis, empty space where no data), or should it still auto-fit but at least the recent/live end should anchor to 'now' instead of the last data point?
+> - [x] 1\. Fixed axis to [start,end] (Recommended)
+>   - _Pass the requested start/end into chartOption and set xAxis.min/max explicitly. Chart always shows the full selected window even if data only covers part of it._
+> - [ ] 2\. Anchor end to now, auto-fit start
+>   - _Only fix the right edge to 'now' (or range end), let echarts auto-fit the left edge/start to actual data extent._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+

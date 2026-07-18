@@ -2,12 +2,32 @@ import type { EChartsOption, SeriesOption } from "echarts";
 
 import type { GraphSeries } from "./types";
 
-export function chartOption(series: GraphSeries[], dark: boolean, exhaustedColor: string): EChartsOption {
+export function seriesDisplayName(item: GraphSeries): string {
+  return `${item.metric_name} · ${item.account_id.slice(0, 8)}`;
+}
+
+export function seriesKey(item: GraphSeries): string {
+  return `${item.account_id}::${item.metric_key}`;
+}
+
+export interface ChartOptions {
+  now?: Date;
+  legendSelected?: Record<string, boolean>;
+}
+
+export function chartOption(
+  series: GraphSeries[],
+  dark: boolean,
+  exhaustedColor: string,
+  options: ChartOptions = {},
+): EChartsOption {
+  const now = options.now ?? new Date();
   const rendered: SeriesOption[] = [];
   for (const item of series) {
+    const name = seriesDisplayName(item);
     rendered.push({
       id: `${item.account_id}/${item.metric_key}/actual`,
-      name: `${item.metric_name} · ${item.account_id.slice(0, 8)}`,
+      name,
       type: "line",
       step: "end",
       showSymbol: false,
@@ -30,6 +50,7 @@ export function chartOption(series: GraphSeries[], dark: boolean, exhaustedColor
       if (window.current) {
         rendered.push({
           id: `${item.account_id}/${item.metric_key}/reset-${index}`,
+          name,
           type: "line",
           showSymbol: false,
           silent: true,
@@ -39,10 +60,18 @@ export function chartOption(series: GraphSeries[], dark: boolean, exhaustedColor
           ],
           lineStyle: { color: item.color, type: "dotted", opacity: 0.75 },
         });
-        const last = item.points.at(-1);
+        const windowStart = new Date(window.start).getTime();
+        const windowEnd = new Date(window.end).getTime();
+        const last = [...item.points]
+          .reverse()
+          .find((point) => {
+            const at = new Date(point.at).getTime();
+            return at >= windowStart && at <= windowEnd;
+          });
         if (last && window.projected_end_percentage !== null) {
           rendered.push({
             id: `${item.account_id}/${item.metric_key}/projection-${index}`,
+            name,
             type: "line",
             showSymbol: false,
             silent: true,
@@ -57,6 +86,7 @@ export function chartOption(series: GraphSeries[], dark: boolean, exhaustedColor
       if (window.exhausted_from) {
         rendered.push({
           id: `${item.account_id}/${item.metric_key}/exhausted-${index}`,
+          name,
           type: "line",
           data: [],
           silent: true,
@@ -70,11 +100,30 @@ export function chartOption(series: GraphSeries[], dark: boolean, exhaustedColor
       }
     }
   }
+  rendered.push({
+    id: "now-line",
+    type: "line",
+    data: [],
+    silent: true,
+    animation: false,
+    markLine: {
+      symbol: "none",
+      silent: true,
+      animation: false,
+      lineStyle: { color: "#ef4444", type: "dashed", width: 1 },
+      label: { show: false },
+      data: [{ xAxis: now.toISOString() }],
+    },
+  });
   return {
     backgroundColor: "transparent",
     textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
     tooltip: { trigger: "axis" },
-    legend: { type: "scroll", textStyle: { color: dark ? "#e5e7eb" : "#1f2937" } },
+    legend: {
+      type: "scroll",
+      textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
+      selected: options.legendSelected,
+    },
     grid: { left: 50, right: 28, top: 52, bottom: 48 },
     xAxis: { type: "time", axisLabel: { color: dark ? "#9ca3af" : "#4b5563" } },
     yAxis: {
@@ -86,4 +135,3 @@ export function chartOption(series: GraphSeries[], dark: boolean, exhaustedColor
     series: rendered,
   };
 }
-

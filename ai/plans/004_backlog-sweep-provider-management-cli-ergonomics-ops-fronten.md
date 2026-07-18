@@ -113,8 +113,8 @@ Phase A/B (backend/CLI) and Phase E (frontend) are independent — can be built 
 - [x] Phase C2: port fallback on default port occupied
 - [x] Phase D1: history log dedup cleanup command
 - [x] Phase D2: auto git commit/push for ~/.ai-usage
-- [ ] Phase E1: frontend dropdown presets auto/1h/3h/6h/12h
-- [ ] Phase E2: incremental chart redraw (no full reanimate)
-- [ ] Phase E3: vertical red dashed "now" line
-- [ ] Phase E4: prediction line legend + window-reset fixes
-- [ ] Phase E5: two-way legend/filter sync
+- [x] Phase E1: frontend dropdown presets auto/1h/3h/6h/12h
+- [x] Phase E2: incremental chart redraw (no full reanimate)
+- [x] Phase E3: vertical red dashed "now" line
+- [x] Phase E4: prediction line legend + window-reset fixes
+- [x] Phase E5: two-way legend/filter sync
