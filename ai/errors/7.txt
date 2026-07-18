@@ -1,0 +1,55 @@
+user@fedora-3:~/git/luckydonald/ai-usage$ ai-usage provider add codex web
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+Opening a login window for Codex private web API...
+Click "Log in" once the page loads.
+[pywebview] Using GTK
+DEBUG [pywebview] Using GTK
+[pywebview] before_load event fired. injecting pywebview object
+DEBUG [pywebview] before_load event fired. injecting pywebview object
+[pywebview] Loading JS files from /home/user/git/luckydonald/ai-usage/.venv/lib/python3.14/site-packages/webview/js
+DEBUG [pywebview] Loading JS files from /home/user/git/luckydonald/ai-usage/.venv/lib/python3.14/site-packages/webview/js
+[pywebview] _pywebviewready event fired
+DEBUG [pywebview] _pywebviewready event fired
+[pywebview] loaded event fired
+DEBUG [pywebview] loaded event fired
+^C^CTraceback (most recent call last):
+  File "/usr/lib64/python3.14/enum.py", line 677, in __call__
+    def __call__(cls, value, names=_not_given, *values, module=None, qualname=None, type=None, start=1, boundary=None):
+
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 167, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^CTraceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/platforms/gtk.py", line 366, in on_window_configure
+    def on_window_configure(self, window, event):
+
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 167, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^C^CTraceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/platforms/gtk.py", line 366, in on_window_configure
+    def on_window_configure(self, window, event):
+
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 167, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+^C^C^C^C^C^C^C^C^C^CTraceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/platforms/gtk.py", line 366, in on_window_configure
+    def on_window_configure(self, window, event):
+
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 167, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+^C^C^C^C^C^C^C^C^CTraceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/platforms/gtk.py", line 366, in on_window_configure
+    def on_window_configure(self, window, event):
+
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 167, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/gi/_ossighelper.py:118: Warning: Source ID 6 was not found when attempting to remove it
+  GLib.source_remove(source_id)
+user@fedora-3:~/git/luckydonald/ai-usage$
+
+document.querySelector('button[data-testid="login-button"]').click()
