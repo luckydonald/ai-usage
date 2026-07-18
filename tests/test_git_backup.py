@@ -37,7 +37,7 @@ def test_backup_skipped_when_not_enabled(tmp_path) -> None:
 # end def
 
 
-def test_backup_commits_tracked_paths_when_enabled(tmp_path) -> None:
+def test_backup_commits_tracked_paths_when_enabled(tmp_path, caplog) -> None:
     paths = temporary_paths(tmp_path)
     paths.ensure()
     _init_repo(paths.root)
@@ -46,12 +46,37 @@ def test_backup_commits_tracked_paths_when_enabled(tmp_path) -> None:
     (paths.root / "history" / "sample.jsonl").write_text("{}\n", encoding="utf-8")
     config = ConfigStore(paths)
 
-    maybe_run_git_backup(paths, config, datetime.now(UTC))
+    with caplog.at_level("INFO"):
+        maybe_run_git_backup(paths, config, datetime.now(UTC))
 
     log = subprocess.run(
         ["git", "log", "--oneline"], cwd=paths.root, capture_output=True, text=True
     )
     assert "Updated crawl results" in log.stdout
+    assert any("committed changes" in message for message in caplog.messages)
+    # no remote configured in this test repo, so the push attempt fails — logged as a warning
+    assert any("git push failed" in message for message in caplog.messages)
+# end def
+
+
+def test_backup_logs_push_success_when_a_remote_accepts_it(tmp_path, caplog) -> None:
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    _init_repo(paths.root)
+    remote = tmp_path / "remote.git"
+    _run("git", "init", "--bare", str(remote), cwd=tmp_path)
+    _run("git", "remote", "add", "origin", str(remote), cwd=paths.root)
+    _run("git", "-C", str(paths.root), "config", "push.autoSetupRemote", "true", cwd=tmp_path)
+    (paths.root / "config.yml").write_text("git:\n  enabled: true\n", encoding="utf-8")
+    (paths.root / "history").mkdir(exist_ok=True)
+    (paths.root / "history" / "sample.jsonl").write_text("{}\n", encoding="utf-8")
+    config = ConfigStore(paths)
+
+    with caplog.at_level("INFO"):
+        maybe_run_git_backup(paths, config, datetime.now(UTC))
+
+    assert any("pushed successfully" in message for message in caplog.messages)
+    assert not any("git push failed" in message for message in caplog.messages)
 # end def
 
 
