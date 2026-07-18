@@ -294,12 +294,19 @@ async def test_claude_web_usage_provider_authenticate_returns_none_without_cooki
 
 @pytest.mark.asyncio
 async def test_codex_web_usage_provider_authenticate_captures_cookies(monkeypatch) -> None:
-    monkeypatch.setattr(
-        "ai_usage.providers.codex.capture_cookies_via_webview",
-        lambda url, title: {"session": "xyz"},
-    )
+    calls: list[tuple[str, str, str | None]] = []
+
+    def fake_capture(url, title, click_selector=None):
+        calls.append((url, title, click_selector))
+        return {"session": "xyz"}
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.codex.capture_cookies_via_webview", fake_capture)
     credential = await CodexWebUsageProvider().authenticate({})
     assert credential == {"cookies": {"session": "xyz"}}
+    assert calls == [
+        ("https://chatgpt.com/", "Codex private web API", '[data-testid="login-button"]')
+    ]
 # end def
 
 
