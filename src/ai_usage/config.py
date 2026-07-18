@@ -1,13 +1,17 @@
 """YAML-backed account and interval configuration."""
 
+import logging
 import uuid
 from pathlib import Path
 from typing import Any
 
 import yaml
+from pydantic import ValidationError
 
-from ai_usage.models import AccountConfig
+from ai_usage.models import AccountConfig, GlobalConfig
 from ai_usage.settings import Paths
+
+LOGGER = logging.getLogger(__name__)
 
 DEFAULT_INTERVALS = {
     "normal_seconds": 600,
@@ -32,6 +36,31 @@ class ConfigStore:
             raise ValueError(f"{path} must contain a YAML object")
         # end if
         return loaded
+    # end def
+
+    def structured_global_config(self) -> GlobalConfig:
+        """Validated view of `global_config()`; falls back to defaults on schema drift."""
+        raw = self.global_config()
+        try:
+            return GlobalConfig.model_validate(raw)
+        except ValidationError as exception:
+            LOGGER.warning(
+                "config.yml did not match the expected schema, falling back to defaults: %s",
+                exception,
+            )
+            return GlobalConfig()
+        # end try
+    # end def
+
+    def save_global_config(self, updates: dict[str, Any]) -> Path:
+        """Merge `updates` into the existing `config.yml`, one top-level key at a time."""
+        path = self.paths.root / "config.yml"
+        merged = self.global_config()
+        merged.update(updates)
+        temporary = path.with_suffix(".yml.tmp")
+        temporary.write_text(yaml.safe_dump(merged, sort_keys=False), encoding="utf-8")
+        temporary.replace(path)
+        return path
     # end def
 
     def list_accounts(self, enabled_only: bool = True) -> list[AccountConfig]:

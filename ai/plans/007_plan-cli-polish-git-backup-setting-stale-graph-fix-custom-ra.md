@@ -108,4 +108,4 @@ Parts 1–3 and 6 are backend-only, independent, low-risk — good to do first a
 - [ ] Custom date range picker
 - [ ] Frontend rebuild: strip to graphs-only + new palette
 - [ ] Shell completion staleness detection + versioned hashes
-- [ ] Claude/Codex web login via pywebview
+- [x] Claude/Codex web login via pywebview
