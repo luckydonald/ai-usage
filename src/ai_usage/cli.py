@@ -456,6 +456,21 @@ def provider_add(
             if credential is None and selected is not None:
                 credential = selected.account.credential
             # end if
+            provider = runtime.providers.get(resolved_service, resolved_provider)
+            if credential is None and provider.login_url and interactive_terminal(no_input):
+                click.echo(f"Opening a login window for {provider.display_name}...")
+                credential = await provider.authenticate(dynamic_options)
+                if credential is None:
+                    raise click.ClickException(
+                        f"login for {provider.display_name} did not complete"
+                    )
+                # end if
+            # end if
+            if credential is not None:
+                for key, value in (await provider.discover_options(credential)).items():
+                    dynamic_options.setdefault(key, value)
+                # end for
+            # end if
             account, action = await create_account(
                 runtime,
                 resolved_service,

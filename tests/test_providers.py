@@ -185,6 +185,38 @@ async def test_claude_web_usage_provider_collects_identity_and_subscription() ->
 # end def
 
 
+@pytest.mark.asyncio
+@respx.mock
+async def test_claude_web_discover_options_auto_fills_single_organization() -> None:
+    respx.get("https://claude.ai/api/organizations").mock(
+        return_value=httpx.Response(200, json=[{"uuid": "org-1", "name": "Solo"}])
+    )
+    discovered = await ClaudeWebUsageProvider().discover_options({"cookies": {"session": "x"}})
+    assert discovered == {"org_id": "org-1"}
+# end def
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_claude_web_discover_options_is_ambiguous_with_multiple_organizations() -> None:
+    respx.get("https://claude.ai/api/organizations").mock(
+        return_value=httpx.Response(
+            200,
+            json=[{"uuid": "org-1", "name": "Solo"}, {"uuid": "org-2", "name": "Team"}],
+        )
+    )
+    discovered = await ClaudeWebUsageProvider().discover_options({"cookies": {"session": "x"}})
+    assert discovered == {}
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_web_discover_options_returns_empty_without_cookies() -> None:
+    assert await ClaudeWebUsageProvider().discover_options(None) == {}
+    assert await ClaudeWebUsageProvider().discover_options({}) == {}
+# end def
+
+
 def test_codex_web_usage_payload() -> None:
     metrics = parse_codex_web_usage(
         {

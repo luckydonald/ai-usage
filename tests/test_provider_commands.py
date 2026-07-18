@@ -540,6 +540,86 @@ def test_provider_login_rejects_providers_without_interactive_login(
 # end def
 
 
+def test_add_triggers_browser_login_for_web_providers(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
+
+    async def authenticate(self, options):
+        del self, options
+        return {"cookies": {"session": "abc123"}}
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+
+    result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
+
+    assert result.exit_code == 0
+    assert "Opening a login window" in result.output
+    account = ConfigStore(paths).list_accounts()[0]
+    assert account.credential_id is not None
+
+    async def stored_credential() -> dict:
+        database = Database(paths)
+        try:
+            return await database.get_credential(account.credential_id)
+        finally:
+            await database.close()
+        # end try
+    # end def
+
+    assert asyncio.run(stored_credential()) == {"cookies": {"session": "abc123"}}
+# end def
+
+
+def test_add_fails_clearly_when_browser_login_does_not_complete(
+    tmp_path: Path, monkeypatch
+) -> None:
+    configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
+
+    async def authenticate(self, options):
+        del self, options
+        return None
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+
+    result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
+
+    assert result.exit_code != 0
+    assert "did not complete" in str(result.exception)
+# end def
+
+
+def test_add_auto_fills_claude_org_id_without_prompting(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
+
+    async def authenticate(self, options):
+        del self, options
+        return {"cookies": {"session": "abc123"}}
+    # end def
+
+    async def discover_options(self, credential):
+        del self, credential
+        return {"org_id": "org-1"}
+    # end def
+
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.ClaudeWebUsageProvider.authenticate", authenticate
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.ClaudeWebUsageProvider.discover_options", discover_options
+    )
+
+    result = CliRunner().invoke(main, ["provider", "add", "claude", "web"])
+
+    assert result.exit_code == 0
+    account = ConfigStore(paths).list_accounts()[0]
+    assert account.options["org_id"] == "org-1"
+# end def
+
+
 def test_config_git_enable_disable_status_round_trip(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
     runner = CliRunner()

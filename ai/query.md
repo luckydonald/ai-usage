@@ -976,3 +976,6 @@ Try to build models for those too.
 
 ❯ squash-cleanup all the commits since last push following LPLP style.
 
+❯ - I don't want to be asked for a claude organisation uuid for claude-web, this need to be fetched from api after login via user in the browser window. This auth is still missing, too.
+- `provider add` with codex adds a provider without login, too.
+

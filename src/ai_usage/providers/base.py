@@ -47,6 +47,12 @@ class Provider(ABC):
         return None
     # end def
 
+    async def discover_options(self, credential: dict[str, Any] | None) -> dict[str, Any]:
+        """Best-effort auto-fill for `configuration_fields` using an already-obtained credential."""
+        del credential
+        return {}
+    # end def
+
     @abstractmethod
     async def fetch(
         self,
