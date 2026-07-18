@@ -997,3 +997,7 @@ Then, after login (navigation change) extract the needed cookies.
 - https://chatgpt.com/ , then click `<button data-testid="login-button" …>` for the user.
 - https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fsettings%2Fcopilot%2Ffeatures
 
+❯ codex-web is on the right webpage, needs to click 'Log in' button still, see @ai/errors/5.txt 
+claude is still showing the @ai/errors/4.json 
+Neither stops if I click close on the window.
+
