@@ -1,0 +1,105 @@
+Opening a login window for Claude private web API...
+^C^CTraceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/platforms/gtk.py", line 284, in close_window
+    should_cancel = self.pywebview_window.events.closing.set()
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/event.py", line 55, in set
+    execute()
+    ~~~~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/event.py", line 41, in execute
+    value = func()
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/webview_login.py", line 67, in on_closing
+    grab_cookies()
+    ~~~~~~~~~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/webview_login.py", line 52, in grab_cookies
+    cookies = window.get_cookies()
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/window.py", line 49, in wrapper
+    return function(self, *args, **kwargs)
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/window.py", line 333, in get_cookies
+    return self.gui.get_cookies(self.uid)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/platforms/gtk.py", line 884, in get_cookies
+    cookies = i.get_cookies()
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/platforms/gtk.py", line 644, in get_cookies
+    semaphore.acquire()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib64/python3.14/threading.py", line 521, in acquire
+    self._cond.wait(timeout)
+    ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib64/python3.14/threading.py", line 369, in wait
+    waiter.acquire()
+    ~~~~~~~~~~~~~~^^
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 167, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/home/user/.local/bin/ai-usage", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 807, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1203, in main
+    return _main(
+        self,
+    ...<6 lines>...
+        **extra,
+    )
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 189, in _main
+    rv = self.invoke(ctx)
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1125, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1125, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 746, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 489, in invoke
+    return callback(*args, **kwargs)
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/main.py", line 1524, in wrapper
+    return callback(**use_params)
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 498, in provider_add
+    asyncio.run(execute())
+    ~~~~~~~~~~~^^^^^^^^^^^
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 205, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/lib64/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 469, in execute
+    raise click.ClickException(
+        f"login for {provider.display_name} did not complete"
+    )
+click.exceptions.ClickException: login for Claude private web API did not complete
+^C
+user@fedora-3:~/git/luckydonald/ai-usage$ ai-usage provider add claude web
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+Opening a login window for Claude private web API...
+[pywebview] 'list' object has no attribute 'values'
+Traceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/event.py", line 41, in execute
+    value = func()
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/webview_login.py", line 73, in on_loaded
+    snapshot_cookies()
+    ~~~~~~~~~~~~~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/webview_login.py", line 64, in snapshot_cookies
+    captured.update({morsel.key: morsel.value for morsel in cookies.values()})
+                                                            ^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'values'
+ERROR [pywebview] 'list' object has no attribute 'values'
+Traceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/webview/event.py", line 41, in execute
+    value = func()
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/webview_login.py", line 73, in on_loaded
+    snapshot_cookies()
+    ~~~~~~~~~~~~~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/webview_login.py", line 64, in snapshot_cookies
+    captured.update({morsel.key: morsel.value for morsel in cookies.values()})
+                                                            ^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'values'
