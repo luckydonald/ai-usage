@@ -3,7 +3,7 @@
 import hashlib
 import json
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import delete, select
@@ -206,5 +206,90 @@ class HistoryStore:
             result = await session.scalars(statement)
             return list(result)
         # end with
+    # end def
+
+    async def dedup(self, older_than_days: int = 7) -> dict[str, int]:
+        """Drop consecutive same-value history lines older than `older_than_days`, keeping the first and last of each run."""
+        root = self.paths.history / "v1"
+        if not root.exists():
+            return {"removed_lines": 0, "touched_files": 0}
+        # end if
+        cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
+        removed_lines = 0
+        touched_files = 0
+        for metric_directory in sorted(path for path in root.glob("*/*/*") if path.is_dir()):
+            files = sorted(metric_directory.glob("**/*.jsonl"))
+            if not files:
+                continue
+            # end if
+            removed, touched = await self._dedup_metric_stream(files, cutoff)
+            removed_lines += removed
+            touched_files += touched
+        # end for
+        return {"removed_lines": removed_lines, "touched_files": touched_files}
+    # end def
+
+    async def _dedup_metric_stream(self, files: list[Path], cutoff: datetime) -> tuple[int, int]:
+        parsed: list[tuple[Path, str, tuple[float, float | None, float | None], datetime]] = []
+        for file in files:
+            for line in file.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                # end if
+                event = HistoryEvent.model_validate_json(line)
+                usage = event.metric.usage
+                min_max = usage if isinstance(usage, MinMaxUsage) else None
+                value_key = (usage.percentage, min_max.current if min_max else None, min_max.maximum if min_max else None)
+                parsed.append((file, line, value_key, event.metric.observed_at.astimezone(UTC)))
+            # end for
+        # end for
+        if len(parsed) < 3:
+            return 0, 0
+        # end if
+
+        keep = [True] * len(parsed)
+        index = 0
+        while index < len(parsed):
+            run_end = index
+            while run_end + 1 < len(parsed) and parsed[run_end + 1][2] == parsed[index][2]:
+                run_end += 1
+            # end while
+            for middle in range(index + 1, run_end):
+                if parsed[middle][3] < cutoff:
+                    keep[middle] = False
+                # end if
+            # end for
+            index = run_end + 1
+        # end while
+
+        removed = keep.count(False)
+        if removed == 0:
+            return 0, 0
+        # end if
+
+        by_file: dict[Path, list[str | None]] = {}
+        for (file, line, _value, _observed), kept in zip(parsed, keep, strict=True):
+            by_file.setdefault(file, []).append(line if kept else None)
+        # end for
+
+        touched = 0
+        for file, lines in by_file.items():
+            surviving = [line for line in lines if line is not None]
+            if len(surviving) == len(lines):
+                continue
+            # end if
+            file.write_text("\n".join(surviving) + ("\n" if surviving else ""), encoding="utf-8")
+            touched += 1
+            relative = str(file.relative_to(self.paths.root))
+            async with self.database.sessions() as session:
+                await session.execute(
+                    delete(MetricSampleRecord).where(MetricSampleRecord.source_path == relative)
+                )
+                await session.execute(delete(IndexedFileRecord).where(IndexedFileRecord.path == relative))
+                await session.commit()
+            # end with
+            await self.index_file(file)
+        # end for
+        return removed, touched
     # end def
 # end class

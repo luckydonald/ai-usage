@@ -1264,6 +1264,27 @@ def db_upgrade() -> None:
 # end def
 
 
+@main.command("history-cleanup")
+@click.option("--older-than-days", default=7, type=int, show_default=True)
+def history_cleanup(older_than_days: int) -> None:
+    """Drop consecutive same-value history lines older than N days, keeping the first and last of each run."""
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            summary = await runtime.history.dedup(older_than_days=older_than_days)
+            click.echo(
+                f"Removed {summary['removed_lines']} duplicate line(s) across {summary['touched_files']} file(s)."
+            )
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
+
+
 @main.command("up")
 @click.option("--host", default="localhost")
 @click.option("--port", default=None, type=int)

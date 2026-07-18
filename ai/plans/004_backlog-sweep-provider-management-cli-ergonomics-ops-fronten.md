@@ -111,7 +111,7 @@ Phase A/B (backend/CLI) and Phase E (frontend) are independent — can be built 
 - [x] Phase B5: rename run-all to up (alias start)
 - [x] Phase C1: fix Ctrl+C hang
 - [x] Phase C2: port fallback on default port occupied
-- [ ] Phase D1: history log dedup cleanup command
+- [x] Phase D1: history log dedup cleanup command
 - [x] Phase D2: auto git commit/push for ~/.ai-usage
 - [ ] Phase E1: frontend dropdown presets auto/1h/3h/6h/12h
 - [ ] Phase E2: incremental chart redraw (no full reanimate)
