@@ -170,13 +170,16 @@ class CodexWebUsageProvider(Provider):
     service = "codex"
     key = "web"
     display_name = "Codex private web API"
-    login_url = "https://chatgpt.com/auth/login"
+    login_url = "https://chatgpt.com/"
+    login_button_selector = '[data-testid="login-button"]'
 
     async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
         del options
         # pywebview must run on the main thread (it raises WebViewException otherwise), so this
         # is a deliberate synchronous, blocking call rather than `asyncio.to_thread(...)`.
-        cookies = capture_cookies_via_webview(self.login_url, self.display_name)
+        cookies = capture_cookies_via_webview(
+            self.login_url, self.display_name, click_selector=self.login_button_selector
+        )
         return {"cookies": cookies} if cookies else None
     # end def
 
