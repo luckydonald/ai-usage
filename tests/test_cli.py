@@ -4,6 +4,7 @@ import click
 from click.testing import CliRunner
 
 import ai_usage.api
+import ai_usage.cli
 from ai_usage.cli import credential_payload, main
 
 
@@ -67,6 +68,28 @@ def test_start_is_an_alias_for_up(tmp_path: Path, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "Crawler started for 2 accounts: Claude, Codex." in result.output
+# end def
+
+
+def test_fetch_triggers_a_git_backup_attempt(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_HOME", str(tmp_path))
+    calls: list[object] = []
+    monkeypatch.setattr(
+        ai_usage.cli, "maybe_run_git_backup", lambda paths, config, now: calls.append(now)
+    )
+
+    result = CliRunner().invoke(main, ["fetch"])
+
+    assert result.exit_code == 0
+    assert len(calls) == 1
+# end def
+
+
+def test_config_help_lists_git_subcommands_inline() -> None:
+    result = CliRunner().invoke(main, ["config", "--help"])
+
+    assert result.exit_code == 0
+    assert "disable|enable|status" in result.output
 # end def
 
 
