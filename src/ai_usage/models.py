@@ -58,6 +58,33 @@ class Metric(BaseModel):
 # end class
 
 
+class AccountIdentity(BaseModel):
+    """Common, provider-agnostic identity fields used to tell accounts apart."""
+
+    name: str | None = None
+    email: str | None = None
+# end class
+
+
+class SubscriptionStatus(BaseModel):
+    """Common, provider-agnostic subscription/billing fields."""
+
+    plan_type: str | None = None
+    status: str | None = None
+    renews_at: datetime | None = None
+    cancel_at: datetime | None = None
+
+    @field_validator("renews_at", "cancel_at")
+    @classmethod
+    def require_timezone(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("timestamps must include a timezone")
+        # end if
+        return value.astimezone(UTC) if value is not None else None
+    # end def
+# end class
+
+
 class ProviderFetchResult(BaseModel):
     service: str
     provider: str
@@ -66,6 +93,9 @@ class ProviderFetchResult(BaseModel):
     status: FetchStatus = FetchStatus.SUCCESS
     metrics: list[Metric] = Field(default_factory=list)
     error: str | None = None
+    identity: AccountIdentity | None = None
+    subscription: SubscriptionStatus | None = None
+    raw_payload: dict[str, Any] | None = None
 # end class
 
 
@@ -82,6 +112,8 @@ class AccountConfig(BaseModel):
     colors: dict[str, str] = Field(default_factory=dict)
     intervals: dict[str, int] = Field(default_factory=dict)
     hosts: list[tuple[str, str]] | None = None
+    identity: AccountIdentity | None = None
+    subscription: SubscriptionStatus | None = None
 # end class
 
 

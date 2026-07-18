@@ -1,3 +1,15 @@
+export interface AccountIdentity {
+  name: string | null;
+  email: string | null;
+}
+
+export interface SubscriptionStatus {
+  plan_type: string | null;
+  status: string | null;
+  renews_at: string | null;
+  cancel_at: string | null;
+}
+
 export interface Account {
   id: string;
   service: string;
@@ -5,6 +17,8 @@ export interface Account {
   name: string;
   enabled: boolean;
   colors: Record<string, string>;
+  identity: AccountIdentity | null;
+  subscription: SubscriptionStatus | null;
 }
 
 export interface CatalogMetric {

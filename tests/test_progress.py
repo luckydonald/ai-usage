@@ -10,7 +10,15 @@ from ai_usage.config import ConfigStore
 from ai_usage.crawler import STALE_RECHECK_SECONDS, Crawler
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
-from ai_usage.models import AccountConfig, FetchStatus, Metric, ProviderFetchResult, Usage
+from ai_usage.models import (
+    AccountConfig,
+    AccountIdentity,
+    FetchStatus,
+    Metric,
+    ProviderFetchResult,
+    SubscriptionStatus,
+    Usage,
+)
 from ai_usage.providers import Provider, ProviderRegistry
 from tests.test_storage import temporary_paths
 
@@ -194,4 +202,69 @@ def test_crawler_without_host_id_applies_no_filtering() -> None:
     crawler.host_id = None
 
     assert crawler.accounts_for_this_host([restricted]) == [restricted]
+# end def
+
+
+class IdentityProvider(Provider):
+    service = "test-service"
+    key = "identity"
+    display_name = "Identity test provider"
+
+    async def fetch(
+        self,
+        account: AccountConfig,
+        credential: dict[str, Any] | None,
+    ) -> ProviderFetchResult:
+        del credential
+        now = datetime.now(UTC)
+        return ProviderFetchResult(
+            service=self.service,
+            provider=self.key,
+            account_id=account.id,
+            fetched_at=now,
+            metrics=[
+                Metric(
+                    key="five-hours",
+                    name="5-hour window",
+                    usage=Usage(percentage=1.0),
+                    observed_at=now,
+                )
+            ],
+            identity=AccountIdentity(name="AbelmannConsulting", email="user@example.com"),
+            subscription=SubscriptionStatus(plan_type="stripe_subscription", status="active"),
+            raw_payload={"secret": "do-not-leak-into-git"},
+        )
+    # end def
+# end class
+
+
+@pytest.mark.asyncio
+async def test_fetch_persists_identity_subscription_and_raw_payload(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    database = Database(paths)
+    await database.migrate()
+    history = HistoryStore(paths, database)
+    config = ConfigStore(paths)
+    account = AccountConfig(
+        id="identity-account", service="test-service", provider="identity", name="Test"
+    )
+    config.save_account(account)
+    registry = ProviderRegistry()
+    registry.register(IdentityProvider())
+    collector = Collector(config, database, history, registry)
+
+    await collector.fetch_account(account)
+
+    reloaded = config.get_account("identity-account")
+    assert reloaded.identity is not None
+    assert reloaded.identity.name == "AbelmannConsulting"
+    assert reloaded.subscription is not None
+    assert reloaded.subscription.plan_type == "stripe_subscription"
+
+    raw_file = paths.local / "raw" / "test-service-identity-account.json"
+    assert raw_file.exists()
+    assert "do-not-leak-into-git" in raw_file.read_text(encoding="utf-8")
+    await database.close()
 # end def

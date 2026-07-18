@@ -724,3 +724,153 @@ Try to build models for those too.
 > - [Raw log (`137850` chars, `135 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/a53360c9321bce68e.output)
 > - `10` tools, `40858` tokens, `1.1376 s`
 
+❯ /plan I got a few changes:
+- Claude web returns 403, so we need to start with some kind of login.
+   - list available options.
+- Codex wants an endpoint still, but we should have figured out the endpoint by now. Probably needs login, too.
+   - list available options for login
+- the automatic git commit shall be a shared setting
+- there is currently no proper setting for enabling/disabling the autocommit.
+- separate the `ingest-claude`, `claude-relay-…` commands as a last internal tooling section in the `--help`.
+- group the commands by what they do
+- after a window ends, the graph display shall go to `0 %` automatically, even if the window end is not part of the current selected range.
+- add custom range, showing two date pickers, both dates included.
+- Remove everything except the graphs and build the website from scratch.
+- Have our website use the following colors:
+  - Usage | code | text color | description
+    ------ | ------- | ------- | ----------
+    primary | `#6C0DE9` | white | electric indigo (dark, for white text)
+    second. | `#00C0DE` | black | sky surge (bright blue, a bit darkened)
+    misc.   | `#FFC0DE` | black | blush pop (soft pink; also works well with primary)
+    success | `#69F69F` | black | bright green
+    error   | `#FF6969` | white | vibrant coral
+  - `#6C0DE9` works with every other color
+  - `#69F69F` and `#FFC0DE` are very bright and don't work together, but every other color can go on top.
+- Have a function which generates the color pallets for in the frontend.
+  - The idea is that all scarpers of one brand are the same base color, but still distingushable
+    - codex graphs are based on `#99bd3c` (the full scale would be `#ee5091`, `#199fd7`, `#99bd3c`, `#fc7942`, `#8a50d8`, but we only use one for now)
+    - claude graphs are based on `#DE7356`
+    - preplexity (we don't have) would be `#21808D`
+    - gemini (we don't have) would be `#9177C7` (of `#4796E3`, `#9177C7`, `#CA6673`)
+    - cursor ai:
+      - (we don't have)
+      - Who would like to be called just "cursor", but the name us so badly chosen, it's literally the pointing device on your computer.
+      - Therefore, always use "cursor ai" or "cursor code". This name would not be trademarkable in the EU.
+      - `#72716D` (of `#43413C`, `#55544F`, `#72716D`, `#D6D5D2`, `#FFFFFF`)
+- have completion file contain a hash of the input, so that we can detect changes, and update it when it's stale.
+  - For simplicity, the update check shall be automatically on pretty much every command.
+  - If no shell completion is installed (file missing) do nothing.
+  - If it's out of sync:
+    - No interactive session: Log a warning.
+    - Interactive session: Ask to update it
+      - yes (this time)
+      - yes, always
+      - no (this time)
+      - no, not this new version
+      - no, never
+    - have a file with a dict with the hashes to version numbers, `dict[str, int]` so it's less confusing to users.
+      - add a unittest confirming the current hash is in that dict.
+
+
+❯ Task Notification:
+> - Task `abfaaec099a0bbf06` <kbd>completed</kbd>
+> - Tool `toolu_018GPdx5UbFn5pyGqryywnVW`
+> - > Agent "Research auth/cookie/login flow for web providers" finished
+> - [Query (`1921` chars, `1.88 KB`)](output/agents/009.abfaaec099a0bbf06/prompt.md)
+> - [Answer (`3533` chars, `3.46 KB`)](output/agents/009.abfaaec099a0bbf06/result.md)
+> - [Raw log (`97693` chars, `95.5 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/abfaaec099a0bbf06.output)
+> - `8` tools, `91369` tokens, `0.5677 s`
+
+❯ Task Notification:
+> - Task `acb813bf28c9c2db9` <kbd>completed</kbd>
+> - Tool `toolu_01NYDAXCisRPaCWowqH3ozKz`
+> - > Agent "Research frontend graphs, colors, range picker" finished
+> - [Query (`1356` chars, `1.33 KB`)](output/agents/010.acb813bf28c9c2db9/prompt.md)
+> - [Answer (`3140` chars, `3.09 KB`)](output/agents/010.acb813bf28c9c2db9/result.md)
+> - [Raw log (`69431` chars, `67.9 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/acb813bf28c9c2db9.output)
+> - `5` tools, `87514` tokens, `0.574733 s`
+
+❯ Task Notification:
+> - Task `a18405bf7d6c43147` <kbd>completed</kbd>
+> - Tool `toolu_0114skZ8aaRHshHSGmL7y3Yb`
+> - > Agent "Research shell completion mechanism" finished
+> - [Query (`1221` chars, `1.19 KB`)](output/agents/011.a18405bf7d6c43147/prompt.md)
+> - [Answer (`2252` chars, `2.22 KB`)](output/agents/011.a18405bf7d6c43147/result.md)
+> - [Raw log (`208308` chars, `204 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/a18405bf7d6c43147.output)
+> - `23` tools, `108095` tokens, `56.6877 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Claude/Codex web providers 403/missing endpoint — no login mechanism exists today (credential is just a manually-crafted {"cookies":{...}} JSON blob via `provider add --secret-json`). How should login work?
+>> 2. Shell-completion staleness feature: hash→version registry — you said `dict[str, int]`. Version string here is semver ("0.1.0"), not an int. Which do you want?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Login flow** (1/2) <kbd>Single Select</kbd><br>
+>> Claude/Codex web providers 403/missing endpoint — no login mechanism exists today (credential is just a manually-crafted {"cookies":{...}} JSON blob via `provider add --secret-json`). How should login work?
+> - [ ] 1\. claude-in-chrome driven (Recommended)
+>   - _New `provider login` step drives the claude-in-chrome MCP: opens the site, waits for you to confirm you're logged in, captures the session cookie jar, stores it via existing put_credential path. Zero new deps, reuses today's storage. Only works from a session with claude-in-chrome connected._
+> - [ ] 2\. Manual cookie paste
+>   - _Prompt asks you to paste document.cookie string, parses key=val pairs. Zero deps, works headless, but manual and cookies expire without a good re-auth story._
+> - [ ] 3\. Playwright-driven login
+>   - _Spins a real headed browser for you to log into, captures cookies via context.cookies(). New dependency (playwright+browser binaries), heavier install, but works independent of Claude Code/MCP being open._
+> - [x] 4\. _Type something:_
+>   - > is there a small webkit/os-browser wrapper available, more lightweight for this task than playwright?
+>
+>> **Registry type** (2/2) <kbd>Single Select</kbd><br>
+>> Shell-completion staleness feature: hash→version registry — you said `dict[str, int]`. Version string here is semver ("0.1.0"), not an int. Which do you want?
+> - [x] 1\. Literal int schema-version counter (Recommended)
+>   - _dict[str, int] as literally written — an incrementing counter (1, 2, 3...) tracking completion-script format revisions, independent of package semver._
+> - [ ] 2\. Semver string
+>   - _dict[str, str], values are the package version string ("0.1.0") that introduced each hash._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. For the claude/web + codex/web login flow, use pywebview (thin native-OS-webview wrapper, no bundled browser) instead of claude-in-chrome or Playwright?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Login flow** (1/1) <kbd>Single Select</kbd><br>
+>> For the claude/web + codex/web login flow, use pywebview (thin native-OS-webview wrapper, no bundled browser) instead of claude-in-chrome or Playwright?
+> - [x] 1\. pywebview (Recommended)
+>   - _New CLI command opens a native webview window (WebKitGTK/WKWebView/WebView2 depending on OS) pointed at the login page. User logs in normally, then we read document.cookie via pywebview's JS bridge and store it through the existing credential path. Lightweight new dependency, no MCP/Claude Code session required, works standalone._
+> - [ ] 2\. claude-in-chrome (from earlier)
+>   - _Reuses the MCP browser tools already available in this session. Zero new deps, but only works when invoked from inside a Claude Code session with claude-in-chrome connected — not standalone._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Where to start first?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Start order** (1/1) <kbd>Single Select</kbd><br>
+>> Where to start first?
+> - [ ] 1\. Backend/low-risk first (Recommended)
+>   - _#21 autocommit toggle, #22 help grouping, #26 completion staleness — independent, no new deps, quick wins._
+> - [ ] 2\. Login flow first (#28)
+>   - _Unblocks re-testing the Claude/Codex web providers that are currently 403ing — highest-value fix but needs the new pywebview dependency._
+> - [ ] 3\. Frontend first (#23-25)
+>   - _Graph 0%-after-window-end, custom range, full rebuild + brand colors (#26 too) — biggest and most subjective chunk._
+> - [x] 4\. _Type something:_
+>   - > 21. autocommt, login flow, then the low risks
+>
+> </details>
+>
+

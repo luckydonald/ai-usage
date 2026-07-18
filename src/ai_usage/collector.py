@@ -1,6 +1,7 @@
 """Provider orchestration and durable fetch-run recording."""
 
 import asyncio
+import json
 import time
 import uuid
 from datetime import UTC, datetime
@@ -29,6 +30,32 @@ class Collector:
         self.providers = providers
         self.report = reporter
         self.account_locks: dict[str, asyncio.Lock] = {}
+    # end def
+
+    def remember_account_details(
+        self,
+        account: AccountConfig,
+        result: ProviderFetchResult,
+    ) -> None:
+        updates: dict[str, object] = {}
+        if result.identity is not None and result.identity != account.identity:
+            updates["identity"] = result.identity
+        # end if
+        if result.subscription is not None and result.subscription != account.subscription:
+            updates["subscription"] = result.subscription
+        # end if
+        if updates:
+            self.config.save_account(account.model_copy(update=updates))
+            for key, value in updates.items():
+                setattr(account, key, value)
+            # end for
+        # end if
+        if result.raw_payload is not None:
+            directory = self.database.paths.local / "raw"
+            directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+            path = directory / f"{account.service}-{account.id}.json"
+            path.write_text(json.dumps(result.raw_payload, indent=2, default=str), encoding="utf-8")
+        # end if
     # end def
 
     async def fetch_account(
@@ -65,6 +92,7 @@ class Collector:
                 provider = self.providers.get(account.service, account.provider)
                 previous = await self.history.latest_percentages(account.id)
                 result = await provider.fetch(account, credential)
+                self.remember_account_details(account, result)
                 await self.history.append_result(result)
                 for metric in result.metrics:
                     old_value = previous.get(metric.key)
