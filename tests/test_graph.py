@@ -39,6 +39,35 @@ def test_graph_builds_step_points_window_and_projection() -> None:
 # end def
 
 
+def test_graph_injects_zero_point_after_an_ended_window() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now - timedelta(hours=1)
+    records = [
+        sample("one", now - timedelta(hours=3), 10, reset),
+        sample("two", now - timedelta(hours=2), 80, reset),
+    ]
+    series = build_series(records, now=now)[0]
+    assert series.windows[0].current is False
+    assert [(point.at, point.percentage) for point in series.points] == [
+        (now - timedelta(hours=3), 10),
+        (now - timedelta(hours=2), 80),
+        (reset, 0),
+    ]
+# end def
+
+
+def test_graph_does_not_duplicate_zero_point_when_a_real_sample_already_sits_at_reset() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now - timedelta(hours=1)
+    records = [
+        sample("one", now - timedelta(hours=2), 50, reset),
+        sample("two", reset, 0, reset),
+    ]
+    series = build_series(records, now=now)[0]
+    assert [point.at for point in series.points] == [now - timedelta(hours=2), reset]
+# end def
+
+
 def test_graph_marks_exhausted_interval() -> None:
     now = datetime(2026, 7, 17, 12, tzinfo=UTC)
     reset = now + timedelta(hours=1)
