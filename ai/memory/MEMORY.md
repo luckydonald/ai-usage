@@ -1,0 +1,1 @@
+- [Test HOME isolation](feedback_test_home_isolation.md) — tests touching real dotfiles/rc-files must isolate HOME, not just pass a tmp Paths object
