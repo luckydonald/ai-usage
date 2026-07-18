@@ -986,3 +986,5 @@ ModuleNotFoundError: No module named 'webview'
 
 ❯ Apparently the `ai-usage provider add` path is not tested for codex/claude web login via TUI. Add those tests, and fix @ai/errors/3.txt
 
+❯ You added tests? what's the next error i'm now getting at `webview.start()`, huh?
+
