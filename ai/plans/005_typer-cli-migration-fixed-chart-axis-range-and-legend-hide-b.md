@@ -72,4 +72,4 @@ Three unrelated fixes/changes requested together:
 - [x] Phase E5: two-way legend/filter sync
 - [x] Fix legend-hide bug (Part 3)
 - [x] Fix chart axis range (Part 2)
-- [ ] Migrate CLI from Click to Typer (Part 1) *(in progress)*
+- [x] Migrate CLI from Click to Typer (Part 1)

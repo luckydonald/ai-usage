@@ -574,3 +574,89 @@ Remove the 2-option misscount.
 > </details>
 >
 
+❯ /plan
+Let's figure out the api endpoints to use.
+We can debug those in the browser if you tell me which one to do, I'll log in beforehand.
+
+#### Claude
+Page: https://claude.ai/new#settings/usage
+API Request (Team): https://claude.ai/api/organizations/{uuid}/usage
+API Request (Personal): https://claude.ai/api/organizations/{uuid}/usage
+
+##### Codex
+Page: https://chatgpt.com/codex/settings/usage
+API Request: https://chatgpt.com/backend-api/wham/usage
+
+#### Copilot
+Page: https://github.com/settings/copilot/features
+API Request: https://github.com/github-copilot/chat/entitlement
+
+#### Misc
+Also addition for CLI scraping of codex:
+```text
+│  Weekly limit:         [█████████████░░░░░░░] 63% left (resets 12:36 on 24 Jul) │
+│  Warning:              limits may be stale - run /status again shortly.         │
+```
+
+❯ Task Notification:
+> - Task `a72980e30e36a725d` <kbd>completed</kbd>
+> - Tool `toolu_0159wJ2KGCJFogJUcmmS54KB`
+> - > Agent "Explore provider crawler structure" finished
+> - [Query (`2309` chars, `2.31 KB`)](output/agents/002.a72980e30e36a725d/prompt.md)
+> - [Answer (`11185` chars, `11 KB`)](output/agents/002.a72980e30e36a725d/result.md)
+> - [Raw log (`225625` chars, `221 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/d918c87c-fad5-4fbe-8ab8-64534b3e1065/tasks/a72980e30e36a725d.output)
+> - `18` tools, `56353` tokens, `1.49195 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Debug order: which endpoint first, browser session?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Debug order** (1/1) <kbd>Single Select</kbd><br>
+>> Debug order: which endpoint first, browser session?
+> - [x] 1\. Claude (Recommended)
+>   - _claude.ai/api/organizations/{uuid}/usage — has Team/Personal org variant, good to nail down first since it may need org-switch logic._
+> - [ ] 2\. Codex
+>   - _chatgpt.com/backend-api/wham/usage — single endpoint, simplest to start._
+> - [ ] 3\. Copilot
+>   - _github.com/github-copilot/chat/entitlement — simplest auth (browser session cookie only)._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+❯ the format notice was for that second line about needing a refresh.
+
+❯ it should actually cause the codex cli crawler to recrawl after 10s
+
+❯ Task Notification:
+> - Task `ac33e63c5007c1ec9` <kbd>completed</kbd>
+> - Tool `toolu_01TP5su5py3zgbTuBkGtFqnY`
+> - > Agent "Check codex status crawl scheduling mechanism" finished
+> - [Query (`1926` chars, `1.89 KB`)](output/agents/003.ac33e63c5007c1ec9/prompt.md)
+> - [Answer (`7308` chars, `7.17 KB`)](output/agents/003.ac33e63c5007c1ec9/result.md)
+> - [Raw log (`91040` chars, `89 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/d918c87c-fad5-4fbe-8ab8-64534b3e1065/tasks/ac33e63c5007c1ec9.output)
+> - `5` tools, `34317` tokens, `0.69345 s`
+
+❯ Task Notification:
+> - Task `a4af043d18fc735fa` <kbd>completed</kbd>
+> - Tool `toolu_01BDsDHHLbgcpDMR9BjzFQWS`
+> - > Agent "Find crawler/codex status test patterns" finished
+> - [Query (`1405` chars, `1.38 KB`)](output/agents/004.a4af043d18fc735fa/prompt.md)
+> - [Answer (`5290` chars, `5.19 KB`)](output/agents/004.a4af043d18fc735fa/result.md)
+> - [Raw log (`117175` chars, `115 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/d918c87c-fad5-4fbe-8ab8-64534b3e1065/tasks/a4af043d18fc735fa.output)
+> - `11` tools, `36191` tokens, `1.07255 s`
+
+❯ Task Notification:
+> - Task `a5fcaba69279a529e` <kbd>completed</kbd>
+> - Tool `toolu_01QwvjKJZsswXbDXLLWcmub6`
+> - > Agent "Check existing FetchStatus.STALE usage in collector" finished
+> - [Query (`1330` chars, `1.3 KB`)](output/agents/005.a5fcaba69279a529e/prompt.md)
+> - [Answer (`4183` chars, `4.11 KB`)](output/agents/005.a5fcaba69279a529e/result.md)
+> - [Raw log (`63464` chars, `62.1 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/d918c87c-fad5-4fbe-8ab8-64534b3e1065/tasks/a5fcaba69279a529e.output)
+> - `6` tools, `29256` tokens, `0.460367 s`
+

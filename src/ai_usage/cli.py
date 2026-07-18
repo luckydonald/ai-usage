@@ -6,9 +6,10 @@ import socket
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import click
+import typer
 
 from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
@@ -53,6 +54,18 @@ from ai_usage.providers.claude import (
 from ai_usage.services import detach, install_service, uninstall_service
 from ai_usage.settings import Paths, default_paths
 from ai_usage.shell_completion import install_completion
+
+app = typer.Typer(
+    context_settings={"max_content_width": 120},
+    rich_markup_mode=None,
+    add_completion=False,
+)
+provider_app = typer.Typer(rich_markup_mode=None)
+app.add_typer(provider_app, name="provider", help="Discover and manage configured provider accounts.")
+hosts_app = typer.Typer(rich_markup_mode=None)
+provider_app.add_typer(
+    hosts_app, name="hosts", help="Manage which machines are allowed to crawl an account."
+)
 
 
 class Runtime:
@@ -206,14 +219,13 @@ async def create_account(
 # end def
 
 
-@click.group(invoke_without_command=True, context_settings={"max_content_width": 120})
-@click.pass_context
-def main(context: click.Context) -> None:
+@app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context) -> None:
     """Collect and visualize AI service usage."""
-    if context.invoked_subcommand is None:
+    if ctx.invoked_subcommand is None:
         click.echo(status_summary())
         click.echo()
-        click.echo(context.get_help())
+        click.echo(ctx.get_help())
     # end if
 # end def
 
@@ -245,12 +257,6 @@ def status_summary() -> str:
     # end def
 
     return asyncio.run(collect())
-# end def
-
-
-@main.group("provider")
-def provider_group() -> None:
-    """Discover and manage configured provider accounts."""
 # end def
 
 
@@ -349,26 +355,27 @@ async def select_discovered_account(
 # end def
 
 
-@provider_group.command("add", context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-@click.option("--name")
-@click.option("--secret-json", help="Credential JSON to encrypt in local SQLite.")
-@click.option(
-    "--secret-file",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Read credential JSON from a file instead of exposing it in shell history.",
+@provider_app.command(
+    "add", context_settings={"ignore_unknown_options": True, "allow_extra_args": True}
 )
-@click.option("--no-input", is_flag=True)
-@click.pass_context
 def provider_add(
-    context: click.Context,
-    service: str | None,
-    provider_key: str | None,
-    name: str | None,
-    secret_json: str | None,
-    secret_file: Path | None,
-    no_input: bool,
+    ctx: typer.Context,
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+    name: Annotated[str | None, typer.Option("--name")] = None,
+    secret_json: Annotated[
+        str | None, typer.Option("--secret-json", help="Credential JSON to encrypt in local SQLite.")
+    ] = None,
+    secret_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--secret-file",
+            exists=True,
+            dir_okay=False,
+            help="Read credential JSON from a file instead of exposing it in shell history.",
+        ),
+    ] = None,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
 ) -> None:
     """Add a configured provider account."""
     async def execute() -> None:
@@ -389,7 +396,7 @@ def provider_add(
         runtime = Runtime(default_paths())
         try:
             await runtime.initialize()
-            dynamic_options = parse_dynamic_options(tuple(context.args))
+            dynamic_options = parse_dynamic_options(tuple(ctx.args))
             selected: DiscoveryChoice | None = None
             selected_target: tuple[str, str] | None = None
             if resolved_service is None or resolved_provider is None:
@@ -458,10 +465,11 @@ def provider_add(
 # end def
 
 
-@provider_group.command("discover")
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-def provider_discover(service: str | None, provider_key: str | None) -> None:
+@provider_app.command("discover")
+def provider_discover(
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+) -> None:
     """Show local accounts a provider can import."""
     async def execute() -> None:
         choices, failures = await discover_or_error(built_in_registry(), service, provider_key)
@@ -473,9 +481,6 @@ def provider_discover(service: str | None, provider_key: str | None) -> None:
 
     asyncio.run(execute())
 # end def
-
-
-provider_group.add_command(provider_add, "new")
 
 
 async def ensure_host_identity(runtime: "Runtime", no_input: bool) -> HostIdentity:
@@ -675,10 +680,11 @@ async def resolve_account(
 # end def
 
 
-@provider_group.command("list")
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-def provider_list(service: str | None, provider_key: str | None) -> None:
+@provider_app.command("list")
+def provider_list(
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+) -> None:
     """List configured provider accounts."""
     paths = default_paths()
     print_accounts(matching_accounts(ConfigStore(paths), service, provider_key))
@@ -735,18 +741,13 @@ def print_account_status(status: AccountStatus) -> None:
 # end def
 
 
-@provider_group.command("status")
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-@click.argument("account", required=False)
-@click.option("--account", "account_option")
-@click.option("--no-input", is_flag=True)
+@provider_app.command("status")
 def provider_status(
-    service: str | None,
-    provider_key: str | None,
-    account: str | None,
-    account_option: str | None,
-    no_input: bool,
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+    account: Annotated[str | None, typer.Argument()] = None,
+    account_option: Annotated[str | None, typer.Option("--account")] = None,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
 ) -> None:
     """Show stored status for a configured account."""
     target_id = requested_account_id(account, account_option)
@@ -764,7 +765,7 @@ def provider_status(
         runtime = Runtime(default_paths())
         try:
             await runtime.initialize()
-            account = await resolve_account(
+            account_config = await resolve_account(
                 runtime,
                 service,
                 provider_key,
@@ -772,8 +773,8 @@ def provider_status(
                 no_input,
                 "inspect",
             )
-            if account is not None:
-                print_account_status(await account_status(runtime.database, account))
+            if account_config is not None:
+                print_account_status(await account_status(runtime.database, account_config))
             # end if
         finally:
             await runtime.close()
@@ -784,20 +785,14 @@ def provider_status(
 # end def
 
 
-@provider_group.command("remove")
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-@click.argument("account", required=False)
-@click.option("--account", "account_option")
-@click.option("--delete-history", is_flag=True)
-@click.option("--no-input", is_flag=True)
+@provider_app.command("remove")
 def provider_remove(
-    service: str | None,
-    provider_key: str | None,
-    account: str | None,
-    account_option: str | None,
-    delete_history: bool,
-    no_input: bool,
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+    account: Annotated[str | None, typer.Argument()] = None,
+    account_option: Annotated[str | None, typer.Option("--account")] = None,
+    delete_history: Annotated[bool, typer.Option("--delete-history")] = False,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
 ) -> None:
     """Remove an account, preserving history unless requested otherwise."""
     target_id = requested_account_id(account, account_option)
@@ -815,7 +810,7 @@ def provider_remove(
         runtime = Runtime(default_paths())
         try:
             await runtime.initialize()
-            account = await resolve_account(
+            account_config = await resolve_account(
                 runtime,
                 service,
                 provider_key,
@@ -823,24 +818,24 @@ def provider_remove(
                 no_input,
                 "remove",
             )
-            if account is None:
+            if account_config is None:
                 return
             # end if
             purge = delete_history
             if interactive_terminal(no_input) and not delete_history:
                 purge = click.confirm(
-                    f"Also permanently delete {account.name}'s historical usage?",
+                    f"Also permanently delete {account_config.name}'s historical usage?",
                     default=False,
                 )
             # end if
-            if account.service == "claude" and account.provider == "statusline":
-                remove_status_relay(account, runtime.paths.local)
+            if account_config.service == "claude" and account_config.provider == "statusline":
+                remove_status_relay(account_config, runtime.paths.local)
             # end if
-            await remove_local_state(runtime.database, account)
-            removed = account.model_copy(
+            await remove_local_state(runtime.database, account_config)
+            removed = account_config.model_copy(
                 update={
                     "enabled": False,
-                    "removed_at": account.removed_at or datetime.now(UTC),
+                    "removed_at": account_config.removed_at or datetime.now(UTC),
                     "credential_id": None,
                 }
             )
@@ -848,9 +843,9 @@ def provider_remove(
             if purge:
                 await purge_history(runtime.paths, runtime.database, removed)
                 runtime.config.delete_account(removed)
-                click.echo(f"Removed {account.name} and permanently deleted its history.")
+                click.echo(f"Removed {account_config.name} and permanently deleted its history.")
             else:
-                click.echo(f"Removed {account.name}; historical usage was preserved.")
+                click.echo(f"Removed {account_config.name}; historical usage was preserved.")
             # end if
         finally:
             await runtime.close()
@@ -861,26 +856,14 @@ def provider_remove(
 # end def
 
 
-provider_group.add_command(provider_list, "ls")
-provider_group.add_command(provider_status, "info")
-provider_group.add_command(provider_remove, "del")
-provider_group.add_command(provider_remove, "rm")
-
-
-@provider_group.command("rename")
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-@click.argument("account", required=False)
-@click.option("--account", "account_option")
-@click.option("--name", "new_name", required=True)
-@click.option("--no-input", is_flag=True)
+@provider_app.command("rename")
 def provider_rename(
-    service: str | None,
-    provider_key: str | None,
-    account: str | None,
-    account_option: str | None,
-    new_name: str,
-    no_input: bool,
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+    account: Annotated[str | None, typer.Argument()] = None,
+    account_option: Annotated[str | None, typer.Option("--account")] = None,
+    new_name: Annotated[str, typer.Option("--name")] = ...,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
 ) -> None:
     """Rename a configured account's display name."""
     target_id = requested_account_id(account, account_option)
@@ -898,12 +881,14 @@ def provider_rename(
         runtime = Runtime(default_paths())
         try:
             await runtime.initialize()
-            account = await resolve_account(runtime, service, provider_key, target_id, no_input, "rename")
-            if account is None:
+            account_config = await resolve_account(
+                runtime, service, provider_key, target_id, no_input, "rename"
+            )
+            if account_config is None:
                 return
             # end if
-            old_name = account.name
-            renamed = account.model_copy(update={"name": new_name})
+            old_name = account_config.name
+            renamed = account_config.model_copy(update={"name": new_name})
             runtime.config.save_account(renamed)
             click.echo(f"Renamed {old_name} to {new_name}.")
         finally:
@@ -915,22 +900,13 @@ def provider_rename(
 # end def
 
 
-provider_group.add_command(provider_rename, "name")
-provider_group.add_command(provider_rename, "mv")
-
-
-@provider_group.command("merge")
-@click.argument("source", required=False)
-@click.argument("target", required=False)
-@click.option("--source", "source_option")
-@click.option("--target", "target_option")
-@click.option("--no-input", is_flag=True)
+@provider_app.command("merge")
 def provider_merge(
-    source: str | None,
-    target: str | None,
-    source_option: str | None,
-    target_option: str | None,
-    no_input: bool,
+    source: Annotated[str | None, typer.Argument()] = None,
+    target: Annotated[str | None, typer.Argument()] = None,
+    source_option: Annotated[str | None, typer.Option("--source")] = None,
+    target_option: Annotated[str | None, typer.Option("--target")] = None,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
 ) -> None:
     """Merge one account's history into another, then delete the source account."""
     source_id = requested_account_id(source, source_option)
@@ -975,12 +951,6 @@ def provider_merge(
 # end def
 
 
-@provider_group.group("hosts")
-def provider_hosts_group() -> None:
-    """Manage which machines are allowed to crawl an account."""
-# end def
-
-
 def _default_host_identity(paths: Paths, hostname: str | None, host_id: str | None) -> HostIdentity:
     if hostname and host_id:
         return HostIdentity(hostname=hostname, host_id=host_id)
@@ -997,22 +967,20 @@ def _default_host_identity(paths: Paths, hostname: str | None, host_id: str | No
 # end def
 
 
-@provider_hosts_group.command("add")
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-@click.argument("account", required=False)
-@click.option("--account", "account_option")
-@click.option("--hostname", help="Defaults to this machine's hostname.")
-@click.option("--host-id", help="Defaults to this machine's local host id (generated if missing).")
-@click.option("--no-input", is_flag=True)
+@hosts_app.command("add")
 def provider_hosts_add(
-    service: str | None,
-    provider_key: str | None,
-    account: str | None,
-    account_option: str | None,
-    hostname: str | None,
-    host_id: str | None,
-    no_input: bool,
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+    account: Annotated[str | None, typer.Argument()] = None,
+    account_option: Annotated[str | None, typer.Option("--account")] = None,
+    hostname: Annotated[
+        str | None, typer.Option("--hostname", help="Defaults to this machine's hostname.")
+    ] = None,
+    host_id: Annotated[
+        str | None,
+        typer.Option("--host-id", help="Defaults to this machine's local host id (generated if missing)."),
+    ] = None,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
 ) -> None:
     """Allow a machine to crawl this account (adds to its host allow-list)."""
     target_id = requested_account_id(account, account_option)
@@ -1048,22 +1016,19 @@ def provider_hosts_add(
 # end def
 
 
-@provider_hosts_group.command("remove")
-@click.argument("service", required=False)
-@click.argument("provider_key", required=False)
-@click.argument("account", required=False)
-@click.option("--account", "account_option")
-@click.option("--hostname", help="Defaults to this machine's hostname.")
-@click.option("--host-id", help="Defaults to this machine's local host id.")
-@click.option("--no-input", is_flag=True)
+@hosts_app.command("remove")
 def provider_hosts_remove(
-    service: str | None,
-    provider_key: str | None,
-    account: str | None,
-    account_option: str | None,
-    hostname: str | None,
-    host_id: str | None,
-    no_input: bool,
+    service: Annotated[str | None, typer.Argument()] = None,
+    provider_key: Annotated[str | None, typer.Argument()] = None,
+    account: Annotated[str | None, typer.Argument()] = None,
+    account_option: Annotated[str | None, typer.Option("--account")] = None,
+    hostname: Annotated[
+        str | None, typer.Option("--hostname", help="Defaults to this machine's hostname.")
+    ] = None,
+    host_id: Annotated[
+        str | None, typer.Option("--host-id", help="Defaults to this machine's local host id.")
+    ] = None,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
 ) -> None:
     """Disallow a machine from crawling this account (removes it from the host allow-list)."""
     target_id = requested_account_id(account, account_option)
@@ -1099,12 +1064,10 @@ def provider_hosts_remove(
 # end def
 
 
-provider_hosts_group.add_command(provider_hosts_remove, "rm")
-
-
-@main.command()
-@click.option("--account", "account_ids", multiple=True)
-def fetch(account_ids: tuple[str, ...]) -> None:
+@app.command()
+def fetch(
+    account_ids: Annotated[list[str], typer.Option("--account")] = [],  # noqa: B006
+) -> None:
     """Fetch every configured provider once."""
     async def execute() -> None:
         runtime = Runtime(default_paths())
@@ -1141,10 +1104,11 @@ def fetch(account_ids: tuple[str, ...]) -> None:
 # end def
 
 
-@main.command()
-@click.option("--detach", "detach_mode", "-d", is_flag=True)
-@click.option("--no-input", is_flag=True)
-def crawl(detach_mode: bool, no_input: bool) -> None:
+@app.command()
+def crawl(
+    detach_mode: Annotated[bool, typer.Option("--detach", "-d")] = False,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
+) -> None:
     """Continuously refresh configured providers."""
     paths = default_paths()
     if detach_mode:
@@ -1174,9 +1138,8 @@ def crawl(detach_mode: bool, no_input: bool) -> None:
 # end def
 
 
-@main.command("ingest-claude")
-@click.argument("account_id")
-def ingest_claude(account_id: str) -> None:
+@app.command("ingest-claude")
+def ingest_claude(account_id: Annotated[str, typer.Argument()]) -> None:
     """Receive one Claude status-line JSON document on stdin."""
     paths = default_paths()
     payload = json.load(sys.stdin)
@@ -1185,9 +1148,8 @@ def ingest_claude(account_id: str) -> None:
 # end def
 
 
-@main.command("claude-relay-install")
-@click.argument("account_id")
-def claude_relay_install(account_id: str) -> None:
+@app.command("claude-relay-install")
+def claude_relay_install(account_id: Annotated[str, typer.Argument()]) -> None:
     """Install or repair the composable Claude status-line relay."""
     runtime = Runtime(default_paths())
     account = runtime.config.get_account(account_id)
@@ -1196,9 +1158,8 @@ def claude_relay_install(account_id: str) -> None:
 # end def
 
 
-@main.command("claude-relay-remove")
-@click.argument("account_id")
-def claude_relay_remove(account_id: str) -> None:
+@app.command("claude-relay-remove")
+def claude_relay_remove(account_id: Annotated[str, typer.Argument()]) -> None:
     """Restore the status line that preceded the AI Usage relay."""
     runtime = Runtime(default_paths())
     account = runtime.config.get_account(account_id)
@@ -1207,25 +1168,29 @@ def claude_relay_remove(account_id: str) -> None:
 # end def
 
 
-@main.command()
-@click.option("--serve/--no-serve", "enable_server", default=True)
-@click.option("--host", default="localhost")
-@click.option("--port", default=4458, type=int)
-def install(enable_server: bool, host: str, port: int) -> None:
+@app.command()
+def install(
+    enable_server: Annotated[bool, typer.Option("--serve/--no-serve")] = True,
+    host: Annotated[str, typer.Option("--host")] = "localhost",
+    port: Annotated[int, typer.Option("--port")] = 4458,
+) -> None:
     """Install a user-level startup service."""
     target = install_service(default_paths(), enable_server, host, port)
     click.echo(f"Installed {target}")
 # end def
 
 
-@main.command()
-@click.option(
-    "--shell",
-    type=click.Choice(["bash", "zsh", "fish"]),
-    default=None,
-    help="Shell to install completion for. Defaults to $SHELL.",
-)
-def completion(shell: str | None) -> None:
+@app.command()
+def completion(
+    shell: Annotated[
+        str | None,
+        typer.Option(
+            "--shell",
+            click_type=click.Choice(["bash", "zsh", "fish"]),
+            help="Shell to install completion for. Defaults to $SHELL.",
+        ),
+    ] = None,
+) -> None:
     """Install shell tab-completion. Safe to re-run."""
     result = install_completion(default_paths(), main, shell)
     if result.rc_path is not None:
@@ -1237,7 +1202,7 @@ def completion(shell: str | None) -> None:
 # end def
 
 
-@main.command("uninstall")
+@app.command("uninstall")
 def uninstall() -> None:
     """Remove the user-level startup service without deleting data."""
     uninstall_service(default_paths())
@@ -1245,10 +1210,7 @@ def uninstall() -> None:
 # end def
 
 
-main.add_command(uninstall, "deinstall")
-
-
-@main.command("db-upgrade")
+@app.command("db-upgrade")
 def db_upgrade() -> None:
     """Upgrade the local database to the latest Alembic revision."""
     async def execute() -> None:
@@ -1264,9 +1226,10 @@ def db_upgrade() -> None:
 # end def
 
 
-@main.command("history-cleanup")
-@click.option("--older-than-days", default=7, type=int, show_default=True)
-def history_cleanup(older_than_days: int) -> None:
+@app.command("history-cleanup")
+def history_cleanup(
+    older_than_days: Annotated[int, typer.Option("--older-than-days", show_default=True)] = 7,
+) -> None:
     """Drop consecutive same-value history lines older than N days, keeping the first and last of each run."""
     async def execute() -> None:
         runtime = Runtime(default_paths())
@@ -1285,12 +1248,13 @@ def history_cleanup(older_than_days: int) -> None:
 # end def
 
 
-@main.command("up")
-@click.option("--host", default="localhost")
-@click.option("--port", default=None, type=int)
-@click.option("--detach", "detach_mode", "-d", is_flag=True)
-@click.option("--no-input", is_flag=True)
-def run_all(host: str, port: int | None, detach_mode: bool, no_input: bool) -> None:
+@app.command("up")
+def run_all(
+    host: Annotated[str, typer.Option("--host")] = "localhost",
+    port: Annotated[int | None, typer.Option("--port")] = None,
+    detach_mode: Annotated[bool, typer.Option("--detach", "-d")] = False,
+    no_input: Annotated[bool, typer.Option("--no-input")] = False,
+) -> None:
     """Run crawling and the dashboard server together."""
     from ai_usage.api import DEFAULT_PORT
 
@@ -1329,13 +1293,11 @@ def run_all(host: str, port: int | None, detach_mode: bool, no_input: bool) -> N
 # end def
 
 
-main.add_command(run_all, "start")
-
-
-@main.command()
-@click.option("--host", default="localhost")
-@click.option("--port", default=None, type=int)
-def serve(host: str, port: int | None) -> None:
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option("--host")] = "localhost",
+    port: Annotated[int | None, typer.Option("--port")] = None,
+) -> None:
     """Serve the usage API and dashboard without crawling."""
     import uvicorn
 
@@ -1351,14 +1313,31 @@ def serve(host: str, port: int | None) -> None:
     port = resolve_port(host, port if port is not None else DEFAULT_PORT, explicit_port)
 
     async def execute() -> None:
-        app = create_app(default_paths())
-        server = uvicorn.Server(uvicorn.Config(app, host=host, port=port))
-        app.state.runtime.server = server
+        server_app = create_app(default_paths())
+        server = uvicorn.Server(uvicorn.Config(server_app, host=host, port=port))
+        server_app.state.runtime.server = server
         await server.serve()
     # end def
 
     asyncio.run(execute())
 # end def
+
+
+main = typer.main.get_command(app)
+main.add_command(main.commands["up"], "start")
+main.add_command(main.commands["uninstall"], "deinstall")
+
+_provider_click = main.commands["provider"]
+_provider_click.add_command(_provider_click.commands["add"], "new")
+_provider_click.add_command(_provider_click.commands["list"], "ls")
+_provider_click.add_command(_provider_click.commands["status"], "info")
+_provider_click.add_command(_provider_click.commands["remove"], "del")
+_provider_click.add_command(_provider_click.commands["remove"], "rm")
+_provider_click.add_command(_provider_click.commands["rename"], "name")
+_provider_click.add_command(_provider_click.commands["rename"], "mv")
+
+_hosts_click = _provider_click.commands["hosts"]
+_hosts_click.add_command(_hosts_click.commands["remove"], "rm")
 
 
 if __name__ == "__main__":
