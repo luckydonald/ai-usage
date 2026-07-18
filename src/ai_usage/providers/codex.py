@@ -174,9 +174,9 @@ class CodexWebUsageProvider(Provider):
 
     async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
         del options
-        cookies = await asyncio.to_thread(
-            capture_cookies_via_webview, self.login_url, self.display_name
-        )
+        # pywebview must run on the main thread (it raises WebViewException otherwise), so this
+        # is a deliberate synchronous, blocking call rather than `asyncio.to_thread(...)`.
+        cookies = capture_cookies_via_webview(self.login_url, self.display_name)
         return {"cookies": cookies} if cookies else None
     # end def
 
