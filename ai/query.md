@@ -1029,6 +1029,27 @@ Neither stops if I click close on the window.
 ❯ Now it spawned with a network debugger, which logged an error `TypeError: undefined is not an object (evaluating 'window.localStorage.getItem')`
 
 ❯ The codex-web login button click does not work yet (but I confirmed in the console there that `document.querySelector('button[data-testid="login-button"]').click()` works), and the browsers are not `^C`-able, see @ai/errors/7.txt
-
+<
 ❯ Can we turn off CSP?
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Disable WebKit's web security (CSP/CORS) for the login window to make auto-click work on chatgpt.com?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Disable CSP** (1/1) <kbd>Single Select</kbd><br>
+>> Disable WebKit's web security (CSP/CORS) for the login window to make auto-click work on chatgpt.com?
+> - [ ] 1\. No, keep clicking manually (Recommended)
+>   - _Leave login_hint as-is. One click, no security trade-off, no fragile GTK-internals dependency._
+> - [ ] 2\. Yes, disable it
+>   - _Reach into pywebview's private GTK internals to set disable-web-security=True on the WebView. Auto-click will work, but CSP/CORS protection is off for the actual login page, and this only works on the GTK backend._
+> - [x] 3\. _Type something:_
+>   - > What about `run_js`?
+>
+> </details>
+>
 
