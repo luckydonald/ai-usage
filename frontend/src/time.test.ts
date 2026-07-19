@@ -77,6 +77,11 @@ function seriesWithCurrentWindowEnd(end: string): GraphSeries {
   };
 }
 
+function seriesWithClosedWindowEnd(end: string): GraphSeries {
+  const [series] = [seriesWithCurrentWindowEnd(end)];
+  return { ...series, windows: series.windows.map((window) => ({ ...window, current: false })) };
+}
+
 describe("paddedChartEnd", () => {
   const start = new Date("2026-07-17T09:00:00Z");
   const end = new Date("2026-07-17T10:00:00Z");
@@ -96,6 +101,18 @@ describe("paddedChartEnd", () => {
     const series = [seriesWithCurrentWindowEnd("2026-07-17T13:00:00Z")];
     expect(paddedChartEnd("custom", start, end, series).getTime()).toBe(end.getTime());
     expect(paddedChartEnd("all", start, end, series).getTime()).toBe(end.getTime());
+  });
+
+  it("ignores non-current windows by default", () => {
+    const series = [seriesWithClosedWindowEnd("2026-07-17T13:00:00Z")];
+    const padded = paddedChartEnd("1h", start, end, series);
+    expect(padded.getTime() - end.getTime()).toBe((end.getTime() - start.getTime()) * 0.1);
+  });
+
+  it("includes non-current windows too when includeAllWindowEnds is on", () => {
+    const series = [seriesWithClosedWindowEnd("2026-07-17T13:00:00Z")];
+    const padded = paddedChartEnd("1h", start, end, series, true);
+    expect(padded.toISOString()).toBe("2026-07-17T13:00:00.000Z");
   });
 });
 
