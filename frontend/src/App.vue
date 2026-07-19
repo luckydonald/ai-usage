@@ -20,6 +20,7 @@ const rangeStart = ref<Date>(new Date());
 const rangeEnd = ref<Date>(new Date());
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localStorage.getItem("ai-usage-theme") && systemDark.matches));
+const includeAllWindowEnds = ref(localStorage.getItem("ai-usage-pad-all-windows") === "true");
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 let events: EventSource | undefined;
 
@@ -66,7 +67,7 @@ async function load(autoWiden = false): Promise<void> {
         : rangeForPreset(preset.value);
     rangeStart.value = start;
     series.value = await fetchSeries(start, end, filters);
-    rangeEnd.value = paddedChartEnd(preset.value, start, end, series.value);
+    rangeEnd.value = paddedChartEnd(preset.value, start, end, series.value, includeAllWindowEnds.value);
     pruneHiddenSeriesKeys();
     if (autoWiden && preset.value !== "custom" && series.value.every((item) => item.points.length === 0)) {
       const next = wideningOrder[wideningOrder.indexOf(preset.value) + 1];
@@ -97,6 +98,12 @@ function toggleSeries(key: string, visible: boolean): void {
 function toggleTheme(): void {
   dark.value = !dark.value;
   localStorage.setItem("ai-usage-theme", dark.value ? "dark" : "light");
+}
+
+function toggleIncludeAllWindowEnds(): void {
+  includeAllWindowEnds.value = !includeAllWindowEnds.value;
+  localStorage.setItem("ai-usage-pad-all-windows", includeAllWindowEnds.value ? "true" : "false");
+  void load();
 }
 
 onMounted(async () => {
@@ -132,6 +139,17 @@ onBeforeUnmount(() => events?.close());
         <select id="range" v-model="preset" @change="load()">
           <option v-for="(label, key) in presetLabels" :key="key" :value="key">{{ label }}</option>
         </select>
+      </div>
+      <div class="field field-checkbox" v-if="preset !== 'custom' && preset !== 'all'">
+        <label for="pad-all-windows">
+          <input
+            id="pad-all-windows"
+            type="checkbox"
+            :checked="includeAllWindowEnds"
+            @change="toggleIncludeAllWindowEnds"
+          />
+          Show every window's end
+        </label>
       </div>
       <template v-if="preset === 'custom'">
         <div class="field">

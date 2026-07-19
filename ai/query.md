@@ -1228,3 +1228,9 @@ Neither stops if I click close on the window.
 
 ❯ Add a small toggle for the "include end of all windows" mode, default off (= 10%).
 
+❯ Explain the changed math
+
+❯ Ah, bad prasing then. Just "include end of windows". Or don't, and just the 10%.
+
+❯ Nope, that would need an early `if (!includeWindowEnds) { return tenPercent; }` (well with the `new Date` math.)
+
