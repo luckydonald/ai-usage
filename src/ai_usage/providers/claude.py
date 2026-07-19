@@ -219,17 +219,19 @@ class ClaudeWebUsageProvider(Provider):
             LOGGER.warning("could not auto-detect Claude organization: %s", exception)
             return {}
         # end try
-        if len(organizations) == 1:
-            return {"org_id": organizations[0]["uuid"]}
+        if not organizations:
+            return {}
         # end if
         if len(organizations) > 1:
             LOGGER.warning(
-                "found %d Claude organizations; pass --org-id explicitly (%s)",
+                "found %d Claude organizations, defaulting to the first (%s); pass --org-id "
+                "explicitly to pick a different one (%s)",
                 len(organizations),
+                organizations[0].get("name"),
                 ", ".join(f"{org.get('name')}={org.get('uuid')}" for org in organizations),
             )
         # end if
-        return {}
+        return {"org_id": organizations[0]["uuid"]}
     # end def
 
     async def fetch(
