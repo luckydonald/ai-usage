@@ -1081,3 +1081,5 @@ Neither stops if I click close on the window.
 
 ❯ This shall be scraped from the API as well.
 
+❯ `ai-usage provider` is also not helpful at all. At least display the `--help` immediatly instead of telling the user to call it. This should be for all other commands like that as well!
+
