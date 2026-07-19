@@ -1170,3 +1170,5 @@ Neither stops if I click close on the window.
    - should eventually end up in the graphs as well, so e.g. double the limits being active can be seen historically.
 
 
+❯ plan it.
+
