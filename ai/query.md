@@ -1083,3 +1083,5 @@ Neither stops if I click close on the window.
 
 ❯ `ai-usage provider` is also not helpful at all. At least display the `--help` immediatly instead of telling the user to call it. This should be for all other commands like that as well!
 
+❯ It doesn't seem to extract the cookies from the browsers correctly. When I close the browser, I get errors. Test for both claude and codex, I'll do the login (or rather, did, as the session doesn't seem to log out). So either way, you should test which cookies are needed for the api requests.
+
