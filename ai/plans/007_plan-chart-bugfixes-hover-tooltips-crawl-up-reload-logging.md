@@ -108,7 +108,7 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [x] Shell completion staleness detection + versioned hashes
 - [x] Claude/Codex web login via pywebview
 - [x] Brand color generator per service
-- [ ] Fix animation replay on SSE refresh (A1)
+- [ ] Fix animation replay on SSE refresh (A1) *(in progress)*
 - [ ] Remove stray reset-line at y=100 (A2)
 - [ ] Future-axis padding for relative ranges (A3)
 - [ ] Hover tooltips: data plumbing + helpers (B)
