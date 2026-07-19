@@ -1249,3 +1249,12 @@ Neither stops if I click close on the window.
 
 ❯ /plan implement the remainders of @ai/plans/pending.md
 
+❯ Task Notification:
+> - Task `a5e28f5e121bcd99b` <kbd>completed</kbd>
+> - Tool `toolu_01VPPjhWqxabt67QjBUSFDkP`
+> - > Agent "Explore provider add advanced section" finished
+> - [Query (`555` chars, `555 B`)](output/agents/015.a5e28f5e121bcd99b/prompt.md)
+> - [Answer (`2227` chars, `2.18 KB`)](output/agents/015.a5e28f5e121bcd99b/result.md)
+> - [Raw log (`92492` chars, `90.4 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/adcfc14a-e186-4ac3-8c39-7880da11ec8a/tasks/a5e28f5e121bcd99b.output)
+> - `7` tools, `23810` tokens, `0.565233 s`
+
