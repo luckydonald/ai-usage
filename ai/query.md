@@ -1197,3 +1197,12 @@ Neither stops if I click close on the window.
 > </details>
 >
 
+❯ Task Notification:
+> - Task `ac22b7687e17bc930` <kbd>completed</kbd>
+> - Tool `toolu_01VQYxoT4r3ZcDFqF3iyux2U`
+> - > Agent "Explore crawl/up config watching code" finished
+> - [Query (`1534` chars, `1.51 KB`)](output/agents/012.ac22b7687e17bc930/prompt.md)
+> - [Answer (`9440` chars, `9.25 KB`)](output/agents/012.ac22b7687e17bc930/result.md)
+> - [Raw log (`253115` chars, `247 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/ac22b7687e17bc930.output)
+> - `21` tools, `53037` tokens, `1.8366 s`
+
