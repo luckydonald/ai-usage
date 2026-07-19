@@ -1258,3 +1258,12 @@ Neither stops if I click close on the window.
 > - [Raw log (`92492` chars, `90.4 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/adcfc14a-e186-4ac3-8c39-7880da11ec8a/tasks/a5e28f5e121bcd99b.output)
 > - `7` tools, `23810` tokens, `0.565233 s`
 
+❯ Task Notification:
+> - Task `a8b00168b0a7e1a0f` <kbd>completed</kbd>
+> - Tool `toolu_01TYzAapctgxbnipi2mpeUxH`
+> - > Agent "Explore claude statusline and model recording" finished
+> - [Query (`950` chars, `950 B`)](output/agents/016.a8b00168b0a7e1a0f/prompt.md)
+> - [Answer (`2965` chars, `2.9 KB`)](output/agents/016.a8b00168b0a7e1a0f/result.md)
+> - [Raw log (`207498` chars, `205 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/adcfc14a-e186-4ac3-8c39-7880da11ec8a/tasks/a8b00168b0a7e1a0f.output)
+> - `10` tools, `41290` tokens, `0.698933 s`
+
