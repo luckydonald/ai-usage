@@ -179,6 +179,54 @@ async def test_stale_result_is_not_treated_as_a_crawl_failure(tmp_path, monkeypa
 # end def
 
 
+@pytest.mark.asyncio
+async def test_tick_reports_account_and_git_backup_changes(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    database = Database(paths)
+    await database.migrate()
+    history = HistoryStore(paths, database)
+    config = ConfigStore(paths)
+    registry = ProviderRegistry()
+    registry.register(ChangingProvider())
+    messages: list[str] = []
+    collector = Collector(config, database, history, registry, reporter=messages.append)
+    crawler = Crawler(collector, config, database, reporter=messages.append)
+
+    await crawler.tick()
+    assert not any("Config reload" in message for message in messages)
+
+    account = AccountConfig(
+        id="reload-account", service="test-service", provider="changing", name="Reload account"
+    )
+    config.save_account(account)
+    await crawler.tick()
+    assert any("account added" in message and "reload-account" in message for message in messages)
+
+    messages.clear()
+    disabled = account.model_copy(update={"enabled": False})
+    config.save_account(disabled)
+    await crawler.tick()
+    assert any(
+        "account removed or disabled" in message and "reload-account" in message
+        for message in messages
+    )
+
+    messages.clear()
+    config.save_global_config({"git": {"enabled": True}})
+    await crawler.tick()
+    assert any("git backup enabled" in message for message in messages)
+
+    messages.clear()
+    config.save_global_config({"git": {"enabled": False}})
+    await crawler.tick()
+    assert any("git backup disabled" in message for message in messages)
+
+    await database.close()
+# end def
+
+
 def test_crawler_filters_accounts_restricted_to_other_hosts() -> None:
     unrestricted = AccountConfig(id="a", service="s", provider="p", name="Unrestricted")
     allowed = AccountConfig(
