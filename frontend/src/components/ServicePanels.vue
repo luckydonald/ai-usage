@@ -16,23 +16,31 @@ interface PanelEntry {
 
 interface ServicePanel {
   service: string;
+  accountId: string;
+  accountLabel: string;
   entries: PanelEntry[];
 }
 
 const panels = computed<ServicePanel[]>(() => {
-  const byService = new Map<string, GraphSeries[]>();
+  const byAccount = new Map<string, GraphSeries[]>();
   for (const item of props.series) {
-    const items = byService.get(item.service) ?? [];
+    const key = `${item.service}::${item.account_id}`;
+    const items = byAccount.get(key) ?? [];
     items.push(item);
-    byService.set(item.service, items);
+    byAccount.set(key, items);
   }
-  return [...byService.entries()].map(([service, items]) => ({
-    service,
-    entries: items.map((item) => ({
-      item,
-      window: item.windows.find((window) => window.current) ?? item.windows.at(-1),
-    })),
-  }));
+  return [...byAccount.values()].map((items) => {
+    const [first] = items;
+    return {
+      service: first!.service,
+      accountId: first!.account_id,
+      accountLabel: props.accountLabels[first!.account_id] ?? first!.account_id.slice(0, 8),
+      entries: items.map((item) => ({
+        item,
+        window: item.windows.find((window) => window.current) ?? item.windows.at(-1),
+      })),
+    };
+  });
 });
 
 function entryKey(entry: PanelEntry): string {
@@ -47,8 +55,8 @@ function statsHtml(entry: PanelEntry): string {
 
 <template>
   <section v-if="panels.length" class="info-panels" aria-label="Service info panels">
-    <div v-for="panel in panels" :key="panel.service" class="info-panel">
-      <h2>{{ panel.service }}</h2>
+    <div v-for="panel in panels" :key="`${panel.service}::${panel.accountId}`" class="info-panel">
+      <h2>{{ panel.service }} · {{ panel.accountLabel }}</h2>
       <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric" v-html="statsHtml(entry)" />
     </div>
   </section>
