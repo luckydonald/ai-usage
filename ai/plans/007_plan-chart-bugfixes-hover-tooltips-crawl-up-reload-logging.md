@@ -114,3 +114,4 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [ ] Hover tooltips: data plumbing + helpers (B)
 - [ ] Update/add frontend tests
 - [ ] crawl/up: log account add/remove + git-backup toggle (C)
+- [ ] Live verification: browser (chart) + crawl/up logging
