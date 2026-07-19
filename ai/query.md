@@ -1206,3 +1206,12 @@ Neither stops if I click close on the window.
 > - [Raw log (`253115` chars, `247 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/ac22b7687e17bc930.output)
 > - `21` tools, `53037` tokens, `1.8366 s`
 
+❯ Task Notification:
+> - Task `a7bebb8e048ebccc9` <kbd>completed</kbd>
+> - Tool `toolu_013t1g3Xfchrgcd87cqqZkbi`
+> - > Agent "Explore graph rendering code" finished
+> - [Query (`2017` chars, `1.98 KB`)](output/agents/013.a7bebb8e048ebccc9/prompt.md)
+> - [Answer (`13630` chars, `13.4 KB`)](output/agents/013.a7bebb8e048ebccc9/result.md)
+> - [Raw log (`202258` chars, `198 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/a7bebb8e048ebccc9.output)
+> - `16` tools, `46493` tokens, `6.13063 s`
+
