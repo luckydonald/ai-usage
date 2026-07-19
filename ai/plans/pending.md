@@ -53,3 +53,4 @@
      - Codex CLI:
        - > `• You have 3 usage limit resets available. Run /usage to use one.`
    - should eventually end up in the graphs as well, so e.g. double the limits being active can be seen historically.
+- Add a small toggle for the "include end of all windows" mode, default off (= 10%).
