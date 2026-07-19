@@ -1276,3 +1276,28 @@ Neither stops if I click close on the window.
 > - [Raw log (`218702` chars, `214 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/adcfc14a-e186-4ac3-8c39-7880da11ec8a/tasks/a833f8eec2caf87d4.output)
 > - `14` tools, `46318` tokens, `0.748167 s`
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Pending.md backlog big and mixed size. Which items this round?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Scope** (1/1) <kbd>Multi Select</kbd><br>
+>> Pending.md backlog big and mixed size. Which items this round?
+> - [x] 1\. Quick wins (Recommended) <sup><sub><kbd>#4</kbd></sub></sup>
+>   - _Provider add dedup listing fix + info panel polish (no capslock headline, account as chip). Small, clear._
+> - [x] 2\. Statusline fallback + model recording <sup><sub><kbd>#2</kbd></sub></sup>
+>   - _Claude statusline falls back to cli-usage when stale; add model field to Metric/storage, populate from claude+codex parsers._
+> - [x] 3\. Special events/notes tracking <sup><sub><kbd>#3</kbd></sub></sup>
+>   - _New subsystem: detect promo/limit-boost banners, store change-only, new storage tree, eventual graph display. Larger, multi-file._
+> - [x] 4\. Cross-account merge design <sup><sub><kbd>#1</kbd></sub></sup>
+>   - _Design-only question in backlog ("how would we best treat those") for aliasing same real account across providers. Needs your input on desired semantics before any plan, not just a bugfix._
+> - [x] 5\. _Type something:_
+>   - > all of them
+>
+> </details>
+>
+
