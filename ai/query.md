@@ -1089,3 +1089,25 @@ Neither stops if I click close on the window.
 
 ❯ Relaunch both
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Codex's 403s trace to Cloudflare fingerprinting httpx, not bad cookies. Switch its HTTP client to curl_cffi (TLS-impersonation) to fix this properly?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **curl_cffi swap** (1/1) <kbd>Single Select</kbd><br>
+>> Codex's 403s trace to Cloudflare fingerprinting httpx, not bad cookies. Switch its HTTP client to curl_cffi (TLS-impersonation) to fix this properly?
+> - [x] 1\. Yes, implement it (Recommended for Codex)
+>   - _Add curl_cffi as a dependency, replace httpx for CodexWebUsageProvider's requests (session endpoint + wham/usage) with a Chrome-impersonating client. Real fix, matches the actual root cause._
+> - [ ] 2\. Not yet — investigate Claude's failure first
+>   - _Claude's error was different (missing org_id from a silently-empty /api/organizations response) — check whether it's the same Cloudflare issue or something else before committing to curl_cffi._
+> - [ ] 3\. No, drop the web-login providers
+>   - _If Cloudflare is going to keep fighting this, reconsider whether cookie-based scraping is worth maintaining at all for these two._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
