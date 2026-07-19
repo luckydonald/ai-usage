@@ -1217,3 +1217,12 @@ Neither stops if I click close on the window.
 
 ❯ Then log the reload at least. Be verbose generally.
 
+❯ Task Notification:
+> - Task `a17c7080fd783aac2` <kbd>completed</kbd>
+> - Tool `toolu_01JyoFraAAgnUgZyMhSSKGeW`
+> - > Agent "Design graph bugfix + hover tooltip plan" finished
+> - [Query (`7380` chars, `7.24 KB`)](output/agents/014.a17c7080fd783aac2/prompt.md)
+> - [Answer (`19222` chars, `18.9 KB`)](output/agents/014.a17c7080fd783aac2/result.md)
+> - [Raw log (`268827` chars, `263 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/a17c7080fd783aac2.output)
+> - `16` tools, `58320` tokens, `7.41573 s`
+
