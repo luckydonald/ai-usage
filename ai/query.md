@@ -1087,3 +1087,5 @@ Neither stops if I click close on the window.
 
 ❯ Like do run the `add` commands for codex and claude, I'll login there, and then close the browser window, you have a look at the logs.
 
+❯ Relaunch both
+
