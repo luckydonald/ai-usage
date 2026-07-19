@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import httpx
+from curl_cffi.requests import AsyncSession
 from pydantic import BaseModel, ValidationError
 
 from ai_usage.models import (
@@ -209,8 +209,10 @@ class ClaudeWebUsageProvider(Provider):
             return {}
         # end if
         try:
-            async with httpx.AsyncClient(
-                timeout=20, cookies=cookies, base_url="https://claude.ai"
+            # claude.ai sits behind Cloudflare (see CodexWebUsageProvider for the full story) —
+            # impersonate a real Chrome TLS fingerprint so cf_clearance is honored.
+            async with AsyncSession(
+                timeout=20, cookies=cookies, base_url="https://claude.ai", impersonate="chrome",
             ) as client:
                 response = await client.get("/api/organizations")
                 response.raise_for_status()
@@ -254,8 +256,9 @@ class ClaudeWebUsageProvider(Provider):
         headers = (credential or {}).get("headers", {})
         observed = datetime.now(UTC)
         raw_payload: dict[str, Any] = {}
-        async with httpx.AsyncClient(
-            timeout=20, cookies=cookies, headers=headers, base_url="https://claude.ai"
+        async with AsyncSession(
+            timeout=20, cookies=cookies, headers=headers, base_url="https://claude.ai",
+            impersonate="chrome",
         ) as client:
             usage_response = await client.get(f"/api/organizations/{org_id}/usage")
             if usage_response.status_code != 200:

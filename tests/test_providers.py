@@ -28,6 +28,50 @@ from ai_usage.providers.codex import (
 from ai_usage.providers.copilot import CopilotBillingProvider, next_billing_reset
 
 
+class FakeCurlResponse:
+    """Stands in for a `curl_cffi.requests.Response` — respx only intercepts httpx, and
+    curl_cffi has no equivalent transport-mocking hook, so tests fake the session directly."""
+
+    def __init__(self, status_code: int, json_data) -> None:
+        self.status_code = status_code
+        self._json_data = json_data
+    # end def
+
+    def json(self):
+        return self._json_data
+    # end def
+
+    def raise_for_status(self) -> None:
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
+        # end if
+    # end def
+# end class
+
+
+class FakeCurlSession:
+    """Stands in for `curl_cffi.requests.AsyncSession`."""
+
+    def __init__(self, responses: dict[str, FakeCurlResponse], **kwargs) -> None:
+        del kwargs
+        self.responses = responses
+    # end def
+
+    async def __aenter__(self) -> FakeCurlSession:
+        return self
+    # end def
+
+    async def __aexit__(self, *args) -> None:
+        del args
+    # end def
+
+    async def get(self, path: str, headers=None) -> FakeCurlResponse:
+        del headers
+        return self.responses[path]
+    # end def
+# end class
+
+
 def test_codex_app_server_rate_limits() -> None:
     now = datetime.now(UTC)
     metrics = parse_rate_limits(
@@ -140,35 +184,34 @@ def test_claude_web_usage_payload_falls_back_on_schema_mismatch() -> None:
 
 
 @pytest.mark.asyncio
-@respx.mock
-async def test_claude_web_usage_provider_collects_identity_and_subscription() -> None:
+async def test_claude_web_usage_provider_collects_identity_and_subscription(monkeypatch) -> None:
     org_id = "e9abf7bc-490f-4c12-8490-d5b2d204e699"
-    respx.get(f"https://claude.ai/api/organizations/{org_id}/usage").mock(
-        return_value=httpx.Response(
+    responses = {
+        f"/api/organizations/{org_id}/usage": FakeCurlResponse(
             200,
-            json={
+            {
                 "five_hour": {"utilization": 16, "resets_at": "2026-07-18T14:40:00+00:00"},
                 "seven_day": {"utilization": 28, "resets_at": "2026-07-21T20:00:00+00:00"},
             },
-        )
-    )
-    respx.get("https://claude.ai/api/organizations").mock(
-        return_value=httpx.Response(
+        ),
+        "/api/organizations": FakeCurlResponse(
             200,
-            json=[
+            [
                 {
                     "uuid": org_id,
                     "name": "AbelmannConsulting",
                     "billing_type": "stripe_subscription",
                 }
             ],
-        )
-    )
-    respx.get("https://claude.ai/api/account").mock(
-        return_value=httpx.Response(200, json={"email_address": "user@example.com"})
-    )
-    respx.get(f"https://claude.ai/api/organizations/{org_id}/subscription_status").mock(
-        return_value=httpx.Response(200, json={"status": "active", "cancel_at_ts": None})
+        ),
+        "/api/account": FakeCurlResponse(200, {"email_address": "user@example.com"}),
+        f"/api/organizations/{org_id}/subscription_status": FakeCurlResponse(
+            200, {"status": "active", "cancel_at_ts": None}
+        ),
+    }
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.AsyncSession",
+        lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     account = AccountConfig(
         id="account", service="claude", provider="web", name="Claude", options={"org_id": org_id}
@@ -186,10 +229,11 @@ async def test_claude_web_usage_provider_collects_identity_and_subscription() ->
 
 
 @pytest.mark.asyncio
-@respx.mock
-async def test_claude_web_discover_options_auto_fills_single_organization() -> None:
-    respx.get("https://claude.ai/api/organizations").mock(
-        return_value=httpx.Response(200, json=[{"uuid": "org-1", "name": "Solo"}])
+async def test_claude_web_discover_options_auto_fills_single_organization(monkeypatch) -> None:
+    responses = {"/api/organizations": FakeCurlResponse(200, [{"uuid": "org-1", "name": "Solo"}])}
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.AsyncSession",
+        lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     discovered = await ClaudeWebUsageProvider().discover_options({"cookies": {"session": "x"}})
     assert discovered == {"org_id": "org-1"}
@@ -197,13 +241,17 @@ async def test_claude_web_discover_options_auto_fills_single_organization() -> N
 
 
 @pytest.mark.asyncio
-@respx.mock
-async def test_claude_web_discover_options_defaults_to_first_org_when_ambiguous() -> None:
-    respx.get("https://claude.ai/api/organizations").mock(
-        return_value=httpx.Response(
-            200,
-            json=[{"uuid": "org-1", "name": "Solo"}, {"uuid": "org-2", "name": "Team"}],
-        )
+async def test_claude_web_discover_options_defaults_to_first_org_when_ambiguous(
+    monkeypatch,
+) -> None:
+    responses = {
+        "/api/organizations": FakeCurlResponse(
+            200, [{"uuid": "org-1", "name": "Solo"}, {"uuid": "org-2", "name": "Team"}]
+        ),
+    }
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.AsyncSession",
+        lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     discovered = await ClaudeWebUsageProvider().discover_options({"cookies": {"session": "x"}})
     assert discovered == {"org_id": "org-1"}
@@ -240,42 +288,6 @@ def test_codex_web_usage_payload_falls_back_on_schema_mismatch() -> None:
     metrics = parse_codex_web_usage({"rate_limit": "not-an-object"}, datetime.now(UTC))
     assert metrics == []
 # end def
-
-
-class FakeCurlResponse:
-    def __init__(self, status_code: int, json_data) -> None:
-        self.status_code = status_code
-        self._json_data = json_data
-    # end def
-
-    def json(self):
-        return self._json_data
-    # end def
-# end class
-
-
-class FakeCurlSession:
-    """Stands in for `curl_cffi.requests.AsyncSession` — respx only intercepts httpx, and
-    curl_cffi has no equivalent transport-mocking hook, so tests fake the session directly."""
-
-    def __init__(self, responses: dict[str, FakeCurlResponse], **kwargs) -> None:
-        del kwargs
-        self.responses = responses
-    # end def
-
-    async def __aenter__(self) -> FakeCurlSession:
-        return self
-    # end def
-
-    async def __aexit__(self, *args) -> None:
-        del args
-    # end def
-
-    async def get(self, path: str, headers=None) -> FakeCurlResponse:
-        del headers
-        return self.responses[path]
-    # end def
-# end class
 
 
 @pytest.mark.asyncio
