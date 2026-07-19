@@ -64,17 +64,17 @@ app = typer.Typer(
     rich_markup_mode=None,
     add_completion=False,
 )
-provider_app = typer.Typer(rich_markup_mode=None)
+provider_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
 app.add_typer(provider_app, name="provider", help="Discover and manage configured provider accounts.")
-hosts_app = typer.Typer(rich_markup_mode=None)
+hosts_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
 provider_app.add_typer(
     hosts_app, name="hosts", help="Manage which machines are allowed to crawl an account."
 )
-config_app = typer.Typer(rich_markup_mode=None)
+config_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
 app.add_typer(
     config_app, name="config", help="View and change shared settings stored in config.yml."
 )
-config_git_app = typer.Typer(rich_markup_mode=None)
+config_git_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
 config_app.add_typer(
     config_git_app, name="git", help="Enable/disable the debounced git commit/push of the data directory."
 )
