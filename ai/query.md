@@ -1215,3 +1215,5 @@ Neither stops if I click close on the window.
 > - [Raw log (`202258` chars, `198 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/a7bebb8e048ebccc9.output)
 > - `16` tools, `46493` tokens, `6.13063 s`
 
+❯ Then log the reload at least. Be verbose generally.
+
