@@ -210,6 +210,9 @@ def capture_cookies_via_webview(
     finally:
         signal.signal(signal.SIGINT, previous_handler)
     # end try
-    LOGGER.warning("captured %d cookie(s): %s", len(captured), ", ".join(sorted(captured)))
+    # print(), not LOGGER.warning(): logging output from this function is unreliable — it went
+    # missing under `debug=True` in live testing despite working in isolation (root cause not yet
+    # found; low priority next to the Cloudflare-fingerprint finding below).
+    print(f"[ai-usage] captured {len(captured)} cookie(s): {', '.join(sorted(captured))}")
     return captured
 # end def
