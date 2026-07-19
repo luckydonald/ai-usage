@@ -20,7 +20,7 @@ const rangeStart = ref<Date>(new Date());
 const rangeEnd = ref<Date>(new Date());
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localStorage.getItem("ai-usage-theme") && systemDark.matches));
-const includeAllWindowEnds = ref(localStorage.getItem("ai-usage-pad-all-windows") === "true");
+const includeWindowEnds = ref(localStorage.getItem("ai-usage-pad-window-ends") === "true");
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 let events: EventSource | undefined;
 
@@ -67,7 +67,7 @@ async function load(autoWiden = false): Promise<void> {
         : rangeForPreset(preset.value);
     rangeStart.value = start;
     series.value = await fetchSeries(start, end, filters);
-    rangeEnd.value = paddedChartEnd(preset.value, start, end, series.value, includeAllWindowEnds.value);
+    rangeEnd.value = paddedChartEnd(preset.value, start, end, series.value, includeWindowEnds.value);
     pruneHiddenSeriesKeys();
     if (autoWiden && preset.value !== "custom" && series.value.every((item) => item.points.length === 0)) {
       const next = wideningOrder[wideningOrder.indexOf(preset.value) + 1];
@@ -100,9 +100,9 @@ function toggleTheme(): void {
   localStorage.setItem("ai-usage-theme", dark.value ? "dark" : "light");
 }
 
-function toggleIncludeAllWindowEnds(): void {
-  includeAllWindowEnds.value = !includeAllWindowEnds.value;
-  localStorage.setItem("ai-usage-pad-all-windows", includeAllWindowEnds.value ? "true" : "false");
+function toggleIncludeWindowEnds(): void {
+  includeWindowEnds.value = !includeWindowEnds.value;
+  localStorage.setItem("ai-usage-pad-window-ends", includeWindowEnds.value ? "true" : "false");
   void load();
 }
 
@@ -141,12 +141,12 @@ onBeforeUnmount(() => events?.close());
         </select>
       </div>
       <div class="field field-checkbox" v-if="preset !== 'custom' && preset !== 'all'">
-        <label for="pad-all-windows">
+        <label for="pad-window-ends">
           <input
-            id="pad-all-windows"
+            id="pad-window-ends"
             type="checkbox"
-            :checked="includeAllWindowEnds"
-            @change="toggleIncludeAllWindowEnds"
+            :checked="includeWindowEnds"
+            @change="toggleIncludeWindowEnds"
           />
           Show every window's end
         </label>

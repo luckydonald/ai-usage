@@ -86,33 +86,33 @@ describe("paddedChartEnd", () => {
   const start = new Date("2026-07-17T09:00:00Z");
   const end = new Date("2026-07-17T10:00:00Z");
 
-  it("pads by 10% of the timeframe when no current window reaches further", () => {
-    const padded = paddedChartEnd("1h", start, end, []);
-    expect(padded.getTime() - end.getTime()).toBe((end.getTime() - start.getTime()) * 0.1);
-  });
-
-  it("pads out to the last still-open window's end when that's further than 10%", () => {
+  it("pads by exactly 10% of the timeframe by default, ignoring windows entirely", () => {
     const series = [seriesWithCurrentWindowEnd("2026-07-17T13:00:00Z")];
-    const padded = paddedChartEnd("1h", start, end, series);
-    expect(padded.toISOString()).toBe("2026-07-17T13:00:00.000Z");
-  });
-
-  it("never pads custom or all-time ranges", () => {
-    const series = [seriesWithCurrentWindowEnd("2026-07-17T13:00:00Z")];
-    expect(paddedChartEnd("custom", start, end, series).getTime()).toBe(end.getTime());
-    expect(paddedChartEnd("all", start, end, series).getTime()).toBe(end.getTime());
-  });
-
-  it("ignores non-current windows by default", () => {
-    const series = [seriesWithClosedWindowEnd("2026-07-17T13:00:00Z")];
     const padded = paddedChartEnd("1h", start, end, series);
     expect(padded.getTime() - end.getTime()).toBe((end.getTime() - start.getTime()) * 0.1);
   });
 
-  it("includes non-current windows too when includeAllWindowEnds is on", () => {
-    const series = [seriesWithClosedWindowEnd("2026-07-17T13:00:00Z")];
+  it("pads out to the last still-open window's end when includeWindowEnds is on and that's further than 10%", () => {
+    const series = [seriesWithCurrentWindowEnd("2026-07-17T13:00:00Z")];
     const padded = paddedChartEnd("1h", start, end, series, true);
     expect(padded.toISOString()).toBe("2026-07-17T13:00:00.000Z");
+  });
+
+  it("still pads by 10% when includeWindowEnds is on but no current window reaches further", () => {
+    const padded = paddedChartEnd("1h", start, end, [], true);
+    expect(padded.getTime() - end.getTime()).toBe((end.getTime() - start.getTime()) * 0.1);
+  });
+
+  it("never pads custom or all-time ranges, even with includeWindowEnds on", () => {
+    const series = [seriesWithCurrentWindowEnd("2026-07-17T13:00:00Z")];
+    expect(paddedChartEnd("custom", start, end, series, true).getTime()).toBe(end.getTime());
+    expect(paddedChartEnd("all", start, end, series, true).getTime()).toBe(end.getTime());
+  });
+
+  it("ignores non-current windows even when includeWindowEnds is on", () => {
+    const series = [seriesWithClosedWindowEnd("2026-07-17T13:00:00Z")];
+    const padded = paddedChartEnd("1h", start, end, series, true);
+    expect(padded.getTime() - end.getTime()).toBe((end.getTime() - start.getTime()) * 0.1);
   });
 });
 
