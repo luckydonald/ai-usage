@@ -1172,3 +1172,28 @@ Neither stops if I click close on the window.
 
 ❯ plan it.
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Whole pending.md huge, many unrelated items. Which scope for this plan? (pick one or few, multi ok)
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Plan scope** (1/1) <kbd>Multi Select</kbd><br>
+>> Whole pending.md huge, many unrelated items. Which scope for this plan? (pick one or few, multi ok)
+> - [x] 1\. Graph bugs + hover tooltips <sup><sub><kbd>#1</kbd></sub></sup>
+>   - _Redraw-animation bug, stray 100% line, future-padding rule, plus rich hover info for points and max-blocks_
+> - [ ] 2\. provider add polish
+>   - _Hide already-discovered providers in advanced section; list-based lightweight selection instead of TUI lib_
+> - [x] 3\. Live config reload <sup><sub><kbd>#2</kbd></sub></sup>
+>   - _crawl/up pick up added/removed/reauthed services + autocommit setting change without restart_
+> - [ ] 4\. Other backend items
+>   - _Cross-provider account merging, model recording, promo/notes tracking, statusline fallback_
+> - [x] 5\. _Type something:_
+>   - > Note for later: Not removal of the TUI lib, but not a "create whole sub-windows via css" fat TUI lib. Something rathre slim and simple for terminal input selection and stuff.
+>
+> </details>
+>
+
