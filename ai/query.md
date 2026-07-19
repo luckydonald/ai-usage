@@ -1267,3 +1267,12 @@ Neither stops if I click close on the window.
 > - [Raw log (`207498` chars, `205 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/adcfc14a-e186-4ac3-8c39-7880da11ec8a/tasks/a8b00168b0a7e1a0f.output)
 > - `10` tools, `41290` tokens, `0.698933 s`
 
+❯ Task Notification:
+> - Task `a833f8eec2caf87d4` <kbd>completed</kbd>
+> - Tool `toolu_01VB7qbuX3YdzsinUDASANf6`
+> - > Agent "Explore special events/notes and cross-account merge" finished
+> - [Query (`1387` chars, `1.36 KB`)](output/agents/017.a833f8eec2caf87d4/prompt.md)
+> - [Answer (`3463` chars, `3.39 KB`)](output/agents/017.a833f8eec2caf87d4/result.md)
+> - [Raw log (`218702` chars, `214 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/adcfc14a-e186-4ac3-8c39-7880da11ec8a/tasks/a833f8eec2caf87d4.output)
+> - `14` tools, `46318` tokens, `0.748167 s`
+

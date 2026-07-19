@@ -1,0 +1,7 @@
+In this repo (/home/user/git/luckydonald/ai-usage), research two backlog items:
+
+1. "Special events / notes" tracking: the backlog wants to detect and store promo/limit-boost notices (e.g. Claude CLI's "+50% weekly limits promo through Aug 19" line, Codex CLI's "You have 3 usage limit resets available" line) — recorded only on change (not every crawl tick), stored per-provider but outside the normal crawl-events files, eventually shown on the graph. Find how the crawler currently parses CLI output for `claude`/`codex` providers (src/ai_usage/providers/), how crawl events are currently stored (file format/location, e.g. under ~/.ai-usage), and what similar "record on change only" pattern already exists (the crawler.py account-change/git-backup-toggle reporting logic added recently is one example — check if there's a similar diffing pattern for data storage, not just console reporting).
+
+2. Cross-provider "same data" account merging: backlog wants two provider configs (e.g. a CLI-based claude provider and a web-api claude provider) that are actually the same underlying account to be "treated as same" for the same account_id. Find the account/config model (src/ai_usage/config.py or similar) to see how accounts are currently identified/keyed, and whether there's already any grouping/aliasing concept.
+
+Report file:line for key structures for both, under 400 words total.
