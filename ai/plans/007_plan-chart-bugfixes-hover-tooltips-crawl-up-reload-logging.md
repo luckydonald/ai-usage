@@ -110,7 +110,7 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [x] Brand color generator per service
 - [x] Fix animation replay on SSE refresh (A1)
 - [x] Remove stray reset-line at y=100 (A2)
-- [ ] Future-axis padding for relative ranges (A3)
+- [x] Future-axis padding for relative ranges (A3)
 - [ ] Hover tooltips: data plumbing + helpers (B)
 - [ ] Update/add frontend tests
 - [ ] crawl/up: log account add/remove + git-backup toggle (C)
