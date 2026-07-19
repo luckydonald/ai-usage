@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { fetchCatalog, fetchSeries } from "./api";
 import UsageChart from "./components/UsageChart.vue";
-import { customRange, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
+import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
 import type { Catalog, Filters, GraphSeries } from "./types";
 
 const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280" });
@@ -52,6 +52,10 @@ function accountLabel(account: Catalog["accounts"][number]): string {
   return identityLabel ? `${account.name} (${identityLabel})` : account.name;
 }
 
+const accountLabels = computed<Record<string, string>>(() =>
+  Object.fromEntries(catalog.value.accounts.map((account) => [account.id, accountLabel(account)])),
+);
+
 async function load(autoWiden = false): Promise<void> {
   loading.value = true;
   error.value = "";
@@ -61,8 +65,8 @@ async function load(autoWiden = false): Promise<void> {
         ? customRange(customStartText.value, customEndText.value)
         : rangeForPreset(preset.value);
     rangeStart.value = start;
-    rangeEnd.value = end;
     series.value = await fetchSeries(start, end, filters);
+    rangeEnd.value = paddedChartEnd(preset.value, start, end, series.value);
     pruneHiddenSeriesKeys();
     if (autoWiden && preset.value !== "custom" && series.value.every((item) => item.points.length === 0)) {
       const next = wideningOrder[wideningOrder.indexOf(preset.value) + 1];
@@ -194,6 +198,7 @@ onBeforeUnmount(() => events?.close());
         :hidden-series-keys="hiddenSeriesKeys"
         :range-start="rangeStart"
         :range-end="rangeEnd"
+        :account-labels="accountLabels"
         @toggle-series="toggleSeries"
       />
     </main>

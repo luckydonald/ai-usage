@@ -1,3 +1,5 @@
+import type { GraphSeries } from "./types";
+
 export type TimePreset = "auto" | "1h" | "3h" | "6h" | "12h" | "day" | "week" | "month" | "year" | "all" | "custom";
 
 export const presetLabels: Record<TimePreset, string> = {
@@ -41,6 +43,42 @@ export function rangeForPreset(preset: TimePreset, now = new Date()): [Date, Dat
 }
 
 export const wideningOrder: TimePreset[] = ["1h", "3h", "6h", "12h", "day", "week", "month", "year", "all"];
+
+// Extends `end` into the future on relative ranges so a still-open window's projection/reset boundary
+// stays visible, without ever pulling in future padding for "custom" or "all time" ranges.
+export function paddedChartEnd(preset: TimePreset, start: Date, end: Date, series: GraphSeries[]): Date {
+  if (preset === "custom" || preset === "all") return end;
+  const duration = end.getTime() - start.getTime();
+  const tenPercent = duration * 0.1;
+  let lastCurrentWindowEnd: number | undefined;
+  for (const item of series) {
+    for (const window of item.windows) {
+      if (!window.current) continue;
+      const windowEnd = new Date(window.end).getTime();
+      if (lastCurrentWindowEnd === undefined || windowEnd > lastCurrentWindowEnd) lastCurrentWindowEnd = windowEnd;
+    }
+  }
+  const timeUntilLastWindowEnd = lastCurrentWindowEnd === undefined ? 0 : Math.max(0, lastCurrentWindowEnd - end.getTime());
+  const padding = Math.max(tenPercent, timeUntilLastWindowEnd);
+  return new Date(end.getTime() + padding);
+}
+
+const MS_PER_MINUTE = 60 * 1000;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+// Picks the two largest non-zero units among days/hours/minutes, e.g. "2h 32m", "3d 4h", "<1m".
+export function formatDuration(ms: number): string {
+  const magnitude = Math.abs(ms);
+  if (magnitude < MS_PER_MINUTE) return "<1m";
+  const days = Math.floor(magnitude / MS_PER_DAY);
+  const hours = Math.floor((magnitude % MS_PER_DAY) / MS_PER_HOUR);
+  const minutes = Math.floor((magnitude % MS_PER_HOUR) / MS_PER_MINUTE);
+  const sign = ms < 0 ? "-" : "";
+  if (days > 0) return `${sign}${days}d ${hours}h`;
+  if (hours > 0) return `${sign}${hours}h ${minutes}m`;
+  return `${sign}${minutes}m`;
+}
 
 // Both dates are inclusive: `startText`'s whole day through `endText`'s whole day, in local time.
 export function customRange(startText: string, endText: string): [Date, Date] {
