@@ -205,6 +205,7 @@ class ClaudeWebUsageProvider(Provider):
     async def discover_options(self, credential: dict[str, Any] | None) -> dict[str, Any]:
         cookies = (credential or {}).get("cookies") or {}
         if not cookies:
+            LOGGER.warning("could not auto-detect Claude organization: no cookies were captured")
             return {}
         # end if
         try:
@@ -220,6 +221,12 @@ class ClaudeWebUsageProvider(Provider):
             return {}
         # end try
         if not organizations:
+            LOGGER.warning(
+                "could not auto-detect Claude organization: /api/organizations returned no "
+                "organizations for the captured cookies (%d cookie(s): %s)",
+                len(cookies),
+                ", ".join(sorted(cookies)),
+            )
             return {}
         # end if
         if len(organizations) > 1:
