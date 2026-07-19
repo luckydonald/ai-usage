@@ -1239,3 +1239,5 @@ Neither stops if I click close on the window.
 
 ❯ Split them by account though.
 
+❯ No need to repeat the headline.
+
