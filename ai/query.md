@@ -1079,3 +1079,5 @@ Neither stops if I click close on the window.
 
 ❯ click.exceptions.ClickException: Claude private web API login succeeded but the first fetch failed: Claude web provider requires an 'org_id' option
 
+❯ This shall be scraped from the API as well.
+
