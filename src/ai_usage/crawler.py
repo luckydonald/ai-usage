@@ -9,7 +9,7 @@ from fastscheduler import FastScheduler
 from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
 from ai_usage.database import Database
-from ai_usage.git_backup import maybe_run_git_backup
+from ai_usage.git_backup import git_backup_enabled, maybe_run_git_backup
 from ai_usage.host_identity import account_allows_host
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.orm import CrawlStateRecord
@@ -41,6 +41,32 @@ class Crawler:
         self.report = reporter
         self.host_id = host_id
         self.scheduler: FastScheduler | None = None
+        self.known_account_ids: set[str] | None = None
+        self.git_backup_was_enabled: bool | None = None
+    # end def
+
+    def report_account_changes(self, accounts: list[AccountConfig]) -> None:
+        current_ids = {account.id for account in accounts}
+        if self.known_account_ids is not None:
+            by_id = {account.id: account for account in accounts}
+            for added_id in current_ids - self.known_account_ids:
+                account = by_id[added_id]
+                label = f"{account.service}/{account.name} ({account.id})"
+                self.report(f"Config reload: account added - {label}.")
+            # end for
+            for removed_id in self.known_account_ids - current_ids:
+                self.report(f"Config reload: account removed or disabled - {removed_id}.")
+            # end for
+        # end if
+        self.known_account_ids = current_ids
+    # end def
+
+    def report_git_backup_toggle(self) -> None:
+        enabled = git_backup_enabled(self.config)
+        if self.git_backup_was_enabled is not None and enabled != self.git_backup_was_enabled:
+            self.report(f"Config reload: git backup {'enabled' if enabled else 'disabled'}.")
+        # end if
+        self.git_backup_was_enabled = enabled
     # end def
 
     def accounts_for_this_host(self, accounts: list[AccountConfig]) -> list[AccountConfig]:
@@ -65,6 +91,8 @@ class Crawler:
 
     async def tick(self) -> None:
         accounts = self.accounts_for_this_host(self.config.list_accounts())
+        self.report_account_changes(accounts)
+        self.report_git_backup_toggle()
         await self.ensure_states(accounts)
         now = datetime.now(UTC)
         due: list[AccountConfig] = []
@@ -79,6 +107,8 @@ class Crawler:
         if not due:
             return
         # end if
+        due_names = ", ".join(account.name for account in due)
+        self.report(f"Crawling {len(due)} account(s) due for a check: {due_names}.")
         results = await self.collector.fetch_all(due, operation="crawling")
         for account, result in zip(due, results, strict=True):
             await self.update_state(account, result, now)
