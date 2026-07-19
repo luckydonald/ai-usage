@@ -46,28 +46,28 @@ export const wideningOrder: TimePreset[] = ["1h", "3h", "6h", "12h", "day", "wee
 
 // Extends `end` into the future on relative ranges so a still-open window's projection/reset boundary
 // stays visible, without ever pulling in future padding for "custom" or "all time" ranges.
-// `includeAllWindowEnds` (default off): off pads to the furthest still-*current* window's end only;
-// on pads to the furthest end among *every* window (current or not), for users who want every window's
-// reset boundary visible at once rather than just the 10%-of-timeframe default.
+// `includeWindowEnds` (default off): off always pads by exactly 10% of the timeframe; on also considers
+// every still-current window's end, padding further out if one of those is later than the 10% mark.
 export function paddedChartEnd(
   preset: TimePreset,
   start: Date,
   end: Date,
   series: GraphSeries[],
-  includeAllWindowEnds = false,
+  includeWindowEnds = false,
 ): Date {
   if (preset === "custom" || preset === "all") return end;
   const duration = end.getTime() - start.getTime();
   const tenPercent = duration * 0.1;
-  let lastWindowEnd: number | undefined;
+  if (!includeWindowEnds) return new Date(end.getTime() + tenPercent);
+  let lastCurrentWindowEnd: number | undefined;
   for (const item of series) {
     for (const window of item.windows) {
-      if (!includeAllWindowEnds && !window.current) continue;
+      if (!window.current) continue;
       const windowEnd = new Date(window.end).getTime();
-      if (lastWindowEnd === undefined || windowEnd > lastWindowEnd) lastWindowEnd = windowEnd;
+      if (lastCurrentWindowEnd === undefined || windowEnd > lastCurrentWindowEnd) lastCurrentWindowEnd = windowEnd;
     }
   }
-  const timeUntilLastWindowEnd = lastWindowEnd === undefined ? 0 : Math.max(0, lastWindowEnd - end.getTime());
+  const timeUntilLastWindowEnd = lastCurrentWindowEnd === undefined ? 0 : Math.max(0, lastCurrentWindowEnd - end.getTime());
   const padding = Math.max(tenPercent, timeUntilLastWindowEnd);
   return new Date(end.getTime() + padding);
 }
