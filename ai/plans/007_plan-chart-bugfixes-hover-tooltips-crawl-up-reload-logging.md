@@ -111,7 +111,7 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [x] Fix animation replay on SSE refresh (A1)
 - [x] Remove stray reset-line at y=100 (A2)
 - [x] Future-axis padding for relative ranges (A3)
-- [ ] Hover tooltips: data plumbing + helpers (B)
+- [x] Hover tooltips: data plumbing + helpers (B)
 - [ ] Update/add frontend tests
 - [ ] crawl/up: log account add/remove + git-backup toggle (C)
 - [ ] Live verification: browser (chart) + crawl/up logging
