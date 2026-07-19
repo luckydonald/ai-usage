@@ -1,0 +1,16 @@
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Press Ctrl-C again to exit                                                                                                                     0 tokens
+^Cuser@fedora-3:~/git/luckydonald/ai-usage$
+user@fedora-3:~/git/luckydonald/ai-usage$
+user@fedora-3:~/git/luckydonald/ai-usage$ claude
+ ▐▛███▜▌   Claude Code v2.1.215
+▝▜█████▛▘  Sonnet 5 with medium effort · Claude Team
+  ▘▘ ▝▝    ~/git/luckydonald/ai-usage
+
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏸ manual mode on · install gh for PR status · ← for agents                                                                                     0 tokens
+                                                                                                                                          ⧉ In normal.txt
+
