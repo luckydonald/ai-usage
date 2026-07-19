@@ -29,8 +29,9 @@
         - the one immediately before was not yet
           - the time between that one and the "end one" is not too big
         - show something along the lines of _right on spot!_ as if it's wii sports.
-  - the
+  - the future graph has pretty similar details. And telling you to slow down or if you can do more work, and by which factor.
 - Graph issues
+  - it still refreshes completely every 10 or so seconds, causing another left-to-right-graph-draw animation. That animation is only allowed on page load the initial draw of a line. After that it's forbidden!
   - At the top of the graph (100%) there's a stray line whenever there's a max-growth-box being displayed. Remove the line.
   - On all relative time ranges, the graph should always display `max(`10% of the selected timeframe`,` the last closing of a window still running`)`  into the future, to allow for showing the prognosis.
 - I want to mark two providers as providing the "same" data. Basically same `provider` + `account` would be treated the same.
