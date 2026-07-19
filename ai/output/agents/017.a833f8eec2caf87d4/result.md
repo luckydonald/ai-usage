@@ -1,0 +1,17 @@
+## Findings
+
+### 1. Special events / notes tracking
+
+**CLI output parsing** happens in the provider modules:
+- Claude CLI: `src/ai_usage/providers/claude.py:83-99` (`parse_usage_output`) parses `/usage` terminal output via `SECTION_PATTERN` regex (`claude.py:38-42`) into `Metric` objects — no other lines (like promo banners) are captured or passed through; everything not matching the section regex is discarded. Raw text is only briefly available in `run_claude_usage` (`claude.py:431-459`).
+- Codex CLI: `src/ai_usage/providers/codex.py:391-408` (`parse_codex_status`) parses `/status` output via `STATUS_PATTERN` (`codex.py:30-34`), plus a separate `STALE_WARNING_PATTERN` (`codex.py:36`) that's checked against raw output in `CodexStatusProvider.fetch` (`codex.py:419-441`) — this is the closest existing example of pulling a *non-metric* signal out of the same raw text and surfacing it (as `FetchStatus.STALE`/`error` string), but it's not persisted anywhere, just returned per-fetch.
+
+**Crawl event storage**: `HistoryEvent` model (`src/ai_usage/models.py:136-144`) is one JSON line per metric, appended to per-account/per-metric/per-day JSONL files at `~/.ai-usage/history/v1/{service}/{account_id}/{metric_key}/{YYYY}/{MM}/{DD}/{source_id}.jsonl` (path built in `src/ai_usage/history.py:40-53`, appended in `history.py:55-77`). These are indexed into SQLite (`MetricSampleRecord`) via `index_file` (`history.py:105-`). Any new "notes" store should live outside this metric-keyed tree (e.g. a sibling `notes/` directory under `paths.history` or `paths.local`), since it isn't keyed by `metric.key`/observed windows.
+
+**"Record on change only" pattern**: `src/ai_usage/crawler.py:48-70` — `Crawler.report_account_changes()` and `Crawler.report_git_backup_toggle()` both keep in-memory previous state (`self.known_account_ids`, `self.git_backup_was_enabled`) and only call `self.report(...)` (console-only) when the new value differs from the last-seen value; nothing is persisted to disk. There is **no existing example of diffing text/state and persisting only the delta to a file** — this would be new code, modeled after that in-memory diff logic but writing to a small JSON/JSONL file (analogous to `history.py`'s append pattern) instead of only reporting to console.
+
+### 2. Cross-provider account merging
+
+Accounts are stored one YAML file per account at `~/.ai-usage/services/{service}/{account_id}.yml` (`src/ai_usage/config.py:66-99`), keyed by a generated `uuid.uuid7()` `AccountConfig.id` (`config.py:118-129`, model at `src/ai_usage/models.py:118-133`). There is no field linking two `AccountConfig`s as "the same underlying account" — `discovery_fingerprint` (`models.py:126`) is only used to re-match a *rediscovered* account of the same service+provider (`config.py:131-158`), not to alias across providers (e.g. `claude/statusline` vs `claude/web`).
+
+The existing "grouping" concept is **manual, one-time merge**, not live aliasing: `provider_accounts.py:120-170` (`merge_account_history`) physically moves all history files/DB rows from `source.id` to `target.id` and deletes the source account (invoked via `ai-usage provider merge` CLI command, `cli.py:1022-1065`). Graphing groups by the tuple `(service, provider, account_id, metric_key)` (`src/ai_usage/graph.py:79-91`), so today two configs pointing at the same real account only get combined by running this merge and deleting one config — there's no persistent alias/group table.
