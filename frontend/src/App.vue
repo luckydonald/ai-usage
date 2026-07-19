@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { fetchCatalog, fetchSeries } from "./api";
+import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
 import type { Catalog, Filters, GraphSeries } from "./types";
@@ -219,6 +220,7 @@ onBeforeUnmount(() => events?.close());
         :account-labels="accountLabels"
         @toggle-series="toggleSeries"
       />
+      <ServicePanels v-if="series.length" :series="series" :account-labels="accountLabels" />
     </main>
   </div>
 </template>
