@@ -1085,3 +1085,5 @@ Neither stops if I click close on the window.
 
 ❯ It doesn't seem to extract the cookies from the browsers correctly. When I close the browser, I get errors. Test for both claude and codex, I'll do the login (or rather, did, as the session doesn't seem to log out). So either way, you should test which cookies are needed for the api requests.
 
+❯ Like do run the `add` commands for codex and claude, I'll login there, and then close the browser window, you have a look at the logs.
+
