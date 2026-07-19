@@ -1075,3 +1075,5 @@ Neither stops if I click close on the window.
 > </details>
 >
 
+❯ The browser flows should call the required endpoints (basically do a first `fetch` api wise) before successfully adding it as a service.
+
