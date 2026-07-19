@@ -1234,3 +1234,6 @@ Neither stops if I click close on the window.
 
 ❯ Nope, that would need an early `if (!includeWindowEnds) { return tenPercent; }` (well with the `new Date` math.)
 
+❯ Add info panels for each service, containing each metric of that.
+  - For that the same stats as previously discussed.
+
