@@ -1055,3 +1055,23 @@ Neither stops if I click close on the window.
 
 ❯ Can we append a `<script>` with a nonce to the HTML?
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Want me to attempt the UserContentManager.add_script() route — untested, reaches into pywebview's private GTK internals, may not even work?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Try user-script** (1/1) <kbd>Single Select</kbd><br>
+>> Want me to attempt the UserContentManager.add_script() route — untested, reaches into pywebview's private GTK internals, may not even work?
+> - [ ] 1\. No, keep clicking manually (Recommended)
+>   - _Stop here. login_hint stays as the answer, no more time sunk into an uncertain workaround for a one-click problem._
+> - [x] 2\. Yes, give it a shot
+>   - _I'll implement it and we test live — no guarantee it bypasses CSP here, and it's GTK-only/fragile if it does work._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
