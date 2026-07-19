@@ -1077,3 +1077,5 @@ Neither stops if I click close on the window.
 
 ❯ The browser flows should call the required endpoints (basically do a first `fetch` api wise) before successfully adding it as a service.
 
+❯ click.exceptions.ClickException: Claude private web API login succeeded but the first fetch failed: Claude web provider requires an 'org_id' option
+
