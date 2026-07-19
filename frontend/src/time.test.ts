@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { customRange, rangeForPreset, subtractCalendarMonth, toDateInputValue, wideningOrder } from "./time";
+import { customRange, formatDuration, paddedChartEnd, rangeForPreset, subtractCalendarMonth, toDateInputValue, wideningOrder } from "./time";
+import type { GraphSeries } from "./types";
 
 describe("calendar month range", () => {
   it("uses the same day in the preceding month", () => {
@@ -60,6 +61,55 @@ describe("custom range", () => {
   it("pads single-digit months and days", () => {
     const date = new Date(2026, 0, 9);
     expect(toDateInputValue(date)).toBe("2026-01-09");
+  });
+});
+
+function seriesWithCurrentWindowEnd(end: string): GraphSeries {
+  return {
+    service: "codex",
+    provider: "app-server",
+    account_id: "account",
+    metric_key: "five-hours",
+    metric_name: "Five hours",
+    color: "#f97316",
+    points: [],
+    windows: [{ start: "2026-07-17T09:00:00Z", end, maximum_percentage: 40, exhausted_from: null, current: true, projected_end_percentage: null }],
+  };
+}
+
+describe("paddedChartEnd", () => {
+  const start = new Date("2026-07-17T09:00:00Z");
+  const end = new Date("2026-07-17T10:00:00Z");
+
+  it("pads by 10% of the timeframe when no current window reaches further", () => {
+    const padded = paddedChartEnd("1h", start, end, []);
+    expect(padded.getTime() - end.getTime()).toBe((end.getTime() - start.getTime()) * 0.1);
+  });
+
+  it("pads out to the last still-open window's end when that's further than 10%", () => {
+    const series = [seriesWithCurrentWindowEnd("2026-07-17T13:00:00Z")];
+    const padded = paddedChartEnd("1h", start, end, series);
+    expect(padded.toISOString()).toBe("2026-07-17T13:00:00.000Z");
+  });
+
+  it("never pads custom or all-time ranges", () => {
+    const series = [seriesWithCurrentWindowEnd("2026-07-17T13:00:00Z")];
+    expect(paddedChartEnd("custom", start, end, series).getTime()).toBe(end.getTime());
+    expect(paddedChartEnd("all", start, end, series).getTime()).toBe(end.getTime());
+  });
+});
+
+describe("formatDuration", () => {
+  it("formats sub-minute durations", () => {
+    expect(formatDuration(0)).toBe("<1m");
+  });
+
+  it("formats hours and minutes", () => {
+    expect(formatDuration(150 * 60_000)).toBe("2h 30m");
+  });
+
+  it("formats days and hours", () => {
+    expect(formatDuration(26 * 3_600_000)).toBe("1d 2h");
   });
 });
 

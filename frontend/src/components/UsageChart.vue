@@ -12,6 +12,7 @@ const props = defineProps<{
   hiddenSeriesKeys: string[];
   rangeStart: Date;
   rangeEnd: Date;
+  accountLabels: Record<string, string>;
 }>();
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
@@ -38,6 +39,8 @@ function render(recreate: boolean): void {
       legendSelected: legendSelected(),
       start: props.rangeStart,
       end: props.rangeEnd,
+      animate: recreate || isNew,
+      accountLabels: props.accountLabels,
     }),
     recreate || isNew,
   );
@@ -61,7 +64,7 @@ onMounted(() => {
 });
 watch(() => props.dark, () => render(true));
 watch(
-  () => [props.series, props.exhaustedColor, props.hiddenSeriesKeys, props.rangeStart, props.rangeEnd],
+  () => [props.series, props.exhaustedColor, props.hiddenSeriesKeys, props.rangeStart, props.rangeEnd, props.accountLabels],
   () => render(false),
   { deep: true },
 );
