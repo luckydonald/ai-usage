@@ -6,6 +6,7 @@ base install doesn't need a system webview toolkit (WebKitGTK/WKWebView/WebView2
 
 import logging
 import signal
+import threading
 from urllib.parse import urlsplit
 
 from ai_usage.providers.base import ProviderError
@@ -118,6 +119,23 @@ def capture_cookies_via_webview(
     initial = urlsplit(url)
     state = {"left_initial_domain": False, "clicked": False, "userscript_installed": False}
     captured: dict[str, str] = {}
+    destroy_lock = threading.Lock()
+    destroyed = {"value": False}
+
+    def destroy_once() -> None:
+        # `window.destroy()` is called both from `on_loaded` (a background thread — pywebview's
+        # `loaded` event isn't main-thread-locked) and from the SIGINT handler (the main thread,
+        # whenever Python regains control). Without this guard, both can race and call it at
+        # nearly the same instant, double-destroying the underlying GTK widget — this reliably
+        # reproduced as `free(): corrupted unsorted chunks`, a native heap-corruption crash.
+        with destroy_lock:
+            if destroyed["value"]:
+                return
+            # end if
+            destroyed["value"] = True
+            window.destroy()
+        # end with
+    # end def
 
     def on_before_load() -> None:
         if click_selector:
@@ -160,7 +178,7 @@ def capture_cookies_via_webview(
             # end try
         # end if
         if state["left_initial_domain"] or current.path.rstrip("/") != initial.path.rstrip("/"):
-            window.destroy()
+            destroy_once()
         # end if
     # end def
 
@@ -174,7 +192,7 @@ def capture_cookies_via_webview(
         # default asyncio SIGINT handler just raises KeyboardInterrupt repeatedly with no effect.
         # Closing the window directly from here actually breaks the loop.
         del signum, frame
-        window.destroy()
+        destroy_once()
     # end def
 
     previous_handler = signal.signal(signal.SIGINT, handle_sigint)
@@ -192,5 +210,6 @@ def capture_cookies_via_webview(
     finally:
         signal.signal(signal.SIGINT, previous_handler)
     # end try
+    LOGGER.info("captured %d cookie(s): %s", len(captured), ", ".join(sorted(captured)))
     return captured
 # end def

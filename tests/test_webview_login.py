@@ -305,6 +305,41 @@ def test_capture_cookies_via_webview_closes_the_window_on_sigint(monkeypatch) ->
 # end def
 
 
+def test_capture_cookies_via_webview_only_destroys_the_window_once(monkeypatch) -> None:
+    # Regression test for a real crash: `window.destroy()` used to be called from both the
+    # navigation-triggered auto-close (on_loaded, background thread) and a SIGINT arriving around
+    # the same time (main thread) with no guard — a double-destroy that corrupted GTK's native
+    # state (`free(): corrupted unsorted chunks`). Simulates both firing for the same window.
+    cookies = SimpleCookie()
+    cookies["session"] = "abc123"
+    window = install_fake_webview(
+        monkeypatch, cookies, urls=["https://claude.ai/login", "https://claude.ai/new"]
+    )
+    destroy_calls: list[None] = []
+    real_destroy = window.destroy
+
+    def counting_destroy() -> None:
+        destroy_calls.append(None)
+        real_destroy()
+    # end def
+
+    window.destroy = counting_destroy
+
+    def start_with_redundant_sigint(**kwargs) -> None:
+        del kwargs
+        window.simulate_navigation()  # path changes claude.ai/login -> /new: auto-destroys once
+        os.kill(os.getpid(), signal.SIGINT)  # redundant second attempt right after
+    # end def
+
+    monkeypatch.setattr(sys.modules["webview"], "start", start_with_redundant_sigint)
+
+    result = capture_cookies_via_webview("https://claude.ai/login", "Claude")
+
+    assert result == {"session": "abc123"}
+    assert len(destroy_calls) == 1
+# end def
+
+
 def test_capture_cookies_via_webview_raises_a_clear_error_when_pywebview_is_missing(
     monkeypatch,
 ) -> None:
