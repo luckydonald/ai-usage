@@ -1226,3 +1226,5 @@ Neither stops if I click close on the window.
 > - [Raw log (`268827` chars, `263 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c903d647-174d-46f2-8c61-8cf39dc278f1/tasks/a17c7080fd783aac2.output)
 > - `16` tools, `58320` tokens, `7.41573 s`
 
+❯ Add a small toggle for the "include end of all windows" mode, default off (= 10%).
+
