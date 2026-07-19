@@ -81,6 +81,16 @@ def test_root_help_groups_commands_into_sections() -> None:
 # end def
 
 
+def test_bare_subgroups_show_help_instead_of_a_missing_command_error() -> None:
+    for args in (["provider"], ["provider", "hosts"], ["config"], ["config", "git"]):
+        result = CliRunner().invoke(main, args)
+        assert "Usage:" in result.output
+        assert "Commands:" in result.output
+        assert "Missing command" not in result.output
+    # end for
+# end def
+
+
 def test_no_input_add_lists_choices_without_creating_runtime(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
