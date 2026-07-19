@@ -49,7 +49,7 @@ function entryKey(entry: PanelEntry): string {
 
 function statsHtml(entry: PanelEntry): string {
   if (!entry.window) return "No window data yet.";
-  return windowTooltipHtml(entry.item, entry.window, new Date(), props.accountLabels);
+  return windowTooltipHtml(entry.item, entry.window, new Date(), props.accountLabels, false);
 }
 </script>
 
@@ -57,7 +57,10 @@ function statsHtml(entry: PanelEntry): string {
   <section v-if="panels.length" class="info-panels" aria-label="Service info panels">
     <div v-for="panel in panels" :key="`${panel.service}::${panel.accountId}`" class="info-panel">
       <h2>{{ panel.service }} · {{ panel.accountLabel }}</h2>
-      <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric" v-html="statsHtml(entry)" />
+      <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric">
+        <h3>{{ entry.item.metric_name }}</h3>
+        <p v-html="statsHtml(entry)" />
+      </div>
     </div>
   </section>
 </template>
@@ -100,8 +103,15 @@ function statsHtml(entry: PanelEntry): string {
     border-top: 1px solid var(--border);
   }
 
-  :deep(strong) {
+  h3 {
+    margin: 0 0 .25rem;
+    font-size: .85rem;
+    font-weight: 700;
     color: var(--text);
+  }
+
+  p {
+    margin: 0;
   }
 }
 </style>

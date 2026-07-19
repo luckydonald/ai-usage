@@ -111,13 +111,16 @@ export function windowTooltipHtml(
   window: GraphWindow,
   now: Date,
   accountLabels: Record<string, string>,
+  includeHeader = true,
 ): string {
   const stats = computeWindowStats(item.points, window, now);
-  const lines = [
-    `<strong>${accountLabelFor(item, accountLabels)} · ${item.metric_name}</strong>`,
+  const lines = includeHeader
+    ? [`<strong>${accountLabelFor(item, accountLabels)} · ${item.metric_name}</strong>`]
+    : [];
+  lines.push(
     `${new Date(window.start).toLocaleString()} → ${new Date(window.end).toLocaleString()}`,
     `Peak usage: ${stats.maximumPercentage.toFixed(1)}%`,
-  ];
+  );
   if (stats.burnRatePerHour !== null) {
     lines.push(`Burn rate: ${stats.burnRatePerHour.toFixed(1)}%/h`);
   }

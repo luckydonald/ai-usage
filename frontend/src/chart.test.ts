@@ -186,4 +186,13 @@ describe("tooltip HTML", () => {
     expect(html).toContain("person@example.com");
     expect(html).toContain("40.0%");
   });
+
+  it("omits the account/metric header line when includeHeader is false", () => {
+    const [window] = series.windows;
+    if (!window) throw new Error("fixture must define a window");
+    const html = windowTooltipHtml(series, window, new Date("2026-07-17T12:00:00Z"), { account: "person@example.com" }, false);
+    expect(html).not.toContain("person@example.com");
+    expect(html).not.toContain("<strong>");
+    expect(html).toContain("40.0%");
+  });
 });
