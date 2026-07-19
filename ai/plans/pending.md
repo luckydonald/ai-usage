@@ -56,3 +56,6 @@
 - Add a small toggle for the "include end of windows" mode, default off (= 10%).
 - Add info panels for each service, containing each metric of that.
   - For that the same stats as previously discussed.
+  - No need to repeat the headline
+  - Don't capslock the provider/account headline
+  - Have the account below that as some tag/chip/bubble thing.
