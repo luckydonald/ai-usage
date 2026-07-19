@@ -35,6 +35,7 @@ class FakeEventSlot:
 
 class FakeEvents:
     def __init__(self) -> None:
+        self.before_load = FakeEventSlot()
         self.loaded = FakeEventSlot()
     # end def
 # end class
@@ -48,6 +49,9 @@ class FakeWindow:
         self._url_index = -1
         self.destroyed = False
         self.evaluated_js: list[str] = []
+        self.uid = "fake-window"
+        # no `.gui` by default — `_install_click_userscript` fails gracefully and the caller
+        # falls back to `evaluate_js`, matching a non-GTK backend or unexpected internals.
     # end def
 
     def get_cookies(self) -> SimpleCookie:
@@ -68,6 +72,7 @@ class FakeWindow:
 
     def simulate_navigation(self) -> None:
         """Step through `self._urls` firing `loaded` after each, like real navigation would."""
+        self.events.before_load.fire()
         for index in range(len(self._urls)):
             if self.destroyed:
                 return
@@ -196,6 +201,63 @@ def test_capture_cookies_via_webview_detects_cross_domain_round_trip_and_clicks_
     assert window.evaluated_js == [
         'document.querySelector(\'[data-testid="login-button"]\')?.click();'
     ]
+# end def
+
+
+def test_capture_cookies_via_webview_prefers_the_userscript_click_when_gtk_internals_exist(
+    monkeypatch,
+) -> None:
+    cookies = SimpleCookie()
+    cookies["session"] = "chatgpt-session"
+    window = install_fake_webview(
+        monkeypatch,
+        cookies,
+        urls=[
+            "https://chatgpt.com/",
+            "https://auth.openai.com/login",
+            "https://chatgpt.com/",
+        ],
+    )
+
+    added_scripts: list[str] = []
+
+    class FakeManager:
+        def add_script(self, script) -> None:
+            added_scripts.append(script)
+        # end def
+    # end class
+
+    class FakeBrowser:
+        manager = FakeManager()
+    # end class
+
+    class FakeInstances:
+        def get(self, uid):
+            return FakeBrowser() if uid == window.uid else None
+        # end def
+    # end class
+
+    class FakeBrowserView:
+        instances = FakeInstances()
+    # end class
+
+    window.gui = types.SimpleNamespace(BrowserView=FakeBrowserView)
+
+    fake_webkit2 = types.SimpleNamespace(
+        UserScript=lambda source, injected_frames, injection_time, allow_list, block_list: source,
+        UserContentInjectedFrames=types.SimpleNamespace(TOP_FRAME="top-frame"),
+        UserScriptInjectionTime=types.SimpleNamespace(END="end"),
+    )
+    monkeypatch.setitem(sys.modules, "gi", types.SimpleNamespace(require_version=lambda *a: None))
+    monkeypatch.setitem(sys.modules, "gi.repository", types.SimpleNamespace(WebKit2=fake_webkit2))
+
+    result = capture_cookies_via_webview(
+        "https://chatgpt.com/", "Codex", click_selector='[data-testid="login-button"]'
+    )
+
+    assert result == {"session": "chatgpt-session"}
+    assert len(added_scripts) == 1
+    assert window.evaluated_js == []  # the evaluate_js fallback should never be reached
 # end def
 
 

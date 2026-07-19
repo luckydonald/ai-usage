@@ -32,6 +32,63 @@ USER_AGENT = (
 )
 
 
+def _click_script(selector: str) -> str:
+    return f"""
+(function() {{
+    function tryClick() {{
+        var el = document.querySelector({selector!r});
+        if (el) {{ el.click(); return true; }}
+        return false;
+    }}
+    if (!tryClick()) {{
+        var observer = new MutationObserver(function() {{
+            if (tryClick()) observer.disconnect();
+        }});
+        observer.observe(document.documentElement, {{childList: true, subtree: true}});
+    }}
+}})();
+"""
+# end def
+
+
+def _install_click_userscript(window, selector: str) -> bool:
+    """Best-effort: inject the click as a WebKit *user script* rather than `evaluate_js`.
+
+    User scripts (the mechanism real browser extensions use for content scripts) run outside the
+    page's own JS world and aren't subject to its CSP — unlike `evaluate_js`/`run_js`, which both
+    execute via WebKit's `evaluate_javascript()` in the page's main world and get blocked by a
+    'unsafe-eval'-forbidding CSP every time. This reaches into pywebview's private GTK internals
+    (`window.gui` is the `platforms.gtk` module; `BrowserView.instances[uid]` is the per-window
+    native object holding the `WebKitUserContentManager`), so it's fragile across pywebview
+    versions and only works on the GTK backend. Returns False (caller should fall back to
+    `evaluate_js`) if any of that isn't available.
+    """
+    try:
+        import gi
+
+        gi.require_version("WebKit2", "4.1")
+        from gi.repository import WebKit2
+
+        browser = window.gui.BrowserView.instances.get(window.uid)
+        if browser is None:
+            return False
+        # end if
+        script = WebKit2.UserScript(
+            _click_script(selector),
+            WebKit2.UserContentInjectedFrames.TOP_FRAME,
+            WebKit2.UserScriptInjectionTime.END,
+            None,
+            None,
+        )
+        browser.manager.add_script(script)
+        return True
+    except Exception as exception:  # noqa: BLE001
+        LOGGER.debug("could not install click user-script: %s", exception)
+        return False
+    # end try
+# end def
+
+
 def capture_cookies_via_webview(
     url: str, title: str, click_selector: str | None = None
 ) -> dict[str, str]:
@@ -59,8 +116,14 @@ def capture_cookies_via_webview(
     # end try
 
     initial = urlsplit(url)
-    state = {"left_initial_domain": False, "clicked": False}
+    state = {"left_initial_domain": False, "clicked": False, "userscript_installed": False}
     captured: dict[str, str] = {}
+
+    def on_before_load() -> None:
+        if click_selector:
+            state["userscript_installed"] = _install_click_userscript(window, click_selector)
+        # end if
+    # end def
 
     def snapshot_cookies() -> None:
         # `get_cookies()`'s return shape differs across pywebview's backends: GTK returns a list
@@ -80,14 +143,15 @@ def capture_cookies_via_webview(
             return
         # end if
         snapshot_cookies()
-        if click_selector and not state["clicked"]:
+        if click_selector and not state["clicked"] and not state["userscript_installed"]:
             state["clicked"] = True
             try:
                 window.evaluate_js(f"document.querySelector({click_selector!r})?.click();")
             except Exception as exception:  # noqa: BLE001
-                # some sites' CSP forbids 'unsafe-eval', which is exactly how pywebview injects
-                # JS — there is no workaround via pywebview's public API. The user can still
-                # click the button themselves; the window is visible to them.
+                # some sites' CSP forbids 'unsafe-eval', which is exactly how pywebview's
+                # evaluate_js/run_js inject code — the user-script path above (installed on
+                # `before_load`) is the workaround; this is only reached when that didn't apply.
+                # The user can still click the button themselves; the window is visible to them.
                 LOGGER.warning(
                     "could not auto-click %r (%s) — please click it yourself in the window.",
                     click_selector,
@@ -101,6 +165,7 @@ def capture_cookies_via_webview(
     # end def
 
     window = webview.create_window(title, url)
+    window.events.before_load += on_before_load
     window.events.loaded += on_loaded
 
     def handle_sigint(signum, frame) -> None:
