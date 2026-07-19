@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import httpx
+from curl_cffi.requests import AsyncSession
 from pydantic import BaseModel, ValidationError
 
 from ai_usage.models import (
@@ -195,8 +195,13 @@ class CodexWebUsageProvider(Provider):
         cookies = (credential or {}).get("cookies", {})
         headers = (credential or {}).get("headers", {})
         observed = datetime.now(UTC)
-        async with httpx.AsyncClient(
-            timeout=20, cookies=cookies, headers=headers, base_url="https://chatgpt.com"
+        # chatgpt.com sits behind Cloudflare, which ties its `cf_clearance` cookie to the TLS/HTTP
+        # client fingerprint that solved the challenge — a plain httpx client gets 403'd even with
+        # otherwise-valid cookies. `impersonate="chrome"` makes curl_cffi present a real Chrome
+        # TLS fingerprint instead, which Cloudflare accepts alongside the captured cookies.
+        async with AsyncSession(
+            timeout=20, cookies=cookies, headers=headers, base_url="https://chatgpt.com",
+            impersonate="chrome",
         ) as client:
             session_response = await client.get("/api/auth/session")
             if session_response.status_code != 200:

@@ -242,16 +242,49 @@ def test_codex_web_usage_payload_falls_back_on_schema_mismatch() -> None:
 # end def
 
 
+class FakeCurlResponse:
+    def __init__(self, status_code: int, json_data) -> None:
+        self.status_code = status_code
+        self._json_data = json_data
+    # end def
+
+    def json(self):
+        return self._json_data
+    # end def
+# end class
+
+
+class FakeCurlSession:
+    """Stands in for `curl_cffi.requests.AsyncSession` — respx only intercepts httpx, and
+    curl_cffi has no equivalent transport-mocking hook, so tests fake the session directly."""
+
+    def __init__(self, responses: dict[str, FakeCurlResponse], **kwargs) -> None:
+        del kwargs
+        self.responses = responses
+    # end def
+
+    async def __aenter__(self) -> FakeCurlSession:
+        return self
+    # end def
+
+    async def __aexit__(self, *args) -> None:
+        del args
+    # end def
+
+    async def get(self, path: str, headers=None) -> FakeCurlResponse:
+        del headers
+        return self.responses[path]
+    # end def
+# end class
+
+
 @pytest.mark.asyncio
-@respx.mock
-async def test_codex_web_usage_provider_collects_identity_and_subscription() -> None:
-    respx.get("https://chatgpt.com/api/auth/session").mock(
-        return_value=httpx.Response(200, json={"accessToken": "token-abc"})
-    )
-    respx.get("https://chatgpt.com/backend-api/wham/usage").mock(
-        return_value=httpx.Response(
+async def test_codex_web_usage_provider_collects_identity_and_subscription(monkeypatch) -> None:
+    responses = {
+        "/api/auth/session": FakeCurlResponse(200, {"accessToken": "token-abc"}),
+        "/backend-api/wham/usage": FakeCurlResponse(
             200,
-            json={
+            {
                 "email": "user@example.com",
                 "plan_type": "team",
                 "rate_limit": {
@@ -262,7 +295,11 @@ async def test_codex_web_usage_provider_collects_identity_and_subscription() -> 
                     }
                 },
             },
-        )
+        ),
+    }
+    monkeypatch.setattr(
+        "ai_usage.providers.codex.AsyncSession",
+        lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     account = AccountConfig(id="account", service="codex", provider="web", name="Codex")
     result = await CodexWebUsageProvider().fetch(account, {"cookies": {"session": "x"}})
