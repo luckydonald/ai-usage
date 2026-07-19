@@ -415,13 +415,21 @@ def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> 
                 account_id=source.id,
                 fetched_at=now,
                 metrics=[
-                    Metric(key="five-hours", name="Five hours", usage=Usage(percentage=42), observed_at=now)
+                    Metric(
+                        key="five-hours",
+                        name="Five hours",
+                        usage=Usage(percentage=42),
+                        observed_at=now,
+                    ),
                 ],
             )
         )
         async with database.sessions() as session:
             session.add(
-                CrawlStateRecord(account_id=source.id, next_run_at=now + timedelta(minutes=10))
+                CrawlStateRecord(
+                    account_id=source.id,
+                    next_run_at=now + timedelta(minutes=10),
+                )
             )
             await session.commit()
         # end with
@@ -469,7 +477,9 @@ def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> 
         async with database.sessions() as session:
             credentials = await session.scalar(select(func.count()).select_from(CredentialRecord))
             crawl_states = await session.scalar(
-                select(func.count()).select_from(CrawlStateRecord).where(CrawlStateRecord.account_id == source.id)
+                select(func.count())
+                .select_from(CrawlStateRecord)
+                .where(CrawlStateRecord.account_id == source.id)
             )
         # end with
         await database.close()
