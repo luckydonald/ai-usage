@@ -210,6 +210,6 @@ def capture_cookies_via_webview(
     finally:
         signal.signal(signal.SIGINT, previous_handler)
     # end try
-    LOGGER.info("captured %d cookie(s): %s", len(captured), ", ".join(sorted(captured)))
+    LOGGER.warning("captured %d cookie(s): %s", len(captured), ", ".join(sorted(captured)))
     return captured
 # end def
