@@ -37,3 +37,18 @@
 - I want to mark two providers as providing the "same" data. Basically same `provider` + `account` would be treated the same.
   - Use case would be to primarily configure it as cli or local tool on one computer, but on another as web-api based endpoint, so that in the end it's crawled one way or another.
   - How would we best treat those possibly different data sets?
+- Claude `statusline` should fall back to `cli-usage` if stale for too long.
+- Record the used model where available with the usage.
+  - Claude CLI: shows this in the startup message, and the footer, e.g. @ai/references/console-output/claude/motd/normal-team.txt
+  - Codex CLI: also shown there, see @ai/references/console-output/codex/motd/normal.md
+- New: Special events / notes
+   - should be stored once they appear, and when they disappear, not write on every crawl (only record changes)
+   - This should be outside the crawl events files, however still be bound to that source (at least the provider)
+   - Different sources
+     - Claude CLI: See @ai/references/console-output/claude/usage/promo.txt - it shows:
+       - > +50% weekly limits promo through Aug 19 · clau.de/cc-50-promo
+     - Claude web: It displays:
+       - > **Your limits are temporarily boosted**: our weekly [Claude Code limit is 50% higher](https://support.claude.com/en/articles/15910845-claude-code-may-july-2026-weekly-limits-promotion) through August 19, and your [Cowork limit is 100% higher](https://support.claude.com/en/articles/15400594-claude-cowork-june-august-2026-usage-promotion) through August 5. When each promotion ends, limits return to your plan's standard amounts.
+       - You still need to figure out the api returning that on the settings page, can't be very far from the other API we use for the uage, if not the same.
+     - Codex CLI:
+       - > • You have 3 usage limit resets available. Run /usage to use one.
