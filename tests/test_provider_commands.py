@@ -32,6 +32,25 @@ def configured_paths(tmp_path: Path, monkeypatch) -> Paths:
 # end def
 
 
+async def fake_verified_fetch(self, account, credential):
+    del self, credential
+    return ProviderFetchResult(
+        service=account.service,
+        provider=account.provider,
+        account_id=account.id,
+        fetched_at=datetime.now(UTC),
+        metrics=[
+            Metric(
+                key="five-hours",
+                name="Five hours",
+                usage=Usage(percentage=1.0),
+                observed_at=datetime.now(UTC),
+            )
+        ],
+    )
+# end def
+
+
 def test_provider_group_exposes_aliases_and_removes_flat_commands() -> None:
     runner = CliRunner()
     root_help = runner.invoke(main, ["--help"])
@@ -506,6 +525,9 @@ def test_provider_login_stores_captured_cookies_as_credential(tmp_path: Path, mo
         "ai_usage.providers.claude.capture_cookies_via_webview",
         lambda url, title: {"session": "abc123"},
     )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.ClaudeWebUsageProvider.fetch", fake_verified_fetch
+    )
 
     result = CliRunner().invoke(main, ["provider", "login", "--account", account.id])
 
@@ -551,6 +573,7 @@ def test_add_triggers_browser_login_for_web_providers(tmp_path: Path, monkeypatc
     # end def
 
     monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
@@ -596,6 +619,7 @@ def test_add_via_tui_manual_selection_triggers_login_for_codex_web(
     # end def
 
     monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add"])
 
@@ -641,6 +665,9 @@ def test_add_via_tui_manual_selection_triggers_login_for_claude_web(
     monkeypatch.setattr(
         "ai_usage.providers.claude.ClaudeWebUsageProvider.discover_options", discover_options
     )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.ClaudeWebUsageProvider.fetch", fake_verified_fetch
+    )
 
     result = CliRunner().invoke(main, ["provider", "add"])
 
@@ -650,6 +677,61 @@ def test_add_via_tui_manual_selection_triggers_login_for_claude_web(
     assert (account.service, account.provider) == ("claude", "web")
     assert account.options["org_id"] == "org-1"
     assert account.credential_id is not None
+# end def
+
+
+def test_add_does_not_create_the_account_when_the_verification_fetch_fails(
+    tmp_path: Path, monkeypatch
+) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
+
+    async def authenticate(self, options):
+        del self, options
+        return {"cookies": {"session": "abc123"}}
+    # end def
+
+    async def failing_fetch(self, account, credential):
+        del self, credential
+        raise ProviderError(f"Codex usage endpoint returned HTTP 403 for {account.id}")
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.fetch", failing_fetch)
+
+    result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
+
+    assert result.exit_code != 0
+    assert "first fetch failed" in str(result.exception)
+    assert ConfigStore(paths).list_accounts() == []
+# end def
+
+
+def test_provider_login_does_not_store_credentials_when_the_verification_fetch_fails(
+    tmp_path: Path, monkeypatch
+) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    account = ConfigStore(paths).create_account(
+        "claude", "web", "Claude", None, {"org_id": "org-1"}
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.capture_cookies_via_webview",
+        lambda url, title: {"session": "abc123"},
+    )
+
+    async def failing_fetch(self, account, credential):
+        del self, credential
+        raise ProviderError(f"Claude usage endpoint returned HTTP 403 for {account.id}")
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.ClaudeWebUsageProvider.fetch", failing_fetch)
+
+    result = CliRunner().invoke(main, ["provider", "login", "--account", account.id])
+
+    assert result.exit_code != 0
+    assert "first fetch failed" in str(result.exception)
+    assert ConfigStore(paths).get_account(account.id).credential_id is None
 # end def
 
 
@@ -713,6 +795,9 @@ def test_add_auto_fills_claude_org_id_without_prompting(tmp_path: Path, monkeypa
     )
     monkeypatch.setattr(
         "ai_usage.providers.claude.ClaudeWebUsageProvider.discover_options", discover_options
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.ClaudeWebUsageProvider.fetch", fake_verified_fetch
     )
 
     result = CliRunner().invoke(main, ["provider", "add", "claude", "web"])
