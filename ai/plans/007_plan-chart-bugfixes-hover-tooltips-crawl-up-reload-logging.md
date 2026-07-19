@@ -113,3 +113,4 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [ ] Future-axis padding for relative ranges (A3)
 - [ ] Hover tooltips: data plumbing + helpers (B)
 - [ ] Update/add frontend tests
+- [ ] crawl/up: log account add/remove + git-backup toggle (C)
