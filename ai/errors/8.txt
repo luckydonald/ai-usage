@@ -1,0 +1,59 @@
+
+Verifying Claude private web API credentials...
+Traceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 494, in execute
+    probe_result = await provider.fetch(probe_account, credential)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/providers/claude.py", line 244, in fetch
+    raise ProviderError("Claude web provider requires an 'org_id' option")
+ai_usage.providers.base.ProviderError: Claude web provider requires an 'org_id' option
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/user/.local/bin/ai-usage", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 807, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1203, in main
+    return _main(
+        self,
+    ...<6 lines>...
+        **extra,
+    )
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 189, in _main
+    rv = self.invoke(ctx)
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1125, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1125, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 746, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 489, in invoke
+    return callback(*args, **kwargs)
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/main.py", line 1524, in wrapper
+    return callback(**use_params)
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 528, in provider_add
+    asyncio.run(execute())
+    ~~~~~~~~~~~^^^^^^^^^^^
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 205, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/lib64/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 496, in execute
+    raise click.ClickException(
+    ...<2 lines>...
+    ) from exception
+click.exceptions.ClickException: Claude private web API login succeeded but the first fetch failed: Claude web provider requires an 'org_id' option
+user@fedora-3:~/git/luckydonald/ai-usage$ free(): corrupted unsorted chunks
+
