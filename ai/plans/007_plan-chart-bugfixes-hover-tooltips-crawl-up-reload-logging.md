@@ -111,3 +111,4 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [ ] Fix animation replay on SSE refresh (A1)
 - [ ] Remove stray reset-line at y=100 (A2)
 - [ ] Future-axis padding for relative ranges (A3)
+- [ ] Hover tooltips: data plumbing + helpers (B)
