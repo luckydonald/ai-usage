@@ -1237,3 +1237,5 @@ Neither stops if I click close on the window.
 ❯ Add info panels for each service, containing each metric of that.
   - For that the same stats as previously discussed.
 
+❯ Split them by account though.
+
