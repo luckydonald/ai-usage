@@ -97,3 +97,15 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 ### Critical files
 - `frontend/src/chart.ts`, `frontend/src/components/UsageChart.vue`, `frontend/src/App.vue`, `frontend/src/time.ts`, `frontend/src/chart.test.ts`, `frontend/src/time.test.ts`
 - `src/ai_usage/crawler.py` (+ check logging setup for `crawl`/`up` CLI entry points in `cli.py`)
+
+## Todos
+
+- [x] Git autocommit as toggleable global setting
+- [x] Group CLI --help and separate internal tooling
+- [x] Graph: force 0% after window ends
+- [x] Custom date range picker
+- [x] Frontend rebuild: strip to graphs-only + new palette
+- [x] Shell completion staleness detection + versioned hashes
+- [x] Claude/Codex web login via pywebview
+- [x] Brand color generator per service
+- [ ] Fix animation replay on SSE refresh (A1)
