@@ -198,7 +198,7 @@ async def test_claude_web_discover_options_auto_fills_single_organization() -> N
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_claude_web_discover_options_is_ambiguous_with_multiple_organizations() -> None:
+async def test_claude_web_discover_options_defaults_to_first_org_when_ambiguous() -> None:
     respx.get("https://claude.ai/api/organizations").mock(
         return_value=httpx.Response(
             200,
@@ -206,7 +206,7 @@ async def test_claude_web_discover_options_is_ambiguous_with_multiple_organizati
         )
     )
     discovered = await ClaudeWebUsageProvider().discover_options({"cookies": {"session": "x"}})
-    assert discovered == {}
+    assert discovered == {"org_id": "org-1"}
 # end def
 
 
