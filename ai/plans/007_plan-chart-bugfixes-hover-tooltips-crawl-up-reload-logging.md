@@ -115,3 +115,4 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [ ] Update/add frontend tests
 - [ ] crawl/up: log account add/remove + git-backup toggle (C)
 - [ ] Live verification: browser (chart) + crawl/up logging
+- [ ] Run full test suite + ruff, commit
