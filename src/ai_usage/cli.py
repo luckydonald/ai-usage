@@ -458,6 +458,7 @@ def provider_add(
                 credential = selected.account.credential
             # end if
             provider = runtime.providers.get(resolved_service, resolved_provider)
+            via_browser_login = False
             if credential is None and provider.login_url and interactive_terminal(no_input):
                 click.echo(f"Opening a login window for {provider.display_name}...")
                 if provider.login_hint:
@@ -473,11 +474,37 @@ def provider_add(
                         f"login for {provider.display_name} did not complete"
                     )
                 # end if
+                via_browser_login = True
             # end if
             if credential is not None:
                 for key, value in (await provider.discover_options(credential)).items():
                     dynamic_options.setdefault(key, value)
                 # end for
+            # end if
+            if via_browser_login:
+                click.echo(f"Verifying {provider.display_name} credentials...")
+                probe_account = AccountConfig(
+                    id="probe",
+                    service=resolved_service,
+                    provider=resolved_provider,
+                    name=name or provider.display_name,
+                    options=dynamic_options,
+                )
+                try:
+                    probe_result = await provider.fetch(probe_account, credential)
+                except ProviderError as exception:
+                    raise click.ClickException(
+                        f"{provider.display_name} login succeeded but the first fetch failed: "
+                        f"{exception}"
+                    ) from exception
+                # end try
+                if probe_result.status == FetchStatus.ERROR:
+                    raise click.ClickException(
+                        f"{provider.display_name} login succeeded but the first fetch failed: "
+                        f"{probe_result.error}"
+                    )
+                # end if
+                click.echo(f"Verified: fetched {len(probe_result.metrics)} metric(s).")
             # end if
             account, action = await create_account(
                 runtime,
@@ -545,6 +572,22 @@ def provider_login(
                     f"{provider.display_name} does not support interactive login"
                 )
             # end if
+            click.echo(f"Verifying {provider.display_name} credentials...")
+            try:
+                probe_result = await provider.fetch(account, credential)
+            except ProviderError as exception:
+                raise click.ClickException(
+                    f"{provider.display_name} login succeeded but the first fetch failed: "
+                    f"{exception}"
+                ) from exception
+            # end try
+            if probe_result.status == FetchStatus.ERROR:
+                raise click.ClickException(
+                    f"{provider.display_name} login succeeded but the first fetch failed: "
+                    f"{probe_result.error}"
+                )
+            # end if
+            click.echo(f"Verified: fetched {len(probe_result.metrics)} metric(s).")
             credential_id = await runtime.database.put_credential(
                 account.provider, account.name, credential
             )
