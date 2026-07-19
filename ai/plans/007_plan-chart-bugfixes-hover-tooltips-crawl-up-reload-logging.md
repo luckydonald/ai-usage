@@ -112,7 +112,7 @@ Note: does NOT need `logging.basicConfig()` added blindly — first confirm curr
 - [x] Remove stray reset-line at y=100 (A2)
 - [x] Future-axis padding for relative ranges (A3)
 - [x] Hover tooltips: data plumbing + helpers (B)
-- [ ] Update/add frontend tests *(in progress)*
-- [ ] crawl/up: log account add/remove + git-backup toggle (C)
+- [x] Update/add frontend tests
+- [x] crawl/up: log account add/remove + git-backup toggle (C)
 - [ ] Live verification: browser (chart) + crawl/up logging
 - [ ] Run full test suite + ruff, commit
