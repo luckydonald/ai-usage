@@ -1247,3 +1247,5 @@ Neither stops if I click close on the window.
 ❯ Conversation compacted <kbd>manual</kbd>:
 > - [Result (`43310` chars, `42.5 KB`)](output/compact/002.7a888858-124b-4b66-b69a-4e0ae4f1e9ae/result.md)
 
+❯ /plan implement the remainders of @ai/plans/pending.md
+
