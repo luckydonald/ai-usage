@@ -76,8 +76,26 @@ def generated_color(service: str, identity: str) -> str:
 # end def
 
 
-def group_key(sample: MetricSampleRecord) -> tuple[str, str, str, str]:
-    return sample.service, sample.provider, sample.account_id, sample.metric_key
+def group_key(
+    sample: MetricSampleRecord, account_groups: dict[str, str]
+) -> tuple[str, str, str, str]:
+    resolved_account_id = account_groups.get(sample.account_id, sample.account_id)
+    provider = sample.provider if sample.account_id not in account_groups else "grouped"
+    return sample.service, provider, resolved_account_id, sample.metric_key
+# end def
+
+
+def merge_duplicate_timestamps(points: list[GraphPoint]) -> list[GraphPoint]:
+    """When grouped accounts both report a sample at the exact same timestamp, keep the higher
+    percentage — the two sources are readings of the same underlying quota."""
+    by_timestamp: dict[datetime, GraphPoint] = {}
+    for point in points:
+        existing = by_timestamp.get(point.at)
+        if existing is None or point.percentage > existing.percentage:
+            by_timestamp[point.at] = point
+        # end if
+    # end for
+    return sorted(by_timestamp.values(), key=lambda point: point.at)
 # end def
 
 
@@ -85,10 +103,12 @@ def build_series(
     samples: list[MetricSampleRecord],
     colors: dict[tuple[str, str], str] | None = None,
     now: datetime | None = None,
+    account_groups: dict[str, str] | None = None,
 ) -> list[GraphSeries]:
+    groups = account_groups or {}
     grouped: dict[tuple[str, str, str, str], list[MetricSampleRecord]] = defaultdict(list)
     for sample in samples:
-        grouped[group_key(sample)].append(sample)
+        grouped[group_key(sample, groups)].append(sample)
     # end for
     current_time = now or datetime.now(UTC)
     configured_colors = colors or {}
@@ -105,6 +125,7 @@ def build_series(
             )
             for sample in metric_samples
         ]
+        points = merge_duplicate_timestamps(points)
         windows = build_windows(metric_samples, current_time)
         points = with_window_reset_zeros(points, windows)
         color = configured_colors.get((account_id, metric_key)) or generated_color(
