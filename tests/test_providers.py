@@ -427,22 +427,21 @@ async def test_claude_status_fresh_relay_is_success(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_claude_status_stale_relay_skips_pexpect_fallback(tmp_path, monkeypatch) -> None:
+async def test_claude_status_stale_relay_falls_back_to_cli_usage(tmp_path, monkeypatch) -> None:
     relay_file = tmp_path / "relay.json"
-    write_relay(relay_file)
+    write_relay(relay_file, five_hour_percentage=23.5)
     old = time.time() - 3600
     os.utime(relay_file, (old, old))
     account = relay_account(relay_file, stale_seconds=120)
 
-    async def fail_if_called(*args, **kwargs):
-        raise AssertionError("run_claude_usage should not be called when relay data exists")
+    async def fake_run_claude_usage(*args, **kwargs):
+        return "Current session\n  ██ 44% used\n  Resets 7:50pm (Europe/Berlin)\n"
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", fail_if_called)
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", fake_run_claude_usage)
     result = await ClaudeStatusProvider().fetch(account, None)
-    assert result.status == FetchStatus.STALE
-    assert result.metrics[0].usage.percentage == 23.5
-    assert "no new statusline data" in result.error
+    assert result.status == FetchStatus.SUCCESS
+    assert result.metrics[0].usage.percentage == 44
 # end def
 
 

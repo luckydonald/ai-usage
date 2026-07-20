@@ -373,23 +373,22 @@ class ClaudeStatusProvider(Provider):
             stale_seconds = int(account.options.get("stale_seconds", 120))
             if relay_file.exists():
                 age = time.time() - relay_file.stat().st_mtime
-                payload = json.loads(relay_file.read_text(encoding="utf-8"))
-                metrics = parse_status_payload(payload, observed)
-                if metrics:
-                    return ProviderFetchResult(
-                        service=self.service,
-                        provider=self.key,
-                        account_id=account.id,
-                        fetched_at=observed,
-                        status=FetchStatus.SUCCESS if age <= stale_seconds else FetchStatus.STALE,
-                        metrics=metrics,
-                        error=(
-                            None
-                            if age <= stale_seconds
-                            else f"no new statusline data yet (last update {age:.0f}s ago)"
-                        ),
-                    )
+                if age <= stale_seconds:
+                    payload = json.loads(relay_file.read_text(encoding="utf-8"))
+                    metrics = parse_status_payload(payload, observed)
+                    if metrics:
+                        return ProviderFetchResult(
+                            service=self.service,
+                            provider=self.key,
+                            account_id=account.id,
+                            fetched_at=observed,
+                            status=FetchStatus.SUCCESS,
+                            metrics=metrics,
+                        )
+                    # end if
                 # end if
+                # relay data missing or stale: fall through and ask the CLI directly instead
+                # of surfacing outdated numbers.
             # end if
         # end if
         output = await run_claude_usage(
