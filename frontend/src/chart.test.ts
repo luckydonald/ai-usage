@@ -328,6 +328,13 @@ describe("axisTooltipHtml", () => {
     expect(html).toContain("Seven days: 55.0%");
   });
 
+  it("tells you when the hovered window resets and how long that is from now", () => {
+    // series' window ends 2026-07-17T14:00:00Z; `now` is fixed at 12:00:00Z -> 2h left.
+    const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);
+    expect(html).toContain(`resets ${new Date("2026-07-17T14:00:00Z").toLocaleString()}`);
+    expect(html).toContain("(2h 0m)");
+  });
+
   it("groups multiple metrics of the same account+provider under one header instead of repeating it", () => {
     const sameAccountOtherMetric: GraphSeries = { ...series, metric_key: "seven-days", metric_name: "Seven days" };
     const html = axisTooltipHtml([series, sameAccountOtherMetric], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);

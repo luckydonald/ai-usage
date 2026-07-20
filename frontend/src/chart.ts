@@ -218,7 +218,11 @@ function activeNotesAt(notes: NoteRange[], atMs: number): NoteRange[] {
 // wall of mostly-repeated text.
 function compactWindowDetail(item: GraphSeries, window: GraphWindow, now: Date): string {
   const stats = computeWindowStats(item.points, window, now);
-  const parts = [`peak ${stats.maximumPercentage.toFixed(0)}%`];
+  const endMs = new Date(window.end).getTime();
+  const parts = [
+    `resets ${new Date(window.end).toLocaleString()} (${formatDuration(Math.max(0, endMs - now.getTime()))})`,
+    `peak ${stats.maximumPercentage.toFixed(0)}%`,
+  ];
   if (stats.burnRatePerHour !== null) parts.push(`${stats.burnRatePerHour.toFixed(1)}%/h`);
   if (stats.perfectLanding) {
     parts.push("right on spot!");
