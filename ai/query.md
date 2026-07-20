@@ -1501,3 +1501,12 @@ But yeah, they shoud be united into one, if possible the one which not only show
 > </details>
 >
 
+❯ Task Notification:
+> - Task `a3f7b937420bd765f` <kbd>completed</kbd>
+> - Tool `toolu_01JMyxnLFYEKSLHUKsqNu2TS`
+> - > Agent "Find terminal selection library usage in CLI" finished
+> - [Query (`2147` chars, `2.1 KB`)](output/agents/021.a3f7b937420bd765f/prompt.md)
+> - [Answer (`7130` chars, `7.03 KB`)](output/agents/021.a3f7b937420bd765f/result.md)
+> - [Raw log (`119526` chars, `117 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e919dd78-d3fd-47e2-8f73-11515d8a617b/tasks/a3f7b937420bd765f.output)
+> - `17` tools, `26611` tokens, `1.44025 s`
+
