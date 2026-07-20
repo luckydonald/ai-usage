@@ -72,3 +72,38 @@ async def test_history_is_idempotently_indexed(tmp_path, monkeypatch) -> None:
     assert count == 1
     await database.close()
 # end def
+
+
+@pytest.mark.asyncio
+async def test_history_round_trips_the_recorded_model(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    database = Database(paths)
+    await database.migrate()
+    history = HistoryStore(paths, database)
+    now = datetime.now(UTC)
+    result = ProviderFetchResult(
+        service="claude",
+        provider="cli-usage",
+        account_id="account",
+        fetched_at=now,
+        metrics=[
+            Metric(
+                key="seven-days-fable",
+                name="Current week (Fable)",
+                usage=Usage(percentage=10),
+                observed_at=now,
+                model="Fable",
+            )
+        ],
+    )
+    events = await history.append_result(result)
+    await history.index_file(history.event_path(events[0]))
+    async with database.sessions() as session:
+        record = await session.scalar(select(MetricSampleRecord))
+    # end with
+    assert record is not None
+    assert record.model == "Fable"
+    await database.close()
+# end def

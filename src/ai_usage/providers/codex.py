@@ -34,6 +34,13 @@ STATUS_PATTERN = re.compile(
 )
 
 STALE_WARNING_PATTERN = re.compile(r"limits may be stale", re.IGNORECASE)
+MODEL_PATTERN = re.compile(r"model:\s*(?P<model>\S.*?)\s{2,}/model to change", re.IGNORECASE)
+
+
+def codex_model(output: str) -> str | None:
+    match = MODEL_PATTERN.search(output)
+    return match.group("model").strip() if match else None
+# end def
 
 
 def window_key(minutes: int) -> str:
@@ -389,6 +396,7 @@ class CodexAppServerProvider(Provider):
 
 
 def parse_codex_status(output: str, observed_at: datetime) -> list[Metric]:
+    model = codex_model(output)
     metrics: list[Metric] = []
     for match in STATUS_PATTERN.finditer(output):
         name = match.group("name").lower().replace(" ", "-")
@@ -400,6 +408,7 @@ def parse_codex_status(output: str, observed_at: datetime) -> list[Metric]:
                 name=match.group("name"),
                 usage=Usage(percentage=100 - remaining),
                 observed_at=observed_at,
+                model=model,
                 metadata={"reset_text": match.group("reset")},
             )
         )

@@ -45,6 +45,7 @@ class Metric(BaseModel):
     observed_at: datetime
     reset_at: datetime | None = None
     window_seconds: int | None = Field(default=None, gt=0)
+    model: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("observed_at", "reset_at")

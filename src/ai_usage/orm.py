@@ -58,6 +58,7 @@ class MetricSampleRecord(Base):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     window_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    model: Mapped[str | None] = mapped_column(String(120), nullable=True)
     usage_kind: Mapped[str] = mapped_column(String(20))
     percentage: Mapped[float] = mapped_column(Float)
     current_value: Mapped[float | None] = mapped_column(Float, nullable=True)

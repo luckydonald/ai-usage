@@ -168,6 +168,7 @@ class HistoryStore:
             "observed_at": event.metric.observed_at,
             "reset_at": event.metric.reset_at,
             "window_seconds": event.metric.window_seconds,
+            "model": event.metric.model,
             "usage_kind": usage.kind,
             "percentage": usage.percentage,
             "current_value": min_max.current if min_max else None,

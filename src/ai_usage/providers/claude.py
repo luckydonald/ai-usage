@@ -54,6 +54,19 @@ def claude_metric_key(name: str) -> str:
 # end def
 
 
+def claude_metric_model(name: str) -> str | None:
+    """Extract the model name from a per-model section title, e.g. `Current week (Fable)` -> `Fable`."""
+    normalized = name.casefold()
+    if "session" in normalized or "all models" in normalized:
+        return None
+    # end if
+    if "(" not in name or not name.endswith(")"):
+        return None
+    # end if
+    return name.split("(", 1)[-1].rstrip(")").strip() or None
+# end def
+
+
 def parse_status_payload(payload: dict[str, Any], observed_at: datetime) -> list[Metric]:
     limits = payload.get("rate_limits") or {}
     metrics: list[Metric] = []
@@ -91,6 +104,7 @@ def parse_usage_output(output: str, observed_at: datetime) -> list[Metric]:
                 name=name,
                 usage=Usage(percentage=float(match.group("percentage"))),
                 observed_at=observed_at,
+                model=claude_metric_model(name),
                 metadata={"reset_text": match.group("reset").strip()},
             )
         )

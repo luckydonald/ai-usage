@@ -12,6 +12,7 @@ from ai_usage.providers.base import ProviderError
 from ai_usage.providers.claude import (
     ClaudeStatusProvider,
     ClaudeWebUsageProvider,
+    claude_metric_model,
     install_status_relay,
     parse_claude_web_usage,
     parse_status_payload,
@@ -21,6 +22,7 @@ from ai_usage.providers.claude import (
 from ai_usage.providers.codex import (
     CodexStatusProvider,
     CodexWebUsageProvider,
+    codex_model,
     parse_codex_status,
     parse_codex_web_usage,
     parse_rate_limits,
@@ -158,6 +160,25 @@ Current week (Fable)
     metrics = parse_usage_output(output, datetime.now(UTC))
     assert [metric.key for metric in metrics] == ["five-hours", "seven-days", "seven-days-fable"]
     assert [metric.usage.percentage for metric in metrics] == [12, 8, 0]
+    assert [metric.model for metric in metrics] == [None, None, "Fable"]
+# end def
+
+
+def test_claude_metric_model_only_extracts_per_model_sections() -> None:
+    assert claude_metric_model("Current session") is None
+    assert claude_metric_model("Current week (all models)") is None
+    assert claude_metric_model("Current week (Fable)") == "Fable"
+# end def
+
+
+def test_codex_model_extracted_from_motd_banner() -> None:
+    output = (
+        "model:     gpt-5.6-sol medium   /model to change\n"
+        "Weekly limit: [████░] 94% left (resets 12:36 on 24 Jul)"
+    )
+    metrics = parse_codex_status(output, datetime.now(UTC))
+    assert codex_model(output) == "gpt-5.6-sol medium"
+    assert metrics[0].model == "gpt-5.6-sol medium"
 # end def
 
 
