@@ -330,17 +330,41 @@ describe("axisTooltipHtml", () => {
     expect(html.match(/<strong>7\/17\/2026/g)?.length).toBe(1);
   });
 
-  it("excludes synthetic series (projection, now-line, notes-marker, exhausted) from the slice", () => {
+  it("excludes non-data synthetic series (now-line, notes-marker, exhausted) from the slice", () => {
     const html = axisTooltipHtml(
       [series],
       [
-        { seriesId: "account/five-hours/projection-0", seriesName: "Five hours · app-server · account", dataIndex: 0, data: ["2026-07-17T10:00:00Z", 20] },
         { seriesId: "now-line", data: [] },
         { seriesId: "notes-marker", data: [] },
+        { seriesId: "account/five-hours/exhausted-0", data: [] },
       ],
       {},
     );
     expect(html).toBe("");
+  });
+
+  it("falls back to the projected value when only the dashed projection line has data at that timestamp", () => {
+    const html = axisTooltipHtml(
+      [series],
+      [{ seriesId: "account/five-hours/projection-0", seriesName: "Five hours · app-server · account", data: ["2026-07-17T13:00:00Z", 65] }],
+      {},
+    );
+    expect(html).toContain("7/17/2026");
+    expect(html).toContain("~65.0% (projected)");
+  });
+
+  it("prefers the real actual-series row over the projection when both are present for the same series", () => {
+    const html = axisTooltipHtml(
+      [series],
+      [
+        { seriesId: "account/five-hours/actual", seriesName: "Five hours · app-server · account", dataIndex: 1, data: ["2026-07-17T11:00:00Z", 40] },
+        { seriesId: "account/five-hours/projection-0", seriesName: "Five hours · app-server · account", data: ["2026-07-17T11:00:00Z", 40] },
+      ],
+      {},
+    );
+    expect(html).toContain("40.0%");
+    expect(html).not.toContain("projected");
+    expect(html.match(/Five hours/g)?.length).toBe(1);
   });
 
   it("returns an empty string when nothing matches", () => {

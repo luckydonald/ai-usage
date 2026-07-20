@@ -173,6 +173,11 @@ function pointRowHtml(
   return lines.join("<br/>");
 }
 
+function projectionRowHtml(item: GraphSeries, percentage: number, accountLabels: Record<string, string>): string {
+  const label = `${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}`;
+  return `<strong>${label}</strong>: ~${percentage.toFixed(1)}% (projected)`;
+}
+
 interface AxisTooltipParams {
   seriesId?: string;
   seriesName?: string;
@@ -187,16 +192,30 @@ export function axisTooltipHtml(
 ): string {
   let header: string | undefined;
   const rows: string[] = [];
+  const itemsWithActualRow = new Set<GraphSeries>();
+  const projectionEntries: { item: GraphSeries; at: string; percentage: number }[] = [];
   for (const params of paramsList) {
-    if (!params.seriesId?.endsWith("/actual")) continue;
     if (!Array.isArray(params.data) || params.data.length !== 2) continue;
     const item = seriesList.find((entry) => seriesDisplayName(entry, accountLabels) === params.seriesName);
     if (!item) continue;
-    const point = item.points[params.dataIndex ?? -1];
-    if (!point) continue;
-    if (!header) header = `<strong>${new Date(point.at).toLocaleString()}</strong>`;
-    const window = windowByPoint(item.windows, point.at);
-    rows.push(pointRowHtml(item, point, window, accountLabels));
+    if (params.seriesId?.endsWith("/actual")) {
+      const point = item.points[params.dataIndex ?? -1];
+      if (!point) continue;
+      if (!header) header = `<strong>${new Date(point.at).toLocaleString()}</strong>`;
+      itemsWithActualRow.add(item);
+      const window = windowByPoint(item.windows, point.at);
+      rows.push(pointRowHtml(item, point, window, accountLabels));
+    } else if (params.seriesId?.includes("/projection-")) {
+      // Beyond the last real sample, only the dashed projection line has any data at all —
+      // without this, hovering purely in the future showed no tooltip whatsoever.
+      const [at, percentage] = params.data as [string, number];
+      projectionEntries.push({ item, at, percentage });
+    }
+  }
+  for (const entry of projectionEntries) {
+    if (itemsWithActualRow.has(entry.item)) continue;
+    if (!header) header = `<strong>${new Date(entry.at).toLocaleString()}</strong>`;
+    rows.push(projectionRowHtml(entry.item, entry.percentage, accountLabels));
   }
   return header ? [header, ...rows].join("<br/>") : "";
 }
