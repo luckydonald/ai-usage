@@ -74,7 +74,7 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [x] A2: info panel styling polish
 - [x] B1: statusline fallback to cli-usage when stale
 - [x] B2: record model with each metric
-- [ ] C1: parse promo/notice banners *(in progress)*
+- [x] C1: parse promo/notice banners
 - [ ] C2: notes storage with change-only writes + verbose report
 - [ ] C3: graph display of active-note windows
 - [ ] D1: account group_id config + CLI group/ungroup
