@@ -500,6 +500,39 @@ def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> 
 # end def
 
 
+def test_group_links_accounts_and_ungroup_removes_one(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    config = ConfigStore(paths)
+    laptop = config.create_account("claude", "cli-usage", "Laptop", None, {})
+    web = config.create_account("claude", "web", "Web", None, {})
+
+    grouped = CliRunner().invoke(main, ["provider", "group", laptop.id, web.id])
+    assert grouped.exit_code == 0
+    assert "Grouped 2 account(s)" in grouped.output
+    laptop_after = config.get_account(laptop.id)
+    web_after = config.get_account(web.id)
+    assert laptop_after.group_id is not None
+    assert laptop_after.group_id == web_after.group_id
+
+    ungrouped = CliRunner().invoke(main, ["provider", "ungroup", laptop.id])
+    assert ungrouped.exit_code == 0
+    assert config.get_account(laptop.id).group_id is None
+    assert config.get_account(web.id).group_id == laptop_after.group_id
+# end def
+
+
+def test_group_requires_at_least_two_accounts(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    paths.ensure()
+    account = ConfigStore(paths).create_account("claude", "cli-usage", "Solo", None, {})
+
+    result = CliRunner().invoke(main, ["provider", "group", account.id])
+
+    assert result.exit_code != 0
+# end def
+
+
 def test_hosts_add_and_remove_round_trip(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
     paths.ensure()
