@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { axisTooltipHtml, chartOption, computeWindowStats, noteTooltipHtml, percentThroughWindow, pointTooltipHtml, regionTooltipHtml, seriesDisplayName, windowByPoint, windowTooltipHtml } from "./chart";
+import { axisTooltipHtml, chartOption, computeWindowStats, noteTooltipHtml, percentThroughWindow, pointTooltipHtml, seriesDisplayName, windowByPoint, windowTooltipHtml } from "./chart";
 import type { GraphSeries, GraphWindow, NoteRange } from "./types";
 
 const series: GraphSeries = {
@@ -313,82 +313,39 @@ describe("axisTooltipHtml", () => {
     account_id: "other-account",
     metric_key: "seven-days",
     metric_name: "Seven days",
+    points: [{ at: "2026-07-17T10:00:00Z", percentage: 55, current: null, maximum: null }],
+    windows: [],
   };
+  const now = new Date("2026-07-17T12:00:00Z");
+  const atMs = (iso: string) => new Date(iso).getTime();
 
-  it("renders one shared header and one row per series at that timestamp", () => {
-    const html = axisTooltipHtml(
-      [series, other],
-      [
-        { seriesId: "account/five-hours/actual", seriesName: "Five hours · app-server · account", dataIndex: 0, data: ["2026-07-17T10:00:00Z", 20] },
-        { seriesId: "other-account/seven-days/actual", seriesName: "Seven days · app-server · other-ac", dataIndex: 0, data: ["2026-07-17T10:00:00Z", 20] },
-      ],
-      {},
-    );
+  it("renders one shared header and one row per series held at that timestamp, merging each series' own window detail in", () => {
+    const html = axisTooltipHtml([series, other], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);
     expect(html).toContain("7/17/2026");
-    expect(html).toContain("Five hours");
-    expect(html).toContain("Seven days");
     expect(html.match(/<strong>7\/17\/2026/g)?.length).toBe(1);
+    expect(html).toContain("Five hours");
+    expect(html).toContain("20.0%");
+    expect(html).toContain("Peak usage: 40.0%"); // series' window detail folded into its own row
+    expect(html).toContain("Seven days");
+    expect(html).toContain("55.0%");
   });
 
-  it("excludes non-data synthetic series (now-line, notes-marker, exhausted) from the slice", () => {
-    const html = axisTooltipHtml(
-      [series],
-      [
-        { seriesId: "now-line", data: [] },
-        { seriesId: "notes-marker", data: [] },
-        { seriesId: "account/five-hours/exhausted-0", data: [] },
-      ],
-      {},
-    );
-    expect(html).toBe("");
+  it("holds the step-line's last value across a gap instead of snapping to whichever point is nearest in raw time", () => {
+    // Hovering a hair before the 11:00 sample (much closer to it in raw time than to the
+    // 10:00 sample) must still report the 10:00 value — the step line hasn't moved yet.
+    const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T10:59:59Z") }], {}, now);
+    expect(html).toContain("<strong>account · app-server · Five hours</strong>: 20.0%");
+    expect(html).not.toContain("</strong>: 40.0%");
   });
 
-  it("falls back to the projected value when only the dashed projection line has data at that timestamp", () => {
-    const html = axisTooltipHtml(
-      [series],
-      [{ seriesId: "account/five-hours/projection-0", seriesName: "Five hours · app-server · account", data: ["2026-07-17T13:00:00Z", 65] }],
-      {},
-    );
-    expect(html).toContain("7/17/2026");
+  it("interpolates the projected value once past the last real sample, matching the dashed projection line", () => {
+    // Window: current, ends 14:00, projected_end_percentage 90; last real sample 11:00 @ 40%.
+    // Halfway (12:30, 1.5h of the remaining 3h) should read 40 + (90-40)*0.5 = 65%.
+    const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T12:30:00Z") }], {}, now);
     expect(html).toContain("~65.0% (projected)");
   });
 
-  it("prefers the real actual-series row over the projection when both are present for the same series", () => {
-    const html = axisTooltipHtml(
-      [series],
-      [
-        { seriesId: "account/five-hours/actual", seriesName: "Five hours · app-server · account", dataIndex: 1, data: ["2026-07-17T11:00:00Z", 40] },
-        { seriesId: "account/five-hours/projection-0", seriesName: "Five hours · app-server · account", data: ["2026-07-17T11:00:00Z", 40] },
-      ],
-      {},
-    );
-    expect(html).toContain("40.0%");
-    expect(html).not.toContain("projected");
-    expect(html.match(/Five hours/g)?.length).toBe(1);
-  });
-
-  it("returns an empty string when nothing matches", () => {
-    expect(axisTooltipHtml([series], [], {})).toBe("");
-  });
-});
-
-describe("regionTooltipHtml", () => {
-  const [window] = series.windows;
-  if (!window) throw new Error("fixture must define a window");
-  const now = new Date("2026-07-17T12:00:00Z");
-
-  it("renders the window's detail tooltip when hovering its markArea", () => {
-    const html = regionTooltipHtml(
-      [series],
-      { seriesName: "Five hours · app-server · account", data: { windowIndex: 0 } },
-      now,
-      {},
-      [],
-    );
-    expect(html).toContain("Peak usage: 40.0%");
-  });
-
-  it("renders a note's tooltip when hovering a notes-band markArea", () => {
+  it("appends any active note once, not per series", () => {
     const note: NoteRange = {
       service: "codex",
       account_id: "account",
@@ -396,12 +353,17 @@ describe("regionTooltipHtml", () => {
       start: "2026-07-01T00:00:00Z",
       end: null,
     };
-    const html = regionTooltipHtml([series], { data: { noteIndex: 0 } }, now, {}, [note]);
-    expect(html).toContain("+50% weekly limits promo");
+    const html = axisTooltipHtml([series, other], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now, [note]);
+    expect(html.match(/\+50% weekly limits promo/g)?.length).toBe(1);
   });
 
-  it("returns an empty string for an unrecognized or missing event shape", () => {
-    expect(regionTooltipHtml([series], {}, now, {}, [])).toBe("");
-    expect(regionTooltipHtml([series], { seriesName: "unknown", data: { windowIndex: 0 } }, now, {}, [])).toBe("");
+  it("skips a series with no sample at-or-before the hovered timestamp", () => {
+    const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T09:00:00Z") }], {}, now);
+    expect(html).toBe("");
+  });
+
+  it("returns an empty string when nothing in paramsList carries a usable axis value", () => {
+    expect(axisTooltipHtml([series], [], {}, now)).toBe("");
+    expect(axisTooltipHtml([series], [{ axisValue: undefined }], {}, now)).toBe("");
   });
 });
