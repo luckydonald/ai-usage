@@ -1510,3 +1510,5 @@ But yeah, they shoud be united into one, if possible the one which not only show
 > - [Raw log (`119526` chars, `117 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e919dd78-d3fd-47e2-8f73-11515d8a617b/tasks/a3f7b937420bd765f.output)
 > - `17` tools, `26611` tokens, `1.44025 s`
 
+❯ Finally the tooltip is somewhat pleasant. Add infos about the current=selected=hovered window, too.
+
