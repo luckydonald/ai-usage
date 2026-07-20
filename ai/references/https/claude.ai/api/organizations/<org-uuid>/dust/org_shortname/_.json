@@ -1,0 +1,4 @@
+// https://claude.ai/api/organizations/<org-uuid>/dust/org_shortname
+{
+  "shortname": "Example"
+}
