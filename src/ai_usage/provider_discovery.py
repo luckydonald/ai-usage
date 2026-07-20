@@ -62,6 +62,19 @@ def matching_providers(
 # end def
 
 
+def exclude_discovered(
+    implementations: list[Provider],
+    choices: list[DiscoveryChoice],
+) -> list[Provider]:
+    discovered = {(choice.service, choice.provider) for choice in choices}
+    return [
+        implementation
+        for implementation in implementations
+        if (implementation.service, implementation.key) not in discovered
+    ]
+# end def
+
+
 async def discover_accounts(
     registry: ProviderRegistry,
     service: str | None = None,

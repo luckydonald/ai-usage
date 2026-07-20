@@ -4,7 +4,12 @@ from typing import Any
 import pytest
 
 from ai_usage.models import AccountConfig, ProviderFetchResult
-from ai_usage.provider_discovery import discover_accounts, discovery_fingerprint
+from ai_usage.provider_discovery import (
+    discover_accounts,
+    discovery_fingerprint,
+    exclude_discovered,
+    matching_providers,
+)
 from ai_usage.providers import Provider, ProviderRegistry
 from ai_usage.providers.base import DiscoveredAccount
 
@@ -58,4 +63,17 @@ async def test_discovery_isolates_provider_failures() -> None:
     assert choices[0].fingerprint == discovery_fingerprint(
         "example", "local", {"profile_dir": "/example"}
     )
+# end def
+
+
+@pytest.mark.asyncio
+async def test_exclude_discovered_drops_already_discovered_adapters() -> None:
+    registry = ProviderRegistry()
+    registry.register(DiscoveringProvider())
+    registry.register(FailingDiscoveryProvider())
+
+    choices, _failures = await discover_accounts(registry)
+    remaining = exclude_discovered(matching_providers(registry), choices)
+
+    assert [implementation.key for implementation in remaining] == ["failing"]
 # end def
