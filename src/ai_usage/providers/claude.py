@@ -49,6 +49,30 @@ def extract_claude_notes(output: str) -> list[str]:
 # end def
 
 
+# The claude.ai web app's promo banner ("Your limits are temporarily boosted...") isn't part
+# of any documented API — it's a GrowthBook remote-config feature flag fetched via the web
+# app's own bootstrap endpoint. `19186470` is that flag's key (a djb2 hash of its real,
+# unpublished name); hardcoded since there's no way to derive or verify it other than by its
+# distinctive content (see ai/plans/009_fix-the-chart-s-remount-reanimate-bug-add-a-real-vertical-sl.md
+# for how this was found, and why it can't be resolved dynamically).
+CLAUDE_WEB_PROMO_FEATURE_KEY = "19186470"
+
+
+def extract_claude_web_notes(app_start_payload: dict[str, Any]) -> list[str]:
+    features = app_start_payload.get("org_growthbook", {}).get("features", {})
+    feature = features.get(CLAUDE_WEB_PROMO_FEATURE_KEY)
+    if not isinstance(feature, dict):
+        return []
+    # end if
+    default_value = feature.get("defaultValue")
+    if not isinstance(default_value, dict):
+        return []
+    # end if
+    text = default_value.get("en-US") or next(iter(default_value.values()), None)
+    return [text] if isinstance(text, str) and text else []
+# end def
+
+
 def claude_metric_key(name: str) -> str:
     normalized = name.casefold()
     if "session" in normalized:
@@ -331,6 +355,24 @@ class ClaudeWebUsageProvider(Provider):
             except Exception as exception:  # noqa: BLE001
                 LOGGER.warning("could not fetch Claude subscription status: %s", exception)
             # end try
+
+            notes: list[str] = []
+            try:
+                app_start_response = await client.get(
+                    f"/edge-api/bootstrap/{org_id}/app_start",
+                    params={
+                        "statsig_hashing_algorithm": "djb2",
+                        "growthbook_format": "sdk",
+                        "include_system_prompts": "false",
+                    },
+                )
+                app_start_response.raise_for_status()
+                app_start_payload = app_start_response.json()
+                raw_payload["app_start"] = app_start_payload
+                notes = extract_claude_web_notes(app_start_payload)
+            except Exception as exception:  # noqa: BLE001
+                LOGGER.warning("could not fetch Claude app_start bootstrap: %s", exception)
+            # end try
         # end with
 
         identity = None
@@ -357,6 +399,7 @@ class ClaudeWebUsageProvider(Provider):
             identity=identity,
             subscription=subscription,
             raw_payload=raw_payload,
+            notes=notes,
         )
     # end def
 # end class
