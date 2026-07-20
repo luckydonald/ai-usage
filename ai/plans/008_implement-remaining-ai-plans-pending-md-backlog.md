@@ -78,6 +78,6 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [x] C2: notes storage with change-only writes + verbose report
 - [x] C3: graph display of active-note windows
 - [x] D1: account group_id config + CLI group/ungroup
-- [ ] D2: merged series building for grouped accounts
+- [ ] D2: merged series building for grouped accounts *(in progress)*
 - [ ] D3: frontend group label wiring
 - [ ] Verification pass
