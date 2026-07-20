@@ -73,3 +73,4 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [ ] A1: fix provider-add duplicate advanced listing
 - [ ] A2: info panel styling polish
 - [ ] B1: statusline fallback to cli-usage when stale
+- [ ] B2: record model with each metric
