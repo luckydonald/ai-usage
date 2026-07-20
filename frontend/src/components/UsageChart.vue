@@ -22,7 +22,7 @@ let chart: echarts.ECharts | undefined;
 function legendSelected(): Record<string, boolean> {
   const selected: Record<string, boolean> = {};
   for (const item of props.series) {
-    selected[seriesDisplayName(item)] = !props.hiddenSeriesKeys.includes(seriesKey(item));
+    selected[seriesDisplayName(item, props.accountLabels)] = !props.hiddenSeriesKeys.includes(seriesKey(item));
   }
   return selected;
 }
@@ -49,7 +49,7 @@ function render(recreate: boolean): void {
   if (isNew) {
     chart.on("legendselectchanged", (raw: unknown) => {
       const params = raw as { name: string; selected: Record<string, boolean> };
-      const item = props.series.find((entry) => seriesDisplayName(entry) === params.name);
+      const item = props.series.find((entry) => seriesDisplayName(entry, props.accountLabels) === params.name);
       const visible = params.selected[params.name] ?? true;
       if (item) emit("toggle-series", seriesKey(item), visible);
     });

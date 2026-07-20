@@ -1354,3 +1354,5 @@ What does that feature flag, `19186470` now mean? Or is it picked up by it's `"i
 ❯ Alright, then we hardcode that number, I guess.
 Back to the website, In case it's not _100.0% remaining at window end_, add useful texts for the other prognostics too, i.e. it will end with less than 100% -> it will show you how much more work you can do, if it's more than 100% it will tell you how fast and when you will have used it up.
 
+❯ The provider name & account name should be at the graph tooltip, the graph legend labels (Five days 12345abcde)  are not helpful at all
+

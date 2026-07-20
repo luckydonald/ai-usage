@@ -3,8 +3,9 @@ import type { EChartsOption, SeriesOption } from "echarts";
 import { formatDuration } from "./time";
 import type { GraphPoint, GraphSeries, GraphWindow, NoteRange } from "./types";
 
-export function seriesDisplayName(item: GraphSeries): string {
-  return `${item.metric_name} · ${item.account_id.slice(0, 8)}`;
+export function seriesDisplayName(item: GraphSeries, accountLabels: Record<string, string> = {}): string {
+  const account = accountLabels[item.account_id] ?? item.account_id.slice(0, 8);
+  return `${item.metric_name} · ${item.provider} · ${account}`;
 }
 
 export function seriesKey(item: GraphSeries): string {
@@ -108,7 +109,8 @@ export function pointTooltipHtml(
 ): string {
   const lines = [
     `<strong>${new Date(point.at).toLocaleString()}</strong>`,
-    `Provider: ${item.service}`,
+    `Service: ${item.service}`,
+    `Provider: ${item.provider}`,
     `Account: ${accountLabelFor(item, accountLabels)}`,
     `Usage: ${point.percentage.toFixed(1)}%`,
   ];
@@ -131,7 +133,7 @@ export function windowTooltipHtml(
 ): string {
   const stats = computeWindowStats(item.points, window, now);
   const lines = includeHeader
-    ? [`<strong>${accountLabelFor(item, accountLabels)} · ${item.metric_name}</strong>`]
+    ? [`<strong>${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`]
     : [];
   lines.push(
     `${new Date(window.start).toLocaleString()} → ${new Date(window.end).toLocaleString()}`,
@@ -183,7 +185,7 @@ export function chartOption(
   const notes = options.notes ?? [];
   const rendered: SeriesOption[] = [];
   for (const item of series) {
-    const name = seriesDisplayName(item);
+    const name = seriesDisplayName(item, accountLabels);
     rendered.push({
       id: `${item.account_id}/${item.metric_key}/actual`,
       name,
@@ -300,7 +302,7 @@ export function chartOption(
             return note ? noteTooltipHtml(note) : "";
           }
         }
-        const item = series.find((entry) => seriesDisplayName(entry) === params.seriesName);
+        const item = series.find((entry) => seriesDisplayName(entry, accountLabels) === params.seriesName);
         if (!item) return "";
         if (params.componentType === "markArea") {
           const data = params.data as [{ windowIndex: number }, unknown];
