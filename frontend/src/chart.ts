@@ -124,21 +124,12 @@ export function pointTooltipHtml(
   return lines.join("<br/>");
 }
 
-export function windowTooltipHtml(
-  item: GraphSeries,
-  window: GraphWindow,
-  now: Date,
-  accountLabels: Record<string, string>,
-  includeHeader = true,
-): string {
+function windowDetailLines(item: GraphSeries, window: GraphWindow, now: Date): string[] {
   const stats = computeWindowStats(item.points, window, now);
-  const lines = includeHeader
-    ? [`<strong>${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`]
-    : [];
-  lines.push(
+  const lines = [
     `${new Date(window.start).toLocaleString()} → ${new Date(window.end).toLocaleString()}`,
     `Peak usage: ${stats.maximumPercentage.toFixed(1)}%`,
-  );
+  ];
   if (stats.burnRatePerHour !== null) {
     lines.push(`Burn rate: ${stats.burnRatePerHour.toFixed(1)}%/h`);
   }
@@ -155,69 +146,21 @@ export function windowTooltipHtml(
     const msUntilExhaustion = Math.max(0, exhaustedAt.getTime() - now.getTime());
     lines.push(`At this rate, you'll hit 100% around ${exhaustedAt.toLocaleString()}`, `That's in ${formatDuration(msUntilExhaustion)}`);
   }
-  return lines.join("<br/>");
+  return lines;
 }
 
-function pointRowHtml(
+export function windowTooltipHtml(
   item: GraphSeries,
-  point: GraphPoint,
-  window: GraphWindow | undefined,
+  window: GraphWindow,
+  now: Date,
   accountLabels: Record<string, string>,
+  includeHeader = true,
 ): string {
-  const label = `${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}`;
-  const lines = [`<strong>${label}</strong>: ${point.percentage.toFixed(1)}%`];
-  if (window) {
-    const remainingMs = new Date(window.end).getTime() - new Date(point.at).getTime();
-    lines.push(`Window end: ${new Date(window.end).toLocaleString()} (${formatDuration(remainingMs)} away)`);
-  }
+  const lines = includeHeader
+    ? [`<strong>${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`]
+    : [];
+  lines.push(...windowDetailLines(item, window, now));
   return lines.join("<br/>");
-}
-
-function projectionRowHtml(item: GraphSeries, percentage: number, accountLabels: Record<string, string>): string {
-  const label = `${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}`;
-  return `<strong>${label}</strong>: ~${percentage.toFixed(1)}% (projected)`;
-}
-
-interface AxisTooltipParams {
-  seriesId?: string;
-  seriesName?: string;
-  dataIndex?: number;
-  data?: unknown;
-}
-
-export function axisTooltipHtml(
-  seriesList: GraphSeries[],
-  paramsList: AxisTooltipParams[],
-  accountLabels: Record<string, string>,
-): string {
-  let header: string | undefined;
-  const rows: string[] = [];
-  const itemsWithActualRow = new Set<GraphSeries>();
-  const projectionEntries: { item: GraphSeries; at: string; percentage: number }[] = [];
-  for (const params of paramsList) {
-    if (!Array.isArray(params.data) || params.data.length !== 2) continue;
-    const item = seriesList.find((entry) => seriesDisplayName(entry, accountLabels) === params.seriesName);
-    if (!item) continue;
-    if (params.seriesId?.endsWith("/actual")) {
-      const point = item.points[params.dataIndex ?? -1];
-      if (!point) continue;
-      if (!header) header = `<strong>${new Date(point.at).toLocaleString()}</strong>`;
-      itemsWithActualRow.add(item);
-      const window = windowByPoint(item.windows, point.at);
-      rows.push(pointRowHtml(item, point, window, accountLabels));
-    } else if (params.seriesId?.includes("/projection-")) {
-      // Beyond the last real sample, only the dashed projection line has any data at all —
-      // without this, hovering purely in the future showed no tooltip whatsoever.
-      const [at, percentage] = params.data as [string, number];
-      projectionEntries.push({ item, at, percentage });
-    }
-  }
-  for (const entry of projectionEntries) {
-    if (itemsWithActualRow.has(entry.item)) continue;
-    if (!header) header = `<strong>${new Date(entry.at).toLocaleString()}</strong>`;
-    rows.push(projectionRowHtml(entry.item, entry.percentage, accountLabels));
-  }
-  return header ? [header, ...rows].join("<br/>") : "";
 }
 
 export function noteTooltipHtml(note: NoteRange): string {
@@ -226,34 +169,88 @@ export function noteTooltipHtml(note: NoteRange): string {
   return [`<strong>${note.text}</strong>`, range].join("<br/>");
 }
 
-export interface MarkAreaHoverEvent {
-  seriesName?: string;
-  data?: unknown;
+// The step-line chart holds each series flat at its last recorded value until the next
+// sample — so the value "at" any hovered timestamp is whatever point came at-or-before it,
+// not whichever recorded point happens to be nearest in raw time. Across a big data gap,
+// ECharts' own per-series nearest-neighbor axis-trigger snapping picks whichever side is
+// closer, which can silently pick the *next* point instead — computing this ourselves from
+// the series' own data, independent of ECharts' snap, is what makes it always correct.
+function pointAtOrBefore(points: GraphPoint[], atMs: number): GraphPoint | undefined {
+  let result: GraphPoint | undefined;
+  for (const point of points) {
+    const pointMs = new Date(point.at).getTime();
+    if (pointMs <= atMs && (!result || pointMs > new Date(result.at).getTime())) {
+      result = point;
+    }
+  }
+  return result;
 }
 
-// Under `tooltip.trigger: "axis"`, ECharts' own tooltip no longer auto-shows for markArea
-// hover (window backgrounds, notes bands) — it's superseded by the axis-trigger slice
-// everywhere. This renders the same region-detail content for a manually-wired
-// mouseover/mouseout listener (see UsageChart.vue) that bypasses the built-in tooltip.
-export function regionTooltipHtml(
+function isLastPoint(points: GraphPoint[], point: GraphPoint): boolean {
+  const pointMs = new Date(point.at).getTime();
+  return !points.some((other) => new Date(other.at).getTime() > pointMs);
+}
+
+// Mirrors the linear interpolation used to draw the dashed projection line itself
+// (`chartOption`'s `projection-*` series: anchored at the last real point, heading to
+// `window.projected_end_percentage` at `window.end`), so a hover past the last real sample
+// reports the same value the dashed line is visually showing at that point.
+function projectedValueAt(last: GraphPoint, window: GraphWindow, atMs: number): number | null {
+  if (window.projected_end_percentage === null) return null;
+  const lastMs = new Date(last.at).getTime();
+  const endMs = new Date(window.end).getTime();
+  if (endMs <= lastMs) return null;
+  const t = Math.min(1, Math.max(0, (atMs - lastMs) / (endMs - lastMs)));
+  return last.percentage + (window.projected_end_percentage - last.percentage) * t;
+}
+
+function activeNotesAt(notes: NoteRange[], atMs: number): NoteRange[] {
+  return notes.filter((note) => {
+    const startMs = new Date(note.start).getTime();
+    const endMs = note.end ? new Date(note.end).getTime() : Infinity;
+    return atMs >= startMs && atMs <= endMs;
+  });
+}
+
+// One unified hover tooltip driven purely by the hovered x-position (not by precisely
+// targeting a line or a markArea box): every currently-displayed series' value at that
+// timestamp, each folding in its own window's detail (peak usage, burn rate, projection —
+// the same content `windowTooltipHtml` shows) right under its value line, plus any active
+// promo/notice notes appended once at the end.
+export function axisTooltipHtml(
   seriesList: GraphSeries[],
-  event: MarkAreaHoverEvent,
-  now: Date,
+  paramsList: { axisValue?: unknown }[],
   accountLabels: Record<string, string>,
-  notes: NoteRange[],
+  now: Date,
+  notes: NoteRange[] = [],
 ): string {
-  if (!event.data || typeof event.data !== "object") return "";
-  const data = event.data as { noteIndex?: number; windowIndex?: number };
-  if (data.noteIndex !== undefined) {
-    const note = notes[data.noteIndex];
-    return note ? noteTooltipHtml(note) : "";
+  const axisEntry = paramsList.find((params) => typeof params.axisValue === "number");
+  if (!axisEntry) return "";
+  const atMs = axisEntry.axisValue as number;
+  const rows: string[] = [];
+  for (const item of seriesList) {
+    const held = pointAtOrBefore(item.points, atMs);
+    if (!held) continue;
+    const window = windowByPoint(item.windows, new Date(atMs).toISOString());
+    const label = `${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}`;
+    let valueLine: string;
+    if (window?.current && atMs > new Date(held.at).getTime() && isLastPoint(item.points, held)) {
+      const projected = projectedValueAt(held, window, atMs);
+      valueLine =
+        projected !== null
+          ? `<strong>${label}</strong>: ~${projected.toFixed(1)}% (projected)`
+          : `<strong>${label}</strong>: ${held.percentage.toFixed(1)}%`;
+    } else {
+      valueLine = `<strong>${label}</strong>: ${held.percentage.toFixed(1)}%`;
+    }
+    const lines = [valueLine];
+    if (window) lines.push(...windowDetailLines(item, window, now));
+    rows.push(lines.join("<br/>"));
   }
-  const item = seriesList.find((entry) => seriesDisplayName(entry, accountLabels) === event.seriesName);
-  if (!item) return "";
-  if (data.windowIndex === undefined) return "";
-  const window = item.windows[data.windowIndex];
-  if (!window) return "";
-  return windowTooltipHtml(item, window, now, accountLabels);
+  if (!rows.length) return "";
+  const header = `<strong>${new Date(atMs).toLocaleString()}</strong>`;
+  const noteLines = activeNotesAt(notes, atMs).map((note) => noteTooltipHtml(note));
+  return [header, ...rows, ...noteLines].join("<br/>");
 }
 
 export interface ChartOptions {
@@ -386,10 +383,7 @@ export function chartOption(
       backgroundColor: dark ? "#1f2937" : "#ffffff",
       borderColor: dark ? "#374151" : "#e5e7eb",
       textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
-      // Under axis-trigger, markArea hover (window backgrounds, notes bands) no longer
-      // reaches this formatter at all — see UsageChart.vue's manual mouseover/mouseout
-      // listener + regionTooltipHtml, which renders that content independently.
-      formatter: (raw: unknown) => (Array.isArray(raw) ? axisTooltipHtml(series, raw as AxisTooltipParams[], accountLabels) : ""),
+      formatter: (raw: unknown) => (Array.isArray(raw) ? axisTooltipHtml(series, raw as { axisValue?: unknown }[], accountLabels, now, notes) : ""),
     },
     legend: {
       type: "scroll",

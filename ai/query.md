@@ -1452,3 +1452,27 @@ Still, your claude agend did the thing, `claude --resume c280fbc5-d004-42b0-b3da
 
 ❯ First commit.
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. For merging the region tooltip (window/notes box) into the axis-slice: should the box's extra detail (peak/burn-rate/promo) become one appended block below the per-series rows, or should it inline per-series (e.g. only the hovered series gets the extra detail, others just show their value)?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Tooltip merge shape** (1/1) <kbd>Single Select</kbd><br>
+>> For merging the region tooltip (window/notes box) into the axis-slice: should the box's extra detail (peak/burn-rate/promo) become one appended block below the per-series rows, or should it inline per-series (e.g. only the hovered series gets the extra detail, others just show their value)?
+> - [ ] 1\. One appended block below the slice (Recommended)
+>   - _Slice rows list every series' value at that timestamp as today; a single extra block at the bottom adds the hovered box's peak/burn-rate/promo detail. Simple, no per-row branching, matches "boxes are extra info about the same moment" framing from pending.md._
+> - [ ] 2\. Inline into just the hovered series' row
+>   - _Only the row for the series whose box is under the cursor gets the extra detail appended; other rows stay plain. More surgical but means row length varies depending on which series you're over, and the region-tooltip/axis code paths stay more entangled._
+> - [ ] 3\. Not now — leave it split as-is
+>   - _Skip this for now; keep the current fix (two separate, non-fighting tooltips) as the resting state and revisit later._
+> - [x] 4\. _Type something:_
+>   - > "replace" is a bit off, randomly one or the other shows. Also the horizontal slice thing is snapping to points and not step of the graph, which is very apperent with bigger no-data holes.
+But yeah, they shoud be united into one, if possible the one which not only shows exactly over a line/box.
+>
+> </details>
+>
+
