@@ -14,6 +14,7 @@ const props = defineProps<{
   rangeEnd: Date;
   accountLabels: Record<string, string>;
   notes: NoteRange[];
+  showDataPoints: boolean;
 }>();
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
@@ -43,6 +44,7 @@ function render(recreate: boolean): void {
       animate: recreate || isNew,
       accountLabels: props.accountLabels,
       notes: props.notes,
+      showDataPoints: props.showDataPoints,
     }),
     recreate || isNew,
   );
@@ -74,6 +76,7 @@ watch(
     props.rangeEnd,
     props.accountLabels,
     props.notes,
+    props.showDataPoints,
   ],
   () => render(false),
   { deep: true },

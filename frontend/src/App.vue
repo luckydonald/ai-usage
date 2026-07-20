@@ -23,6 +23,7 @@ const rangeEnd = ref<Date>(new Date());
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localStorage.getItem("ai-usage-theme") && systemDark.matches));
 const includeWindowEnds = ref(localStorage.getItem("ai-usage-pad-window-ends") === "true");
+const showDataPoints = ref(localStorage.getItem("ai-usage-show-data-points") === "true");
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 let events: EventSource | undefined;
 
@@ -123,6 +124,11 @@ function toggleIncludeWindowEnds(): void {
   void load();
 }
 
+function toggleShowDataPoints(): void {
+  showDataPoints.value = !showDataPoints.value;
+  localStorage.setItem("ai-usage-show-data-points", showDataPoints.value ? "true" : "false");
+}
+
 onMounted(async () => {
   try {
     catalog.value = await fetchCatalog();
@@ -169,6 +175,17 @@ onBeforeUnmount(() => events?.close());
             @change="toggleIncludeWindowEnds"
           />
           Show every window's end
+        </label>
+      </div>
+      <div class="field field-checkbox">
+        <label for="show-data-points">
+          <input
+            id="show-data-points"
+            type="checkbox"
+            :checked="showDataPoints"
+            @change="toggleShowDataPoints"
+          />
+          Show data points
         </label>
       </div>
       <template v-if="preset === 'custom'">
@@ -238,6 +255,7 @@ onBeforeUnmount(() => events?.close());
         :range-end="rangeEnd"
         :account-labels="accountLabels"
         :notes="notes"
+        :show-data-points="showDataPoints"
         @toggle-series="toggleSeries"
       />
       <ServicePanels v-if="series.length" :series="series" :account-labels="accountLabels" />
