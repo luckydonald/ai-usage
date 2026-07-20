@@ -1336,3 +1336,12 @@ Neither stops if I click close on the window.
 ❯ Conversation compacted <kbd>manual</kbd>:
 > - [Result (`27523` chars, `27 KB`)](output/compact/004.e1798582-543b-4a27-aa78-71f5924034ec/result.md)
 
+❯ Now use the browser integration to figure out where the "our weekly" … text comes from. Pretty sure it's from an API directly, on the usage settings page, too.
+
+❯ I've provided you a copy at `ai/references/https/claude.ai/edge-api/bootstrap/<redacted-uuid>/app_start?statsig_hashing_algorithm=djb2&growthbook_format=sdk&include_system_prompts=false/_.json` (make sure to not leak any actual private data when working on this in the commits, and check the autocommits afterwards too.
+Btw., looking at the requests, `http/claude.ai/api/organizations/<redacted-uuid>/dust/org_shortname` was quite interesting, too, and if not already collected should be part of the data for that endpoint.
+
+❯ The internet is a bit spotty, so you can retry failing requests, btw.
+Anonymize dates and other data in that file which could be used to coralate an account membership.
+What does that feature flag, `19186470` now mean? Or is it picked up by it's `"id": "fr_mrprtkqh"`?
+
