@@ -212,11 +212,40 @@ function activeNotesAt(notes: NoteRange[], atMs: number): NoteRange[] {
   });
 }
 
+// Same window facts as `windowDetailLines`, but as one short " · "-joined line instead of
+// several full sentences — used in the grouped hover tooltip where every metric of the same
+// account/provider already gets its own line, so a multi-line block per metric would be a
+// wall of mostly-repeated text.
+function compactWindowDetail(item: GraphSeries, window: GraphWindow, now: Date): string {
+  const stats = computeWindowStats(item.points, window, now);
+  const parts = [`peak ${stats.maximumPercentage.toFixed(0)}%`];
+  if (stats.burnRatePerHour !== null) parts.push(`${stats.burnRatePerHour.toFixed(1)}%/h`);
+  if (stats.perfectLanding) {
+    parts.push("right on spot!");
+  } else if (window.exhausted_from && stats.exhaustedAfterMs !== null && stats.blockedForMs !== null) {
+    parts.push(`hit 100% after ${formatDuration(stats.exhaustedAfterMs)}`, `blocked ${formatDuration(stats.blockedForMs)}`);
+  } else if (stats.remainingPercentageAtEnd !== null) {
+    parts.push(`${stats.remainingPercentageAtEnd.toFixed(0)}% left at end`);
+  } else if (stats.projectedRemainingPercentageAtEnd !== null) {
+    parts.push(`${stats.projectedRemainingPercentageAtEnd.toFixed(0)}% would be left`);
+  } else if (stats.projectedExhaustedAt !== null) {
+    const exhaustedAt = new Date(stats.projectedExhaustedAt);
+    parts.push(`~100% in ${formatDuration(Math.max(0, exhaustedAt.getTime() - now.getTime()))}`);
+  }
+  return parts.join(" · ");
+}
+
+interface SeriesRow {
+  item: GraphSeries;
+  valueLabel: string;
+  detail: string;
+}
+
 // One unified hover tooltip driven purely by the hovered x-position (not by precisely
 // targeting a line or a markArea box): every currently-displayed series' value at that
-// timestamp, each folding in its own window's detail (peak usage, burn rate, projection —
-// the same content `windowTooltipHtml` shows) right under its value line, plus any active
-// promo/notice notes appended once at the end.
+// timestamp, grouped by account+provider (one color-swatched header, one compact line per
+// metric underneath) instead of repeating the account/provider label per metric — plus any
+// active promo/notice notes appended once at the end.
 export function axisTooltipHtml(
   seriesList: GraphSeries[],
   paramsList: { axisValue?: unknown }[],
@@ -227,30 +256,41 @@ export function axisTooltipHtml(
   const axisEntry = paramsList.find((params) => typeof params.axisValue === "number");
   if (!axisEntry) return "";
   const atMs = axisEntry.axisValue as number;
-  const rows: string[] = [];
+  const rows: SeriesRow[] = [];
   for (const item of seriesList) {
     const held = pointAtOrBefore(item.points, atMs);
     if (!held) continue;
     const window = windowByPoint(item.windows, new Date(atMs).toISOString());
-    const label = `${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}`;
-    let valueLine: string;
+    let valueLabel: string;
     if (window?.current && atMs > new Date(held.at).getTime() && isLastPoint(item.points, held)) {
       const projected = projectedValueAt(held, window, atMs);
-      valueLine =
-        projected !== null
-          ? `<strong>${label}</strong>: ~${projected.toFixed(1)}% (projected)`
-          : `<strong>${label}</strong>: ${held.percentage.toFixed(1)}%`;
+      valueLabel = projected !== null ? `~${projected.toFixed(1)}% (projected)` : `${held.percentage.toFixed(1)}%`;
     } else {
-      valueLine = `<strong>${label}</strong>: ${held.percentage.toFixed(1)}%`;
+      valueLabel = `${held.percentage.toFixed(1)}%`;
     }
-    const lines = [valueLine];
-    if (window) lines.push(...windowDetailLines(item, window, now));
-    rows.push(lines.join("<br/>"));
+    rows.push({ item, valueLabel, detail: window ? compactWindowDetail(item, window, now) : "" });
   }
   if (!rows.length) return "";
+
+  const groups = new Map<string, SeriesRow[]>();
+  for (const row of rows) {
+    const key = `${row.item.provider}::${accountLabelFor(row.item, accountLabels)}`;
+    (groups.get(key) ?? groups.set(key, []).get(key)!).push(row);
+  }
+  const blocks = Array.from(groups.values()).map((groupRows) => {
+    const firstItem = groupRows[0]!.item;
+    const swatch = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${firstItem.color};margin-right:4px;"></span>`;
+    const groupHeader = `${swatch}<strong>${accountLabelFor(firstItem, accountLabels)} · ${firstItem.provider}</strong>`;
+    const metricLines = groupRows.map((row) => {
+      const base = `&nbsp;&nbsp;${row.item.metric_name}: ${row.valueLabel}`;
+      return row.detail ? `${base} — ${row.detail}` : base;
+    });
+    return [groupHeader, ...metricLines].join("<br/>");
+  });
+
   const header = `<strong>${new Date(atMs).toLocaleString()}</strong>`;
   const noteLines = activeNotesAt(notes, atMs).map((note) => noteTooltipHtml(note));
-  return [header, ...rows, ...noteLines].join("<br/>");
+  return [header, ...blocks, ...noteLines].join("<br/>");
 }
 
 export interface ChartOptions {
