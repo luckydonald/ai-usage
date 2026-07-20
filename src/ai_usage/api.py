@@ -23,6 +23,7 @@ from ai_usage.crawler import Crawler
 from ai_usage.database import Database
 from ai_usage.graph import build_series
 from ai_usage.history import HistoryStore
+from ai_usage.notes import collect_note_ranges
 from ai_usage.orm import MetricSampleRecord
 from ai_usage.progress import ProgressReporter
 from ai_usage.providers import built_in_registry
@@ -155,6 +156,21 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
             # end for
         # end for
         return [item.model_dump(mode="json") for item in build_series(samples, colors)]
+    # end def
+
+    @app.get("/api/v1/notes")
+    async def notes() -> list[dict[str, Any]]:
+        ranges = collect_note_ranges(state.paths)
+        return [
+            {
+                "service": item.service,
+                "account_id": item.account_id,
+                "text": item.text,
+                "start": item.start.isoformat(),
+                "end": item.end.isoformat() if item.end else None,
+            }
+            for item in ranges
+        ]
     # end def
 
     @app.get("/api/v1/events")

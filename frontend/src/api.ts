@@ -1,4 +1,4 @@
-import type { Catalog, Filters, GraphSeries, LatestMetric } from "./types";
+import type { Catalog, Filters, GraphSeries, LatestMetric, NoteRange } from "./types";
 
 async function request<T>(path: string): Promise<T> {
   const response = await fetch(path, { headers: { Accept: "application/json" } });
@@ -21,5 +21,9 @@ export function fetchSeries(start: Date, end: Date, filters: Filters): Promise<G
   for (const value of filters.accounts) parameters.append("account", value);
   for (const value of filters.metrics) parameters.append("metric", value);
   return request<GraphSeries[]>(`/api/v1/series?${parameters.toString()}`);
+}
+
+export function fetchNotes(): Promise<NoteRange[]> {
+  return request<NoteRange[]>("/api/v1/notes");
 }
 

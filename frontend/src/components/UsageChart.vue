@@ -3,7 +3,7 @@ import * as echarts from "echarts";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { chartOption, seriesDisplayName, seriesKey } from "../chart";
-import type { GraphSeries } from "../types";
+import type { GraphSeries, NoteRange } from "../types";
 
 const props = defineProps<{
   series: GraphSeries[];
@@ -13,6 +13,7 @@ const props = defineProps<{
   rangeStart: Date;
   rangeEnd: Date;
   accountLabels: Record<string, string>;
+  notes: NoteRange[];
 }>();
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
@@ -41,6 +42,7 @@ function render(recreate: boolean): void {
       end: props.rangeEnd,
       animate: recreate || isNew,
       accountLabels: props.accountLabels,
+      notes: props.notes,
     }),
     recreate || isNew,
   );
@@ -64,7 +66,15 @@ onMounted(() => {
 });
 watch(() => props.dark, () => render(true));
 watch(
-  () => [props.series, props.exhaustedColor, props.hiddenSeriesKeys, props.rangeStart, props.rangeEnd, props.accountLabels],
+  () => [
+    props.series,
+    props.exhaustedColor,
+    props.hiddenSeriesKeys,
+    props.rangeStart,
+    props.rangeEnd,
+    props.accountLabels,
+    props.notes,
+  ],
   () => render(false),
   { deep: true },
 );

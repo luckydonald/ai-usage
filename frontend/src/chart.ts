@@ -1,7 +1,7 @@
 import type { EChartsOption, SeriesOption } from "echarts";
 
 import { formatDuration } from "./time";
-import type { GraphPoint, GraphSeries, GraphWindow } from "./types";
+import type { GraphPoint, GraphSeries, GraphWindow, NoteRange } from "./types";
 
 export function seriesDisplayName(item: GraphSeries): string {
   return `${item.metric_name} · ${item.account_id.slice(0, 8)}`;
@@ -134,6 +134,12 @@ export function windowTooltipHtml(
   return lines.join("<br/>");
 }
 
+export function noteTooltipHtml(note: NoteRange): string {
+  const start = new Date(note.start).toLocaleDateString();
+  const range = note.end ? `${start} → ${new Date(note.end).toLocaleDateString()}` : `${start} → now`;
+  return [`<strong>${note.text}</strong>`, range].join("<br/>");
+}
+
 export interface ChartOptions {
   now?: Date;
   legendSelected?: Record<string, boolean>;
@@ -141,6 +147,7 @@ export interface ChartOptions {
   end?: Date;
   animate?: boolean;
   accountLabels?: Record<string, string>;
+  notes?: NoteRange[];
 }
 
 export function chartOption(
@@ -151,6 +158,7 @@ export function chartOption(
 ): EChartsOption {
   const now = options.now ?? new Date();
   const accountLabels = options.accountLabels ?? {};
+  const notes = options.notes ?? [];
   const rendered: SeriesOption[] = [];
   for (const item of series) {
     const name = seriesDisplayName(item);
@@ -233,6 +241,22 @@ export function chartOption(
       data: [{ xAxis: now.toISOString() }],
     },
   });
+  if (notes.length) {
+    rendered.push({
+      id: "notes-marker",
+      name: "Notes",
+      type: "line",
+      data: [],
+      silent: false,
+      markArea: {
+        itemStyle: { color: "#94a3b8", opacity: 0.25 },
+        data: notes.map((note, index) => [
+          { xAxis: note.start, yAxis: 97, noteIndex: index },
+          { xAxis: note.end ?? now.toISOString(), yAxis: 100, noteIndex: index },
+        ]),
+      },
+    });
+  }
   return {
     backgroundColor: "transparent",
     animation: options.animate ?? true,
@@ -247,6 +271,13 @@ export function chartOption(
           dataIndex?: number;
           data?: unknown;
         };
+        if (params.componentType === "markArea" && Array.isArray(params.data)) {
+          const noteIndex = (params.data as [{ noteIndex?: number }, unknown])[0].noteIndex;
+          if (noteIndex !== undefined) {
+            const note = notes[noteIndex];
+            return note ? noteTooltipHtml(note) : "";
+          }
+        }
         const item = series.find((entry) => seriesDisplayName(entry) === params.seriesName);
         if (!item) return "";
         if (params.componentType === "markArea") {

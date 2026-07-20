@@ -23,6 +23,59 @@ class NoteTransition:
 # end class
 
 
+@dataclass(frozen=True, slots=True)
+class NoteRange:
+    service: str
+    account_id: str
+    text: str
+    start: datetime
+    end: datetime | None
+# end class
+
+
+def collect_note_ranges(paths: Paths) -> list[NoteRange]:
+    """Replay every recorded transition into start/end ranges (`end=None` while still active)."""
+    root = paths.local / "notes"
+    if not root.exists():
+        return []
+    # end if
+    ranges: list[NoteRange] = []
+    for path in sorted(root.glob("*/*.jsonl")):
+        service = path.parent.name
+        account_id = path.stem
+        open_starts: dict[str, datetime] = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            # end if
+            record = json.loads(line)
+            observed_at = datetime.fromisoformat(record["observed_at"])
+            text = record["text"]
+            if record["active"]:
+                open_starts[text] = observed_at
+            else:
+                start = open_starts.pop(text, observed_at)
+                ranges.append(
+                    NoteRange(
+                        service=service,
+                        account_id=account_id,
+                        text=text,
+                        start=start,
+                        end=observed_at,
+                    )
+                )
+            # end if
+        # end for
+        for text, start in open_starts.items():
+            ranges.append(
+                NoteRange(service=service, account_id=account_id, text=text, start=start, end=None)
+            )
+        # end for
+    # end for
+    return ranges
+# end def
+
+
 class NotesStore:
     def __init__(self, paths: Paths):
         self.paths = paths
