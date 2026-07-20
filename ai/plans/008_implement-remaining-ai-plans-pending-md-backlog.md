@@ -67,3 +67,7 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - Backend: `pytest` — extend `tests/test_progress.py`-style crawler tests for the notes diff-and-report logic (Cluster C2), add unit tests for `Metric.model` round-tripping through `history.py`/`orm.py` (Cluster B2), add tests for the `matching_providers` exclusion filter (Cluster A1), and add `graph.py` tests for group merging with overlapping/non-overlapping windows (Cluster D2). Run `ruff check` on all touched files.
 - Frontend: `yarn vue-tsc --noEmit`, `yarn vitest run`, `yarn build` after each cluster (chart.ts marker additions, ServicePanels.vue styling, catalog/group label wiring).
 - Manual: run `ai-usage serve` against real `~/.ai-usage` data (read-only, safe alongside a running `ai-usage up`) to confirm info-panel styling and the new note markers render without console errors; browser-automation pixel verification remains unavailable in this environment per the known tooling limitation, so this stays a code-level + unit-test verification, disclosed as such.
+
+## Todos
+
+- [ ] A1: fix provider-add duplicate advanced listing
