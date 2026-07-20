@@ -19,6 +19,7 @@ export interface Account {
   colors: Record<string, string>;
   identity: AccountIdentity | null;
   subscription: SubscriptionStatus | null;
+  group_id: string | null;
 }
 
 export interface CatalogMetric {

@@ -55,9 +55,20 @@ function accountLabel(account: Catalog["accounts"][number]): string {
   return identityLabel ? `${account.name} (${identityLabel})` : account.name;
 }
 
-const accountLabels = computed<Record<string, string>>(() =>
-  Object.fromEntries(catalog.value.accounts.map((account) => [account.id, accountLabel(account)])),
-);
+const accountLabels = computed<Record<string, string>>(() => {
+  const labels: Record<string, string> = {};
+  const groupLabelSource = new Map<string, Catalog["accounts"][number]>();
+  for (const account of catalog.value.accounts) {
+    labels[account.id] = accountLabel(account);
+    if (account.group_id && !groupLabelSource.has(account.group_id)) {
+      groupLabelSource.set(account.group_id, account);
+    }
+  }
+  for (const [groupId, account] of groupLabelSource) {
+    labels[groupId] = accountLabel(account);
+  }
+  return labels;
+});
 
 async function load(autoWiden = false): Promise<void> {
   loading.value = true;
