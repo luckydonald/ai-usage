@@ -109,6 +109,20 @@ class Crawler:
         # end with
     # end def
 
+    async def crawl(self, accounts: list[AccountConfig], reason: str) -> None:
+        if not accounts:
+            return
+        # end if
+        now = datetime.now(UTC)
+        names = ", ".join(account.name for account in accounts)
+        self.report(f"Crawling {len(accounts)} account(s) {reason}: {names}.")
+        results = await self.collector.fetch_all(accounts, operation="crawling")
+        for account, result in zip(accounts, results, strict=True):
+            await self.update_state(account, result, now)
+        # end for
+        await asyncio.to_thread(maybe_run_git_backup, self.database.paths, self.config, now)
+    # end def
+
     async def tick(self) -> None:
         accounts = self.accounts_for_this_host(self.config.list_accounts())
         self.report_account_changes(accounts)
@@ -124,16 +138,7 @@ class Crawler:
                 # end if
             # end for
         # end with
-        if not due:
-            return
-        # end if
-        due_names = ", ".join(account.name for account in due)
-        self.report(f"Crawling {len(due)} account(s) due for a check: {due_names}.")
-        results = await self.collector.fetch_all(due, operation="crawling")
-        for account, result in zip(due, results, strict=True):
-            await self.update_state(account, result, now)
-        # end for
-        await asyncio.to_thread(maybe_run_git_backup, self.database.paths, self.config, now)
+        await self.crawl(due, "due for a check")
     # end def
 
     async def update_state(
@@ -215,6 +220,12 @@ class Crawler:
         else:
             self.report("Crawler started with no enabled accounts; waiting for configuration.")
         # end if
+        await self.ensure_states(accounts)
+        # Crawl right away instead of waiting for the first scheduled tick: a persisted
+        # `next_run_at` from a previous run could be minutes/hours in the future (long-window
+        # accounts back off their interval), which would otherwise leave a freshly (re)started
+        # `up`/`crawl` showing stale numbers until that time arrives.
+        await self.crawl(accounts, "immediately on startup")
         state_file = str(self.database.paths.local / "fastscheduler.json")
         self.scheduler = FastScheduler(state_file=state_file, quiet=True)
         self.scheduler.every(1).seconds.no_catch_up().do(self.tick)
