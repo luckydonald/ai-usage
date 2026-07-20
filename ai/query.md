@@ -1333,3 +1333,6 @@ Neither stops if I click close on the window.
 ❯ Conversation compacted <kbd>manual</kbd>:
 > - [Result (`30593` chars, `30 KB`)](output/compact/003.e1798582-543b-4a27-aa78-71f5924034ec/result.md)
 
+❯ Conversation compacted <kbd>manual</kbd>:
+> - [Result (`27523` chars, `27 KB`)](output/compact/004.e1798582-543b-4a27-aa78-71f5924034ec/result.md)
+
