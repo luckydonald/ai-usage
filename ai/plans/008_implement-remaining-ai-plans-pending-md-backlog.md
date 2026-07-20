@@ -72,7 +72,7 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 
 - [x] A1: fix provider-add duplicate advanced listing
 - [x] A2: info panel styling polish
-- [ ] B1: statusline fallback to cli-usage when stale
+- [ ] B1: statusline fallback to cli-usage when stale *(in progress)*
 - [ ] B2: record model with each metric
 - [ ] C1: parse promo/notice banners
 - [ ] C2: notes storage with change-only writes + verbose report
