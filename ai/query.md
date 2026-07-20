@@ -1359,3 +1359,88 @@ Back to the website, In case it's not _100.0% remaining at window end_, add usef
 ❯ Add a checkbox adding dot to the data collection points.
 
 
+❯ /plan The graphes are still animating whenever there's new data, they even remove the dom node completely, making the page jump.
+You tried fixing this several times, are there better suited graphing libraries available to use?
+You may inspect the `ai/query.md` prompt to summarize the graph's requirements first (probably an agent not inheriting this lengthy history but just working on that file). Then I want to have a checklist of my features, and after that some recommendations.
+Also the overlay should show all data at that time, not only the log-points for a single line; but a vertical slice to that moment in time.
+
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. For the vertical-slice tooltip: when hovering directly over a window-background/notes-band (not a specific line point), should it show the axis-slice (all series at that x) or keep today's region-specific tooltip (peak/burn-rate/projection text, promo text)?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Slice vs region hover** (1/1) <kbd>Single Select</kbd><br>
+>> For the vertical-slice tooltip: when hovering directly over a window-background/notes-band (not a specific line point), should it show the axis-slice (all series at that x) or keep today's region-specific tooltip (peak/burn-rate/projection text, promo text)?
+> - [ ] 1\. Region tooltip wins on markArea, slice elsewhere (Recommended)
+>   - _Hovering the window/notes background keeps today's detailed region tooltip; hovering anywhere else on the chart (including directly on a line) shows the new all-series vertical slice. Matches ECharts' natural separation between axis-trigger and item-hover and needs no invented merge behavior._
+> - [ ] 2\. Always show the vertical slice, drop region-specific tooltips
+>   - _Simpler mental model, but loses the peak-usage/burn-rate/exhausted-at/promo-text detail that today's window and notes tooltips carry — that detail would need to be moved elsewhere (e.g. the per-service info panels) to not be lost outright._
+> - [ ] 3\. Try to merge both into one tooltip when hovering a markArea
+>   - _Most information-dense option, but per ECharts' own tooltip model axis-trigger and item-hover are two different mechanisms — merging them means hand-building a custom tooltip via manual mouseover/mousemove events instead of the built-in formatter, more implementation risk for an uncertain payoff._
+> - [x] 4\. _Type something:_
+>   - > Let's the the first one first, giving this lib one more try, I guess.
+>
+> </details>
+>
+
+❯ Also switch to the tree shake mode.
+
+❯ Check out why the agents above didn't oropperly log to `query.md` - see also @ai/°base/AGENTS.md to get you up to speed
+
+❯ Alright, implement this
+
+❯ Alright, inspect the base repo itself, at `../base`, there it was working before (I.e. see `Task Notification` `aa37767ddf7b415bd` in `ai/°base/query.md` there and there in `ai/output/**`).
+It shall be fixed in that repo.
+
+❯ Add a reusable debug hook, which just does the logging part as we expect, then commit, I'll then launch claude there (tell me what I needs to say to make it run a simple task/agent), then I'll report back and you can inspect.
+
+❯ Ah, maybe the problem were the commit hooks blocking the commit (specifically the local claude being updated by user interaction with a new command), it seems. Can that block the whole file IO including `.debug`? The old hooks seem to work once I ran `sync.py`?
+
+Still, your claude agend did the thing, `claude --resume c280fbc5-d004-42b0-b3da-1f3a3d53a392`.
+
+❯ But `20260720-140007_151594-save-prompt.json` also exists.
+
+❯ Launch a subagent (Agent tool, general-purpose, backgrounded) to do something trivial — e.g. "list the top-level files in this repo" — then just wait for it to finish and tell me it's done.
+
+❯ Task Notification:
+> - Task `a99e23add329e25d8` <kbd>completed</kbd>
+> - Tool `toolu_01A9fBrstbcQcwb5DviqBbHj`
+> - > Agent "List top-level repo files" finished
+> - [Query (`141` chars, `141 B`)](output/agents/018.a99e23add329e25d8/prompt.md)
+> - [Answer (`656` chars, `656 B`)](output/agents/018.a99e23add329e25d8/result.md)
+> - [Raw log (`26296` chars, `25.7 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e76fd94a-bf1d-49aa-90c1-e9466e5497fe/tasks/a99e23add329e25d8.output)
+> - `1` tools, `21888` tokens, `0.29955 s`
+
+❯ I launched a fresh claude in this dir, and this is the result: `claude --resume e76fd94a-bf1d-49aa-90c1-e9466e5497fe`
+
+❯ Launch a subagent (Agent tool, general-purpose, backgrounded) to do something trivial — e.g. "list the top-level files in this repo" — then just wait for it to finish and tell me it's done.
+
+❯ Task Notification:
+> - Task `a28e024f15a1cfa8c` <kbd>completed</kbd>
+> - Tool `toolu_01WrjYW8AMLS5TKyZQz35s88`
+> - > Agent "List top-level repo files" finished
+> - [Query (`210` chars, `212 B`)](output/agents/019.a28e024f15a1cfa8c/prompt.md)
+> - [Answer (`869` chars, `869 B`)](output/agents/019.a28e024f15a1cfa8c/result.md)
+> - [Raw log (`26835` chars, `26.3 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/adcfc14a-e186-4ac3-8c39-7880da11ec8a/tasks/a28e024f15a1cfa8c.output)
+> - `1` tools, `22046` tokens, `0.16025 s`
+
+❯ Apparently you are still in plan session?
+
+❯ Launch a subagent (Agent tool, general-purpose, backgrounded) to do something trivial — e.g. "list the top-level files in this repo" — then just wait for it to finish and tell me it's done.
+
+❯ Task Notification:
+> - Task `a9bb4ebf7b50e7a37` <kbd>completed</kbd>
+> - Tool `toolu_01Efm1Z6asfL9p7bPd5gF94u`
+> - > Agent "List top-level repo files" finished
+> - [Query (`116` chars, `116 B`)](output/agents/020.a9bb4ebf7b50e7a37/prompt.md)
+> - [Answer (`188` chars, `188 B`)](output/agents/020.a9bb4ebf7b50e7a37/result.md)
+> - [Raw log (`22433` chars, `22 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/6bcfd635-ceaf-44e5-a047-0651d5f5f16a/tasks/a9bb4ebf7b50e7a37.output)
+> - `1` tools, `20876` tokens, `0.184767 s`
+
+❯ Alright, I switched out of plan mode now, to change that variable. Also, and I still believe this is the culprit, I've now modified claude's `settings.local.json`, but not the others `sync.py`, then I did launch our agent codex again (all after `14:25:00`): `claude --resume 6bcfd635-ceaf-44e5-a047-0651d5f5f16a`
+

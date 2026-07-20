@@ -1,0 +1,1 @@
+List top-level files in directory /home/user/git/luckydonald/ai-usage (run `ls` there). Report the list back, short.

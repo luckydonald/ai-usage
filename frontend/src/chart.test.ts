@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chartOption, computeWindowStats, noteTooltipHtml, percentThroughWindow, pointTooltipHtml, seriesDisplayName, windowByPoint, windowTooltipHtml } from "./chart";
+import { axisTooltipHtml, chartOption, computeWindowStats, noteTooltipHtml, percentThroughWindow, pointTooltipHtml, regionTooltipHtml, seriesDisplayName, windowByPoint, windowTooltipHtml } from "./chart";
 import type { GraphSeries, GraphWindow, NoteRange } from "./types";
 
 const series: GraphSeries = {
@@ -304,5 +304,80 @@ describe("tooltip HTML", () => {
     const html = windowTooltipHtml(series, overshooting, new Date("2026-07-17T12:00:00Z"), {});
     expect(html).toContain("hit 100% around");
     expect(html).toContain("That's in");
+  });
+});
+
+describe("axisTooltipHtml", () => {
+  const other: GraphSeries = {
+    ...series,
+    account_id: "other-account",
+    metric_key: "seven-days",
+    metric_name: "Seven days",
+  };
+
+  it("renders one shared header and one row per series at that timestamp", () => {
+    const html = axisTooltipHtml(
+      [series, other],
+      [
+        { seriesId: "account/five-hours/actual", seriesName: "Five hours · app-server · account", dataIndex: 0, data: ["2026-07-17T10:00:00Z", 20] },
+        { seriesId: "other-account/seven-days/actual", seriesName: "Seven days · app-server · other-ac", dataIndex: 0, data: ["2026-07-17T10:00:00Z", 20] },
+      ],
+      {},
+    );
+    expect(html).toContain("7/17/2026");
+    expect(html).toContain("Five hours");
+    expect(html).toContain("Seven days");
+    expect(html.match(/<strong>7\/17\/2026/g)?.length).toBe(1);
+  });
+
+  it("excludes synthetic series (projection, now-line, notes-marker, exhausted) from the slice", () => {
+    const html = axisTooltipHtml(
+      [series],
+      [
+        { seriesId: "account/five-hours/projection-0", seriesName: "Five hours · app-server · account", dataIndex: 0, data: ["2026-07-17T10:00:00Z", 20] },
+        { seriesId: "now-line", data: [] },
+        { seriesId: "notes-marker", data: [] },
+      ],
+      {},
+    );
+    expect(html).toBe("");
+  });
+
+  it("returns an empty string when nothing matches", () => {
+    expect(axisTooltipHtml([series], [], {})).toBe("");
+  });
+});
+
+describe("regionTooltipHtml", () => {
+  const [window] = series.windows;
+  if (!window) throw new Error("fixture must define a window");
+  const now = new Date("2026-07-17T12:00:00Z");
+
+  it("renders the window's detail tooltip when hovering its markArea", () => {
+    const html = regionTooltipHtml(
+      [series],
+      { seriesName: "Five hours · app-server · account", data: { windowIndex: 0 } },
+      now,
+      {},
+      [],
+    );
+    expect(html).toContain("Peak usage: 40.0%");
+  });
+
+  it("renders a note's tooltip when hovering a notes-band markArea", () => {
+    const note: NoteRange = {
+      service: "codex",
+      account_id: "account",
+      text: "+50% weekly limits promo",
+      start: "2026-07-01T00:00:00Z",
+      end: null,
+    };
+    const html = regionTooltipHtml([series], { data: { noteIndex: 0 } }, now, {}, [note]);
+    expect(html).toContain("+50% weekly limits promo");
+  });
+
+  it("returns an empty string for an unrecognized or missing event shape", () => {
+    expect(regionTooltipHtml([series], {}, now, {}, [])).toBe("");
+    expect(regionTooltipHtml([series], { seriesName: "unknown", data: { windowIndex: 0 } }, now, {}, [])).toBe("");
   });
 });

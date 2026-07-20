@@ -158,10 +158,83 @@ export function windowTooltipHtml(
   return lines.join("<br/>");
 }
 
+function pointRowHtml(
+  item: GraphSeries,
+  point: GraphPoint,
+  window: GraphWindow | undefined,
+  accountLabels: Record<string, string>,
+): string {
+  const label = `${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}`;
+  const lines = [`<strong>${label}</strong>: ${point.percentage.toFixed(1)}%`];
+  if (window) {
+    const remainingMs = new Date(window.end).getTime() - new Date(point.at).getTime();
+    lines.push(`Window end: ${new Date(window.end).toLocaleString()} (${formatDuration(remainingMs)} away)`);
+  }
+  return lines.join("<br/>");
+}
+
+interface AxisTooltipParams {
+  seriesId?: string;
+  seriesName?: string;
+  dataIndex?: number;
+  data?: unknown;
+}
+
+export function axisTooltipHtml(
+  seriesList: GraphSeries[],
+  paramsList: AxisTooltipParams[],
+  accountLabels: Record<string, string>,
+): string {
+  let header: string | undefined;
+  const rows: string[] = [];
+  for (const params of paramsList) {
+    if (!params.seriesId?.endsWith("/actual")) continue;
+    if (!Array.isArray(params.data) || params.data.length !== 2) continue;
+    const item = seriesList.find((entry) => seriesDisplayName(entry, accountLabels) === params.seriesName);
+    if (!item) continue;
+    const point = item.points[params.dataIndex ?? -1];
+    if (!point) continue;
+    if (!header) header = `<strong>${new Date(point.at).toLocaleString()}</strong>`;
+    const window = windowByPoint(item.windows, point.at);
+    rows.push(pointRowHtml(item, point, window, accountLabels));
+  }
+  return header ? [header, ...rows].join("<br/>") : "";
+}
+
 export function noteTooltipHtml(note: NoteRange): string {
   const start = new Date(note.start).toLocaleDateString();
   const range = note.end ? `${start} → ${new Date(note.end).toLocaleDateString()}` : `${start} → now`;
   return [`<strong>${note.text}</strong>`, range].join("<br/>");
+}
+
+export interface MarkAreaHoverEvent {
+  seriesName?: string;
+  data?: unknown;
+}
+
+// Under `tooltip.trigger: "axis"`, ECharts' own tooltip no longer auto-shows for markArea
+// hover (window backgrounds, notes bands) — it's superseded by the axis-trigger slice
+// everywhere. This renders the same region-detail content for a manually-wired
+// mouseover/mouseout listener (see UsageChart.vue) that bypasses the built-in tooltip.
+export function regionTooltipHtml(
+  seriesList: GraphSeries[],
+  event: MarkAreaHoverEvent,
+  now: Date,
+  accountLabels: Record<string, string>,
+  notes: NoteRange[],
+): string {
+  if (!event.data || typeof event.data !== "object") return "";
+  const data = event.data as { noteIndex?: number; windowIndex?: number };
+  if (data.noteIndex !== undefined) {
+    const note = notes[data.noteIndex];
+    return note ? noteTooltipHtml(note) : "";
+  }
+  const item = seriesList.find((entry) => seriesDisplayName(entry, accountLabels) === event.seriesName);
+  if (!item) return "";
+  if (data.windowIndex === undefined) return "";
+  const window = item.windows[data.windowIndex];
+  if (!window) return "";
+  return windowTooltipHtml(item, window, now, accountLabels);
 }
 
 export interface ChartOptions {
@@ -289,38 +362,12 @@ export function chartOption(
     animation: options.animate ?? true,
     textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
     tooltip: {
-      trigger: "item",
+      trigger: "axis",
       confine: true,
-      formatter: (raw: unknown) => {
-        const params = raw as {
-          componentType: string;
-          seriesName?: string;
-          dataIndex?: number;
-          data?: unknown;
-        };
-        if (params.componentType === "markArea" && Array.isArray(params.data)) {
-          const noteIndex = (params.data as [{ noteIndex?: number }, unknown])[0].noteIndex;
-          if (noteIndex !== undefined) {
-            const note = notes[noteIndex];
-            return note ? noteTooltipHtml(note) : "";
-          }
-        }
-        const item = series.find((entry) => seriesDisplayName(entry, accountLabels) === params.seriesName);
-        if (!item) return "";
-        if (params.componentType === "markArea") {
-          const data = params.data as [{ windowIndex: number }, unknown];
-          const window = item.windows[data[0].windowIndex];
-          if (!window) return "";
-          return windowTooltipHtml(item, window, now, accountLabels);
-        }
-        if (params.componentType === "series" && Array.isArray(params.data) && params.data.length === 2) {
-          const point = item.points[params.dataIndex ?? -1];
-          if (!point) return "";
-          const window = windowByPoint(item.windows, point.at);
-          return pointTooltipHtml(item, point, window, accountLabels);
-        }
-        return "";
-      },
+      // Under axis-trigger, markArea hover (window backgrounds, notes bands) no longer
+      // reaches this formatter at all — see UsageChart.vue's manual mouseover/mouseout
+      // listener + regionTooltipHtml, which renders that content independently.
+      formatter: (raw: unknown) => (Array.isArray(raw) ? axisTooltipHtml(series, raw as AxisTooltipParams[], accountLabels) : ""),
     },
     legend: {
       type: "scroll",

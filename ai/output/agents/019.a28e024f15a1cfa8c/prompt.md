@@ -1,0 +1,1 @@
+List the top-level files and directories in /home/user/git/luckydonald/ai-usage (just run `ls -la` in that directory and report the output). This is a trivial test task — just report the directory listing back.
