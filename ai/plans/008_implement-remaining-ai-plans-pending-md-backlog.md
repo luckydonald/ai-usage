@@ -80,4 +80,4 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [x] D1: account group_id config + CLI group/ungroup
 - [x] D2: merged series building for grouped accounts
 - [x] D3: frontend group label wiring
-- [ ] Verification pass *(in progress)*
+- [x] Verification pass
