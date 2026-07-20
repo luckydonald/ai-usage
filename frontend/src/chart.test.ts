@@ -210,6 +210,31 @@ describe("computeWindowStats", () => {
     const stats = computeWindowStats(series.points, openWindow, new Date("2026-07-17T12:00:00Z"));
     expect(stats.remainingPercentageAtEnd).toBeNull();
   });
+
+  it("projects remaining headroom when the current window is on track to land under 100%", () => {
+    const [openWindow] = series.windows;
+    if (!openWindow) throw new Error("fixture must define a window");
+    // fixture's projected_end_percentage is 90
+    const stats = computeWindowStats(series.points, openWindow, new Date("2026-07-17T12:00:00Z"));
+    expect(stats.projectedRemainingPercentageAtEnd).toBeCloseTo(10);
+    expect(stats.projectedExhaustedAt).toBeNull();
+  });
+
+  it("projects an exhaustion ETA when the current window is on track to blow past 100%", () => {
+    const overshooting: GraphWindow = {
+      start: "2026-07-17T09:00:00Z",
+      end: "2026-07-17T14:00:00Z",
+      maximum_percentage: 40,
+      exhausted_from: null,
+      current: true,
+      projected_end_percentage: 150,
+    };
+    const stats = computeWindowStats(series.points, overshooting, new Date("2026-07-17T12:00:00Z"));
+    expect(stats.projectedRemainingPercentageAtEnd).toBeNull();
+    expect(stats.projectedExhaustedAt).not.toBeNull();
+    // burn rate is 40%/hour over the 1h elapsed (09:00->11:00 start, last point 11:00 at 40%... see fixture)
+    expect(new Date(stats.projectedExhaustedAt!).getTime()).toBeGreaterThan(new Date("2026-07-17T11:00:00Z").getTime());
+  });
 });
 
 describe("tooltip HTML", () => {
@@ -239,5 +264,27 @@ describe("tooltip HTML", () => {
     expect(html).not.toContain("person@example.com");
     expect(html).not.toContain("<strong>");
     expect(html).toContain("40.0%");
+  });
+
+  it("tells you how much headroom is left when the projection lands under 100%", () => {
+    const [window] = series.windows;
+    if (!window) throw new Error("fixture must define a window");
+    const html = windowTooltipHtml(series, window, new Date("2026-07-17T12:00:00Z"), {});
+    expect(html).toContain("Projected to land at 90.0%");
+    expect(html).toContain("10.0% of your limit would be left to use");
+  });
+
+  it("tells you the burn rate and exhaustion ETA when the projection overshoots 100%", () => {
+    const overshooting: GraphWindow = {
+      start: "2026-07-17T09:00:00Z",
+      end: "2026-07-17T14:00:00Z",
+      maximum_percentage: 40,
+      exhausted_from: null,
+      current: true,
+      projected_end_percentage: 150,
+    };
+    const html = windowTooltipHtml(series, overshooting, new Date("2026-07-17T12:00:00Z"), {});
+    expect(html).toContain("hit 100% around");
+    expect(html).toContain("That's in");
   });
 });

@@ -34,6 +34,8 @@ export interface WindowStats {
   blockedForMs: number | null;
   remainingPercentageAtEnd: number | null;
   perfectLanding: boolean;
+  projectedRemainingPercentageAtEnd: number | null;
+  projectedExhaustedAt: string | null;
 }
 
 export function computeWindowStats(points: GraphPoint[], window: GraphWindow, now: Date): WindowStats {
@@ -70,6 +72,18 @@ export function computeWindowStats(points: GraphPoint[], window: GraphWindow, no
     perfectLanding = gapToPrevious <= PERFECT_LANDING_MAX_GAP_MS && gapToWindowEnd <= PERFECT_LANDING_MAX_GAP_MS;
   }
 
+  let projectedRemainingPercentageAtEnd: number | null = null;
+  let projectedExhaustedAt: string | null = null;
+  if (window.current && !window.exhausted_from && window.projected_end_percentage !== null) {
+    const projected = window.projected_end_percentage;
+    if (projected < 100 - PERFECT_LANDING_TOLERANCE_PERCENT) {
+      projectedRemainingPercentageAtEnd = 100 - projected;
+    } else if (projected > 100 + PERFECT_LANDING_TOLERANCE_PERCENT && last && burnRatePerHour) {
+      const hoursToExhaustion = (100 - last.percentage) / burnRatePerHour;
+      projectedExhaustedAt = new Date(new Date(last.at).getTime() + hoursToExhaustion * 60 * 60 * 1000).toISOString();
+    }
+  }
+
   return {
     maximumPercentage: window.maximum_percentage,
     burnRatePerHour,
@@ -77,6 +91,8 @@ export function computeWindowStats(points: GraphPoint[], window: GraphWindow, no
     blockedForMs,
     remainingPercentageAtEnd,
     perfectLanding,
+    projectedRemainingPercentageAtEnd,
+    projectedExhaustedAt,
   };
 }
 
@@ -130,6 +146,12 @@ export function windowTooltipHtml(
     lines.push(`Hit 100% after ${formatDuration(stats.exhaustedAfterMs)}`, `Blocked for ${formatDuration(stats.blockedForMs)}`);
   } else if (stats.remainingPercentageAtEnd !== null) {
     lines.push(`${stats.remainingPercentageAtEnd.toFixed(1)}% remaining at window end`);
+  } else if (stats.projectedRemainingPercentageAtEnd !== null) {
+    lines.push(`Projected to land at ${(100 - stats.projectedRemainingPercentageAtEnd).toFixed(1)}%`, `${stats.projectedRemainingPercentageAtEnd.toFixed(1)}% of your limit would be left to use`);
+  } else if (stats.projectedExhaustedAt !== null) {
+    const exhaustedAt = new Date(stats.projectedExhaustedAt);
+    const msUntilExhaustion = Math.max(0, exhaustedAt.getTime() - now.getTime());
+    lines.push(`At this rate, you'll hit 100% around ${exhaustedAt.toLocaleString()}`, `That's in ${formatDuration(msUntilExhaustion)}`);
   }
   return lines.join("<br/>");
 }

@@ -1345,3 +1345,12 @@ Btw., looking at the requests, `http/claude.ai/api/organizations/<redacted-uuid>
 Anonymize dates and other data in that file which could be used to coralate an account membership.
 What does that feature flag, `19186470` now mean? Or is it picked up by it's `"id": "fr_mrprtkqh"`?
 
+❯ But how does it end up in the website? Always that lookup key 19186470?
+
+❯ Removing `statsig_hashing_algorithm=djb2`, it instead gave me other keys. The key for `19186470` is now `"Gidz4JDhcW4tRXx9U91WCq1OzW1CBaXm2CSmkNKnTC4="`, which I still don't find useful?
+
+❯ I never heard of `djb2`, how does it compare to common `md5`?
+
+❯ Alright, then we hardcode that number, I guess.
+Back to the website, In case it's not _100.0% remaining at window end_, add useful texts for the other prognostics too, i.e. it will end with less than 100% -> it will show you how much more work you can do, if it's more than 100% it will tell you how fast and when you will have used it up.
+
