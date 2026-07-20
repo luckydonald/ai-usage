@@ -75,3 +75,4 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [ ] B1: statusline fallback to cli-usage when stale
 - [ ] B2: record model with each metric
 - [ ] C1: parse promo/notice banners
+- [ ] C2: notes storage with change-only writes + verbose report
