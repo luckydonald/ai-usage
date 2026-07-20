@@ -4,14 +4,22 @@ from ai_usage.graph import PALETTE, build_series, generated_color
 from ai_usage.orm import MetricSampleRecord
 
 
-def sample(event_id: str, at: datetime, percentage: float, reset: datetime) -> MetricSampleRecord:
+def sample(
+    event_id: str,
+    at: datetime,
+    percentage: float,
+    reset: datetime,
+    account_id: str = "account",
+    provider: str = "app-server",
+    service: str = "codex",
+) -> MetricSampleRecord:
     return MetricSampleRecord(
         event_id=event_id,
         source_path="history.jsonl",
         source_id="source",
-        service="codex",
-        provider="app-server",
-        account_id="account",
+        service=service,
+        provider=provider,
+        account_id=account_id,
         metric_key="five-hours",
         metric_name="Five hours",
         observed_at=at,
@@ -108,5 +116,50 @@ def test_graph_marks_exhausted_interval() -> None:
     window = build_series(records, now=now)[0].windows[0]
     assert window.exhausted_from == now - timedelta(minutes=10)
     assert window.maximum_percentage == 100
+# end def
+
+
+def test_grouped_accounts_merge_into_a_single_series_under_the_group_id() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now + timedelta(hours=2)
+    records = [
+        sample(
+            "one", now - timedelta(hours=2), 10, reset, account_id="laptop", provider="cli-usage"
+        ),
+        sample("two", now - timedelta(hours=1), 30, reset, account_id="web", provider="web"),
+    ]
+    series = build_series(records, now=now, account_groups={"laptop": "group-1", "web": "group-1"})
+    assert len(series) == 1
+    merged = series[0]
+    assert merged.account_id == "group-1"
+    assert merged.provider == "grouped"
+    assert [point.percentage for point in merged.points] == [10, 30]
+# end def
+
+
+def test_grouped_accounts_keep_the_higher_percentage_for_overlapping_windows() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now + timedelta(hours=2)
+    same_moment = now - timedelta(hours=1)
+    records = [
+        sample("one", same_moment, 40, reset, account_id="laptop", provider="cli-usage"),
+        sample("two", same_moment, 65, reset, account_id="web", provider="web"),
+    ]
+    series = build_series(records, now=now, account_groups={"laptop": "group-1", "web": "group-1"})
+    merged = series[0]
+    assert [point.percentage for point in merged.points] == [65]
+    assert merged.windows[0].maximum_percentage == 65
+# end def
+
+
+def test_ungrouped_accounts_remain_separate_series() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now + timedelta(hours=2)
+    records = [
+        sample("one", now - timedelta(hours=2), 10, reset, account_id="laptop"),
+        sample("two", now - timedelta(hours=1), 30, reset, account_id="web"),
+    ]
+    series = build_series(records, now=now)
+    assert {item.account_id for item in series} == {"laptop", "web"}
 # end def
 

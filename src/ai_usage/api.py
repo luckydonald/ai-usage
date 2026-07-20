@@ -150,12 +150,19 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
     ) -> list[dict[str, Any]]:
         samples = await state.history.samples(start, end, service, provider, account, metric)
         colors: dict[tuple[str, str], str] = {}
+        account_groups: dict[str, str] = {}
         for configured in state.config.list_accounts(False):
             for metric_key, color in configured.colors.items():
                 colors[(configured.id, metric_key)] = color
             # end for
+            if configured.group_id:
+                account_groups[configured.id] = configured.group_id
+            # end if
         # end for
-        return [item.model_dump(mode="json") for item in build_series(samples, colors)]
+        return [
+            item.model_dump(mode="json")
+            for item in build_series(samples, colors, account_groups=account_groups)
+        ]
     # end def
 
     @app.get("/api/v1/notes")
