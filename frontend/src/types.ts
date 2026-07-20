@@ -77,6 +77,14 @@ export interface GraphSeries {
   windows: GraphWindow[];
 }
 
+export interface NoteRange {
+  service: string;
+  account_id: string;
+  text: string;
+  start: string;
+  end: string | null;
+}
+
 export interface Filters {
   services: string[];
   providers: string[];

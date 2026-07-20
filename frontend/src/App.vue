@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
-import { fetchCatalog, fetchSeries } from "./api";
+import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
-import type { Catalog, Filters, GraphSeries } from "./types";
+import type { Catalog, Filters, GraphSeries, NoteRange } from "./types";
 
 const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280" });
 const series = ref<GraphSeries[]>([]);
+const notes = ref<NoteRange[]>([]);
 const preset = ref<TimePreset>("auto");
 const customStartText = ref(toDateInputValue(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
 const customEndText = ref(toDateInputValue(new Date()));
@@ -85,6 +86,10 @@ async function load(autoWiden = false): Promise<void> {
   }
 }
 
+async function loadNotes(): Promise<void> {
+  notes.value = await fetchNotes();
+}
+
 function pruneHiddenSeriesKeys(): void {
   const validKeys = new Set(series.value.map((item) => `${item.account_id}::${item.metric_key}`));
   hiddenSeriesKeys.value = hiddenSeriesKeys.value.filter((key) => validKeys.has(key));
@@ -110,11 +115,14 @@ function toggleIncludeWindowEnds(): void {
 onMounted(async () => {
   try {
     catalog.value = await fetchCatalog();
-    await load(true);
+    await Promise.all([load(true), loadNotes()]);
     events = new EventSource("/api/v1/events");
     events.addEventListener("open", () => (connected.value = true));
     events.addEventListener("error", () => (connected.value = false));
-    events.addEventListener("sample", () => void load());
+    events.addEventListener("sample", () => {
+      void load();
+      void loadNotes();
+    });
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : String(reason);
     loading.value = false;
@@ -218,6 +226,7 @@ onBeforeUnmount(() => events?.close());
         :range-start="rangeStart"
         :range-end="rangeEnd"
         :account-labels="accountLabels"
+        :notes="notes"
         @toggle-series="toggleSeries"
       />
       <ServicePanels v-if="series.length" :series="series" :account-labels="accountLabels" />

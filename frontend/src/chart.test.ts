@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { chartOption, computeWindowStats, percentThroughWindow, pointTooltipHtml, windowByPoint, windowTooltipHtml } from "./chart";
-import type { GraphSeries, GraphWindow } from "./types";
+import { chartOption, computeWindowStats, noteTooltipHtml, percentThroughWindow, pointTooltipHtml, windowByPoint, windowTooltipHtml } from "./chart";
+import type { GraphSeries, GraphWindow, NoteRange } from "./types";
 
 const series: GraphSeries = {
   service: "codex",
@@ -80,6 +80,51 @@ describe("chart rendering contract", () => {
   it("leaves the x-axis auto-scaling when no range is given", () => {
     const option = chartOption([series], false, "#6b7280");
     expect(option.xAxis).toMatchObject({ min: undefined, max: undefined });
+  });
+
+  it("adds a notes marker series only when notes are present", () => {
+    const withoutNotes = chartOption([series], false, "#6b7280");
+    const rendered = withoutNotes.series;
+    if (!Array.isArray(rendered)) throw new Error("chart series must be an array");
+    expect(rendered.some((item) => item.id === "notes-marker")).toBe(false);
+
+    const note: NoteRange = {
+      service: "codex",
+      account_id: "account",
+      text: "+50% weekly limits promo through Aug 19",
+      start: "2026-07-01T00:00:00Z",
+      end: null,
+    };
+    const withNotes = chartOption([series], false, "#6b7280", { notes: [note] });
+    const renderedWithNotes = withNotes.series;
+    if (!Array.isArray(renderedWithNotes)) throw new Error("chart series must be an array");
+    const marker = renderedWithNotes.find((item) => item.id === "notes-marker");
+    expect(marker).toBeDefined();
+  });
+});
+
+describe("noteTooltipHtml", () => {
+  it("shows the note text and an open-ended range when still active", () => {
+    const html = noteTooltipHtml({
+      service: "codex",
+      account_id: "account",
+      text: "+50% weekly limits promo",
+      start: "2026-07-01T00:00:00Z",
+      end: null,
+    });
+    expect(html).toContain("+50% weekly limits promo");
+    expect(html).toContain("now");
+  });
+
+  it("shows a closed range when the note has ended", () => {
+    const html = noteTooltipHtml({
+      service: "codex",
+      account_id: "account",
+      text: "+50% weekly limits promo",
+      start: "2026-07-01T00:00:00Z",
+      end: "2026-07-10T00:00:00Z",
+    });
+    expect(html).not.toContain(" → now");
   });
 });
 

@@ -8,6 +8,7 @@ import pytest
 
 from ai_usage.api import DEFAULT_PORT, create_app, exposed_host, resolve_port
 from ai_usage.models import Metric, ProviderFetchResult, Usage
+from ai_usage.notes import NotesStore
 from tests.test_storage import temporary_paths
 
 
@@ -49,6 +50,33 @@ async def test_api_catalog_latest_and_series(tmp_path, monkeypatch) -> None:
     assert catalog.json()["metrics"][0]["metric_key"] == "five-hours"
     assert latest.json()[0]["percentage"] == 42
     assert series.json()[0]["points"][0]["percentage"] == 42
+    await runtime.close()
+# end def
+
+
+@pytest.mark.asyncio
+async def test_api_notes_reports_open_and_closed_ranges(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    app = create_app(paths)
+    runtime = app.state.runtime
+    await runtime.initialize()
+    store = NotesStore(paths)
+    started = datetime(2026, 7, 1, tzinfo=UTC)
+    ended = datetime(2026, 7, 10, tzinfo=UTC)
+    store.diff_and_record("claude", "account", ["+50% weekly limits promo"], set(), started)
+    store.diff_and_record("claude", "account", [], {"+50% weekly limits promo"}, ended)
+    store.diff_and_record("codex", "other-account", ["3 resets available"], set(), started)
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/notes")
+    # end with
+    ranges = {(item["service"], item["account_id"], item["text"]): item for item in response.json()}
+    closed = ranges[("claude", "account", "+50% weekly limits promo")]
+    open_range = ranges[("codex", "other-account", "3 resets available")]
+    assert closed["end"] is not None
+    assert open_range["end"] is None
     await runtime.close()
 # end def
 
