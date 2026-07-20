@@ -113,6 +113,7 @@ class ProviderFetchResult(BaseModel):
     identity: AccountIdentity | None = None
     subscription: SubscriptionStatus | None = None
     raw_payload: dict[str, Any] | None = None
+    notes: list[str] = Field(default_factory=list)
 # end class
 
 

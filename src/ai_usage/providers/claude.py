@@ -40,6 +40,13 @@ SECTION_PATTERN = re.compile(
     r".*?(?P<percentage>\d+(?:\.\d+)?)%\s+used.*?Resets\s+(?P<reset>[^\r\n]+)",
     re.IGNORECASE | re.DOTALL,
 )
+PROMO_PATTERN = re.compile(r"^\s*\+\d+%.*promo.*$", re.IGNORECASE | re.MULTILINE)
+
+
+def extract_claude_notes(output: str) -> list[str]:
+    clean = ANSI_PATTERN.sub("", output).replace("\r", "")
+    return [match.group(0).strip() for match in PROMO_PATTERN.finditer(clean)]
+# end def
 
 
 def claude_metric_key(name: str) -> str:
@@ -419,6 +426,7 @@ class ClaudeStatusProvider(Provider):
             account_id=account.id,
             fetched_at=observed,
             metrics=metrics,
+            notes=extract_claude_notes(output),
         )
     # end def
 # end class

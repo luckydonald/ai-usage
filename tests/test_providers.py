@@ -13,6 +13,7 @@ from ai_usage.providers.claude import (
     ClaudeStatusProvider,
     ClaudeWebUsageProvider,
     claude_metric_model,
+    extract_claude_notes,
     install_status_relay,
     parse_claude_web_usage,
     parse_status_payload,
@@ -23,6 +24,7 @@ from ai_usage.providers.codex import (
     CodexStatusProvider,
     CodexWebUsageProvider,
     codex_model,
+    extract_codex_notes,
     parse_codex_status,
     parse_codex_web_usage,
     parse_rate_limits,
@@ -179,6 +181,29 @@ def test_codex_model_extracted_from_motd_banner() -> None:
     metrics = parse_codex_status(output, datetime.now(UTC))
     assert codex_model(output) == "gpt-5.6-sol medium"
     assert metrics[0].model == "gpt-5.6-sol medium"
+# end def
+
+
+def test_extract_claude_notes_finds_promo_banner() -> None:
+    output = (
+        "Current week (all models)\n"
+        "████████████████████▌                              41% used\n"
+        "Resets Jul 21, 10pm (Europe/Berlin)\n"
+        "+50% weekly limits promo through Aug 19 · clau.de/cc-50-promo\n"
+    )
+    notes = extract_claude_notes(output)
+    assert notes == ["+50% weekly limits promo through Aug 19 · clau.de/cc-50-promo"]
+# end def
+
+
+def test_extract_claude_notes_empty_without_promo() -> None:
+    assert extract_claude_notes("Current session\n0% used\nResets 7:50pm (Europe/Berlin)\n") == []
+# end def
+
+
+def test_extract_codex_notes_finds_reset_availability_line() -> None:
+    output = "• You have 3 usage limit resets available. Run /usage to use one.\n"
+    assert extract_codex_notes(output) == ["You have 3 usage limit resets available. Run /usage to use one."]
 # end def
 
 
