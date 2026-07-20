@@ -70,7 +70,7 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 
 ## Todos
 
-- [ ] A1: fix provider-add duplicate advanced listing
+- [ ] A1: fix provider-add duplicate advanced listing *(in progress)*
 - [ ] A2: info panel styling polish
 - [ ] B1: statusline fallback to cli-usage when stale
 - [ ] B2: record model with each metric
