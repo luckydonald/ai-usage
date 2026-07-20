@@ -43,6 +43,16 @@ def codex_model(output: str) -> str | None:
 # end def
 
 
+NOTE_PATTERN = re.compile(
+    r"You have \d+ usage limit resets? available\. Run /usage to use one\.", re.IGNORECASE
+)
+
+
+def extract_codex_notes(output: str) -> list[str]:
+    return [match.group(0).strip() for match in NOTE_PATTERN.finditer(output)]
+# end def
+
+
 def window_key(minutes: int) -> str:
     known = {300: "five-hours", 10080: "seven-days"}
     return known.get(minutes, f"window-{minutes}-minutes")
@@ -446,6 +456,7 @@ class CodexStatusProvider(Provider):
             status=FetchStatus.STALE if is_stale else FetchStatus.SUCCESS,
             error="codex reported limits may be stale" if is_stale else None,
             metrics=metrics,
+            notes=extract_codex_notes(output),
         )
     # end def
 # end class
