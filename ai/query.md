@@ -1356,3 +1356,6 @@ Back to the website, In case it's not _100.0% remaining at window end_, add usef
 
 ❯ The provider name & account name should be at the graph tooltip, the graph legend labels (Five days 12345abcde)  are not helpful at all
 
+❯ Add a checkbox adding dot to the data collection points.
+
+

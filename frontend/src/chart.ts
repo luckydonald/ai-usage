@@ -172,6 +172,7 @@ export interface ChartOptions {
   animate?: boolean;
   accountLabels?: Record<string, string>;
   notes?: NoteRange[];
+  showDataPoints?: boolean;
 }
 
 export function chartOption(
@@ -183,6 +184,7 @@ export function chartOption(
   const now = options.now ?? new Date();
   const accountLabels = options.accountLabels ?? {};
   const notes = options.notes ?? [];
+  const showDataPoints = options.showDataPoints ?? false;
   const rendered: SeriesOption[] = [];
   for (const item of series) {
     const name = seriesDisplayName(item, accountLabels);
@@ -191,7 +193,8 @@ export function chartOption(
       name,
       type: "line",
       step: "end",
-      showSymbol: false,
+      showSymbol: showDataPoints,
+      symbolSize: 6,
       data: item.points.map((point) => [point.at, point.percentage]),
       lineStyle: { color: item.color, width: 2 },
       itemStyle: { color: item.color },

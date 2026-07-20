@@ -41,10 +41,16 @@ describe("chart rendering contract", () => {
     expect(Array.isArray(rendered)).toBe(true);
     if (!Array.isArray(rendered)) throw new Error("chart series must be an array");
     expect(rendered).toHaveLength(3);
-    expect(rendered[0]).toMatchObject({ type: "line", step: "end" });
+    expect(rendered[0]).toMatchObject({ type: "line", step: "end", showSymbol: false });
     expect(rendered[1]).toMatchObject({ id: "account/five-hours/projection-0" });
     expect(rendered.at(-1)).toMatchObject({ id: "now-line" });
     expect(rendered.some((item) => typeof item.id === "string" && item.id.includes("/reset-"))).toBe(false);
+  });
+
+  it("hides data-point symbols by default but shows them when showDataPoints is set", () => {
+    const rendered = chartOption([series], false, "#6b7280", { showDataPoints: true }).series;
+    if (!Array.isArray(rendered)) throw new Error("chart series must be an array");
+    expect(rendered[0]).toMatchObject({ showSymbol: true });
   });
 
   it("defaults to animated, but honors an explicit animate:false", () => {
