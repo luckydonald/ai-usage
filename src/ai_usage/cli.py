@@ -45,6 +45,7 @@ from ai_usage.provider_discovery import (
     DiscoveryChoice,
     DiscoveryFailure,
     discover_accounts,
+    exclude_discovered,
     matching_providers,
 )
 from ai_usage.provider_tui import SelectionChoice, select_choice
@@ -352,7 +353,7 @@ async def select_discovered_account(
     if selected != "manual":
         return choices[int(selected.removeprefix("discovered-"))], None
     # end if
-    providers = matching_providers(runtime.providers, service, provider_key)
+    providers = exclude_discovered(matching_providers(runtime.providers, service, provider_key), choices)
     manual_options = [
         SelectionChoice(
             f"provider-{index}",
@@ -399,7 +400,9 @@ def provider_add(
             choices, failures = await discover_or_error(registry, service, provider_key)
             print_discovery_choices(
                 choices,
-                manual_providers=matching_providers(registry, service, provider_key),
+                manual_providers=exclude_discovered(
+                    matching_providers(registry, service, provider_key), choices
+                ),
             )
             for failure in failures:
                 click.echo(f"WARNING {failure.service}/{failure.provider}: {failure.error}", err=True)
@@ -433,8 +436,9 @@ def provider_add(
                     if not interactive_terminal(no_input):
                         print_discovery_choices(
                             choices,
-                            manual_providers=matching_providers(
-                                runtime.providers, resolved_service, resolved_provider
+                            manual_providers=exclude_discovered(
+                                matching_providers(runtime.providers, resolved_service, resolved_provider),
+                                choices,
                             ),
                         )
                         return
