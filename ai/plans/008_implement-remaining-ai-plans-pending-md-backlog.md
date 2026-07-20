@@ -76,7 +76,7 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [x] B2: record model with each metric
 - [x] C1: parse promo/notice banners
 - [x] C2: notes storage with change-only writes + verbose report
-- [ ] C3: graph display of active-note windows *(in progress)*
+- [x] C3: graph display of active-note windows
 - [ ] D1: account group_id config + CLI group/ungroup
 - [ ] D2: merged series building for grouped accounts
 - [ ] D3: frontend group label wiring
