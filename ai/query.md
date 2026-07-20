@@ -1301,3 +1301,32 @@ Neither stops if I click close on the window.
 > </details>
 >
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Cross-provider "same account" aliasing: should it be a persistent config link (both accounts stay separate, crawl independently, but share a group id used for graphing/panels) or should it reuse the existing one-time `provider merge` (physically move history, delete one side)?
+>> 2. When two aliased sources report overlapping/conflicting samples for the same window (e.g. both machines report at the same time), how should the merged series be built?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Merge model** (1/2) <kbd>Single Select</kbd><br>
+>> Cross-provider "same account" aliasing: should it be a persistent config link (both accounts stay separate, crawl independently, but share a group id used for graphing/panels) or should it reuse the existing one-time `provider merge` (physically move history, delete one side)?
+> - [x] 1\. Persistent alias group (Recommended)
+>   - _Add e.g. `group_id` to AccountConfig. Both configs keep crawling independently (different machines). Graph/panels/history treat same group_id + metric_key as one series. Reversible, no data loss._
+> - [ ] 2\. Reuse one-time merge
+>   - _Keep existing `provider merge` command as-is (physically moves history, deletes source). User just runs it manually when they notice a duplicate. No new live-aliasing feature, closes the backlog item as "already possible."_
+> - [ ] 3\. _Type something._
+>
+>> **Conflict rule** (2/2) <kbd>Single Select</kbd><br>
+>> When two aliased sources report overlapping/conflicting samples for the same window (e.g. both machines report at the same time), how should the merged series be built?
+> - [x] 1\. Max percentage wins (Recommended)
+>   - _For any timestamp/window where both sources have data, take the higher percentage (usage from either machine is real usage against the same shared quota)._
+> - [ ] 2\. Most recent write wins
+>   - _Whichever source's sample has the latest observed_at timestamp for that slot overwrites the other._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
