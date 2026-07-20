@@ -76,3 +76,4 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [ ] B2: record model with each metric
 - [ ] C1: parse promo/notice banners
 - [ ] C2: notes storage with change-only writes + verbose report
+- [ ] C3: graph display of active-note windows
