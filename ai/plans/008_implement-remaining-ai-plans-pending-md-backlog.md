@@ -71,3 +71,4 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 ## Todos
 
 - [ ] A1: fix provider-add duplicate advanced listing
+- [ ] A2: info panel styling polish
