@@ -14,6 +14,7 @@ from ai_usage.providers.claude import (
     ClaudeWebUsageProvider,
     claude_metric_model,
     extract_claude_notes,
+    extract_claude_web_notes,
     install_status_relay,
     parse_claude_web_usage,
     parse_status_payload,
@@ -69,8 +70,8 @@ class FakeCurlSession:
         del args
     # end def
 
-    async def get(self, path: str, headers=None) -> FakeCurlResponse:
-        del headers
+    async def get(self, path: str, headers=None, params=None) -> FakeCurlResponse:
+        del headers, params
         return self.responses[path]
     # end def
 # end class
@@ -207,6 +208,40 @@ def test_extract_codex_notes_finds_reset_availability_line() -> None:
 # end def
 
 
+def test_extract_claude_web_notes_finds_promo_banner() -> None:
+    payload = {
+        "org_growthbook": {
+            "features": {
+                "19186470": {
+                    "defaultValue": {
+                        "en-US": "**Your limits are boosted.** Weekly limit is 50% higher.",
+                        "de-DE": "**Deine Limits sind vorübergehend erhöht.**",
+                    }
+                }
+            }
+        }
+    }
+    expected = ["**Your limits are boosted.** Weekly limit is 50% higher."]
+    assert extract_claude_web_notes(payload) == expected
+# end def
+
+
+def test_extract_claude_web_notes_falls_back_to_any_locale_without_en_us() -> None:
+    payload = {"org_growthbook": {"features": {"19186470": {"defaultValue": {"de-DE": "Erhöht."}}}}}
+    assert extract_claude_web_notes(payload) == ["Erhöht."]
+# end def
+
+
+def test_extract_claude_web_notes_empty_when_feature_absent_or_malformed() -> None:
+    assert extract_claude_web_notes({}) == []
+    assert extract_claude_web_notes({"org_growthbook": {"features": {}}}) == []
+    assert extract_claude_web_notes({"org_growthbook": {"features": {"19186470": {}}}}) == []
+    assert extract_claude_web_notes(
+        {"org_growthbook": {"features": {"19186470": {"defaultValue": "not-a-dict"}}}}
+    ) == []
+# end def
+
+
 def test_claude_web_usage_payload() -> None:
     metrics = parse_claude_web_usage(
         {
@@ -254,6 +289,14 @@ async def test_claude_web_usage_provider_collects_identity_and_subscription(monk
         f"/api/organizations/{org_id}/subscription_status": FakeCurlResponse(
             200, {"status": "active", "cancel_at_ts": None}
         ),
+        f"/edge-api/bootstrap/{org_id}/app_start": FakeCurlResponse(
+            200,
+            {
+                "org_growthbook": {
+                    "features": {"19186470": {"defaultValue": {"en-US": "Limits boosted."}}}
+                }
+            },
+        ),
     }
     monkeypatch.setattr(
         "ai_usage.providers.claude.AsyncSession",
@@ -271,6 +314,40 @@ async def test_claude_web_usage_provider_collects_identity_and_subscription(monk
     assert result.subscription.plan_type == "stripe_subscription"
     assert result.subscription.status == "active"
     assert result.raw_payload is not None and "usage" in result.raw_payload
+    assert result.raw_payload is not None and "app_start" in result.raw_payload
+    assert result.notes == ["Limits boosted."]
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_web_usage_provider_notes_empty_when_app_start_fetch_fails(
+    monkeypatch,
+) -> None:
+    org_id = "e9abf7bc-490f-4c12-8490-d5b2d204e699"
+    responses = {
+        f"/api/organizations/{org_id}/usage": FakeCurlResponse(
+            200,
+            {
+                "five_hour": {"utilization": 16, "resets_at": "2026-07-18T14:40:00+00:00"},
+                "seven_day": {"utilization": 28, "resets_at": "2026-07-21T20:00:00+00:00"},
+            },
+        ),
+        "/api/organizations": FakeCurlResponse(200, []),
+        "/api/account": FakeCurlResponse(404, {}),
+        f"/api/organizations/{org_id}/subscription_status": FakeCurlResponse(404, {}),
+        # app_start deliberately left unmapped so the fetch raises a KeyError, exercising the
+        # best-effort try/except path — the whole fetch must not fail just because the
+        # undocumented promo-banner probe did.
+    }
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.AsyncSession",
+        lambda **kwargs: FakeCurlSession(responses, **kwargs),
+    )
+    account = AccountConfig(
+        id="account", service="claude", provider="web", name="Claude", options={"org_id": org_id}
+    )
+    result = await ClaudeWebUsageProvider().fetch(account, {"cookies": {"session": "x"}})
+    assert result.notes == []
 # end def
 
 
