@@ -12,6 +12,7 @@ from ai_usage.database import Database
 from ai_usage.git_backup import git_backup_enabled, maybe_run_git_backup
 from ai_usage.host_identity import account_allows_host
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
+from ai_usage.notes import NotesStore
 from ai_usage.orm import CrawlStateRecord
 from ai_usage.progress import ProgressReporter, quiet_reporter
 
@@ -43,6 +44,8 @@ class Crawler:
         self.scheduler: FastScheduler | None = None
         self.known_account_ids: set[str] | None = None
         self.git_backup_was_enabled: bool | None = None
+        self.notes_store = NotesStore(database.paths)
+        self.known_active_notes: dict[str, set[str]] = {}
     # end def
 
     def report_account_changes(self, accounts: list[AccountConfig]) -> None:
@@ -67,6 +70,23 @@ class Crawler:
             self.report(f"Config reload: git backup {'enabled' if enabled else 'disabled'}.")
         # end if
         self.git_backup_was_enabled = enabled
+    # end def
+
+    def report_note_changes(
+        self, account: AccountConfig, result: ProviderFetchResult, now: datetime
+    ) -> None:
+        known = self.known_active_notes.get(account.id)
+        if known is None:
+            known = self.notes_store.load_active_notes(account.service, account.id)
+        # end if
+        updated, transitions = self.notes_store.diff_and_record(
+            account.service, account.id, result.notes, known, now
+        )
+        self.known_active_notes[account.id] = updated
+        for transition in transitions:
+            verb = "appeared" if transition.active else "disappeared"
+            self.report(f"{account.name}: note {verb} - {transition.text}")
+        # end for
     # end def
 
     def accounts_for_this_host(self, accounts: list[AccountConfig]) -> list[AccountConfig]:
@@ -122,6 +142,7 @@ class Crawler:
         result: ProviderFetchResult,
         now: datetime,
     ) -> None:
+        self.report_note_changes(account, result, now)
         intervals = self.config.intervals_for(account)
         async with self.database.sessions() as session:
             state = await session.get(CrawlStateRecord, account.id)

@@ -179,6 +179,100 @@ async def test_stale_result_is_not_treated_as_a_crawl_failure(tmp_path, monkeypa
 # end def
 
 
+class NotingProvider(Provider):
+    service = "test-service"
+    key = "noting"
+    display_name = "Noting test provider"
+
+    def __init__(self) -> None:
+        self.notes: list[str] = []
+    # end def
+
+    async def fetch(
+        self,
+        account: AccountConfig,
+        credential: dict[str, Any] | None,
+    ) -> ProviderFetchResult:
+        del credential
+        now = datetime.now(UTC)
+        return ProviderFetchResult(
+            service=self.service,
+            provider=self.key,
+            account_id=account.id,
+            fetched_at=now,
+            metrics=[
+                Metric(
+                    key="five-hours",
+                    name="5-hour window",
+                    usage=Usage(percentage=1.0),
+                    observed_at=now,
+                )
+            ],
+            notes=list(self.notes),
+        )
+    # end def
+# end class
+
+
+@pytest.mark.asyncio
+async def test_crawler_records_and_reports_note_transitions_only_on_change(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    database = Database(paths)
+    await database.migrate()
+    history = HistoryStore(paths, database)
+    config = ConfigStore(paths)
+    account = AccountConfig(
+        id="note-account", service="test-service", provider="noting", name="Note account"
+    )
+    provider = NotingProvider()
+    registry = ProviderRegistry()
+    registry.register(provider)
+    messages: list[str] = []
+    collector = Collector(config, database, history, registry, reporter=messages.append)
+    crawler = Crawler(collector, config, database, reporter=messages.append)
+    await crawler.ensure_states([account])
+    now = datetime.now(UTC)
+
+    first = await collector.fetch_account(account, operation="crawling")
+    await crawler.update_state(account, first, now)
+    assert not any("note appeared" in message for message in messages)
+    assert crawler.notes_store.load_active_notes("test-service", "note-account") == set()
+
+    provider.notes = ["+50% weekly limits promo through Aug 19"]
+    second = await collector.fetch_account(account, operation="crawling")
+    await crawler.update_state(account, second, now)
+    assert any(
+        "note appeared" in message and "+50% weekly limits promo" in message for message in messages
+    )
+    assert crawler.notes_store.load_active_notes("test-service", "note-account") == {
+        "+50% weekly limits promo through Aug 19"
+    }
+
+    messages.clear()
+    third = await collector.fetch_account(account, operation="crawling")
+    await crawler.update_state(account, third, now)
+    assert not any(
+        "note appeared" in message or "note disappeared" in message for message in messages
+    )
+
+    messages.clear()
+    provider.notes = []
+    fourth = await collector.fetch_account(account, operation="crawling")
+    await crawler.update_state(account, fourth, now)
+    assert any(
+        "note disappeared" in message and "+50% weekly limits promo" in message
+        for message in messages
+    )
+    assert crawler.notes_store.load_active_notes("test-service", "note-account") == set()
+
+    await database.close()
+# end def
+
+
 @pytest.mark.asyncio
 async def test_tick_reports_account_and_git_backup_changes(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
