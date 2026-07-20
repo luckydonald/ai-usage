@@ -19,6 +19,7 @@ from ai_usage.models import (
     SubscriptionStatus,
     Usage,
 )
+from ai_usage.orm import CrawlStateRecord
 from ai_usage.providers import Provider, ProviderRegistry
 from tests.test_storage import temporary_paths
 
@@ -316,6 +317,46 @@ async def test_tick_reports_account_and_git_backup_changes(tmp_path, monkeypatch
     config.save_global_config({"git": {"enabled": False}})
     await crawler.tick()
     assert any("git backup disabled" in message for message in messages)
+
+    await database.close()
+# end def
+
+
+@pytest.mark.asyncio
+async def test_crawl_ignores_a_far_future_next_run_at_but_tick_still_respects_it(
+    tmp_path, monkeypatch
+) -> None:
+    # Regression test for "starting the server should crawl right away instead of waiting for
+    # whatever was scheduled in a previous run": `crawl()` (what `run()` calls at startup)
+    # must crawl unconditionally; `tick()` (the recurring path) must keep honoring `next_run_at`.
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    database = Database(paths)
+    await database.migrate()
+    history = HistoryStore(paths, database)
+    config = ConfigStore(paths)
+    account = AccountConfig(
+        id="account", service="test-service", provider="changing", name="Test account"
+    )
+    config.save_account(account)
+    registry = ProviderRegistry()
+    registry.register(ChangingProvider())
+    messages: list[str] = []
+    collector = Collector(config, database, history, registry, reporter=messages.append)
+    crawler = Crawler(collector, config, database, reporter=messages.append)
+
+    far_future = datetime.now(UTC) + timedelta(hours=1)
+    async with database.sessions() as session:
+        session.add(CrawlStateRecord(account_id=account.id, next_run_at=far_future))
+        await session.commit()
+    # end async with
+
+    await crawler.tick()
+    assert not any("Crawling" in message for message in messages)
+
+    await crawler.crawl([account], "immediately on startup")
+    assert any("Crawling 1 account(s) immediately on startup" in message for message in messages)
 
     await database.close()
 # end def
