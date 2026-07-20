@@ -1444,3 +1444,11 @@ Still, your claude agend did the thing, `claude --resume c280fbc5-d004-42b0-b3da
 
 ❯ Alright, I switched out of plan mode now, to change that variable. Also, and I still believe this is the culprit, I've now modified claude's `settings.local.json`, but not the others `sync.py`, then I did launch our agent codex again (all after `14:25:00`): `claude --resume 6bcfd635-ceaf-44e5-a047-0651d5f5f16a`
 
+❯ But none of these logs commited (or was that a rebase by the other agent?)
+
+❯ Make sure there's no remaining files added by us (!) in the base repo folder.
+
+❯ First commit.
+
+❯ First commit.
+

@@ -364,6 +364,9 @@ export function chartOption(
     tooltip: {
       trigger: "axis",
       confine: true,
+      backgroundColor: dark ? "#1f2937" : "#ffffff",
+      borderColor: dark ? "#374151" : "#e5e7eb",
+      textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
       // Under axis-trigger, markArea hover (window backgrounds, notes bands) no longer
       // reaches this formatter at all — see UsageChart.vue's manual mouseover/mouseout
       // listener + regionTooltipHtml, which renders that content independently.
@@ -380,6 +383,8 @@ export function chartOption(
       min: options.start ? options.start.getTime() : undefined,
       max: options.end ? options.end.getTime() : undefined,
       axisLabel: { color: dark ? "#9ca3af" : "#4b5563" },
+      axisLine: { lineStyle: { color: dark ? "#374151" : "#d1d5db" } },
+      splitLine: { lineStyle: { color: dark ? "#1f2937" : "#e5e7eb" } },
       axisPointer: { show: true, type: "line" },
     },
     yAxis: {
@@ -387,6 +392,8 @@ export function chartOption(
       min: 0,
       max: 100,
       axisLabel: { formatter: "{value}%", color: dark ? "#9ca3af" : "#4b5563" },
+      axisLine: { lineStyle: { color: dark ? "#374151" : "#d1d5db" } },
+      splitLine: { lineStyle: { color: dark ? "#1f2937" : "#e5e7eb" } },
     },
     series: rendered,
   };
