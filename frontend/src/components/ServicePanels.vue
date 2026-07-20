@@ -56,7 +56,7 @@ function statsHtml(entry: PanelEntry): string {
 <template>
   <section v-if="panels.length" class="info-panels" aria-label="Service info panels">
     <div v-for="panel in panels" :key="`${panel.service}::${panel.accountId}`" class="info-panel">
-      <h2>{{ panel.service }} · {{ panel.accountLabel }}</h2>
+      <h2>{{ panel.service }} <span class="account-chip">{{ panel.accountLabel }}</span></h2>
       <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric">
         <h3>{{ entry.item.metric_name }}</h3>
         <p v-html="statsHtml(entry)" />
@@ -83,13 +83,24 @@ function statsHtml(entry: PanelEntry): string {
   box-shadow: 0 12px 38px rgb(15 10 35 / 6%);
 
   h2 {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
     margin: 0 0 .75rem;
-    font-size: .9rem;
+    font-size: .95rem;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
     color: var(--text-muted);
   }
+}
+
+.account-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .15rem .65rem;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: .78rem;
+  font-weight: 600;
 }
 
 .info-panel-metric {
