@@ -79,3 +79,4 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 - [ ] C3: graph display of active-note windows
 - [ ] D1: account group_id config + CLI group/ungroup
 - [ ] D2: merged series building for grouped accounts
+- [ ] D3: frontend group label wiring
