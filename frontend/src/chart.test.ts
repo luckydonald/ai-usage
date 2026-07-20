@@ -319,23 +319,29 @@ describe("axisTooltipHtml", () => {
   const now = new Date("2026-07-17T12:00:00Z");
   const atMs = (iso: string) => new Date(iso).getTime();
 
-  it("renders one shared header and one row per series held at that timestamp, merging each series' own window detail in", () => {
+  it("renders one shared header and one group per account+provider, folding each series' own window detail into a compact line", () => {
     const html = axisTooltipHtml([series, other], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);
     expect(html).toContain("7/17/2026");
     expect(html.match(/<strong>7\/17\/2026/g)?.length).toBe(1);
-    expect(html).toContain("Five hours");
-    expect(html).toContain("20.0%");
-    expect(html).toContain("Peak usage: 40.0%"); // series' window detail folded into its own row
-    expect(html).toContain("Seven days");
-    expect(html).toContain("55.0%");
+    expect(html).toContain("Five hours: 20.0%");
+    expect(html).toContain("peak 40%"); // series' window detail folded into a compact line, not the verbose block
+    expect(html).toContain("Seven days: 55.0%");
+  });
+
+  it("groups multiple metrics of the same account+provider under one header instead of repeating it", () => {
+    const sameAccountOtherMetric: GraphSeries = { ...series, metric_key: "seven-days", metric_name: "Seven days" };
+    const html = axisTooltipHtml([series, sameAccountOtherMetric], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);
+    expect(html.match(/account · app-server/g)?.length).toBe(1);
+    expect(html).toContain("Five hours: 20.0%");
+    expect(html).toContain("Seven days: 20.0%");
   });
 
   it("holds the step-line's last value across a gap instead of snapping to whichever point is nearest in raw time", () => {
     // Hovering a hair before the 11:00 sample (much closer to it in raw time than to the
     // 10:00 sample) must still report the 10:00 value — the step line hasn't moved yet.
     const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T10:59:59Z") }], {}, now);
-    expect(html).toContain("<strong>account · app-server · Five hours</strong>: 20.0%");
-    expect(html).not.toContain("</strong>: 40.0%");
+    expect(html).toContain("Five hours: 20.0%");
+    expect(html).not.toContain("Five hours: 40.0%");
   });
 
   it("interpolates the projected value once past the last real sample, matching the dashed projection line", () => {

@@ -1476,3 +1476,28 @@ But yeah, they shoud be united into one, if possible the one which not only show
 > </details>
 >
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Remaining open items in pending.md: (1) tooltip compactness/verbosity now that window detail is merged in, (2) TUI-library-alternatives research note, (3) claude-web promo banner provider (needs cookie auth, bigger feature). Which should I pick up?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Next task** (1/1) <kbd>Single Select</kbd><br>
+>> Remaining open items in pending.md: (1) tooltip compactness/verbosity now that window detail is merged in, (2) TUI-library-alternatives research note, (3) claude-web promo banner provider (needs cookie auth, bigger feature). Which should I pick up?
+> - [ ] 1\. Tooltip compactness (Recommended)
+>   - _Direct follow-on from the just-shipped unified-tooltip work — trim/reorganize the merged per-series rows so overlapping series don't produce a wall of repeated text._
+> - [ ] 2\. TUI library research
+>   - _Research-only: list lightweight alternatives to the current terminal-selection approach for the few remaining selection tasks._
+> - [ ] 3\. Claude-web promo provider
+>   - _Bigger scope: new experimental web provider authenticated via claude.ai session cookies, to pull the promo banner into NotesStore. Needs cookie/session-auth flow design first._
+> - [ ] 4\. None of these — something else
+>   - _Tell me what you'd like to work on instead._
+> - [x] 5\. _Type something:_
+>   - > Todos: 1. _TUI library research_ yeah this makes sense to put into a /plan. 2. _Tooltip compactness_ Use visual elements and styling as well as grouping the different metrics of the same providers to reduce duplication and wall-of-text-ness. 3. _Claude-web promo provider_: This should be part of the existing claude web provider.
+>
+> </details>
+>
+
