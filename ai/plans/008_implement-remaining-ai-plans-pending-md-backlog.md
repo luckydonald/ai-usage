@@ -71,7 +71,7 @@ Per user's decision: soft, reversible grouping — not the existing destructive 
 ## Todos
 
 - [x] A1: fix provider-add duplicate advanced listing
-- [ ] A2: info panel styling polish *(in progress)*
+- [x] A2: info panel styling polish
 - [ ] B1: statusline fallback to cli-usage when stale
 - [ ] B2: record model with each metric
 - [ ] C1: parse promo/notice banners
