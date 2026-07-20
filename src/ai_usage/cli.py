@@ -1074,6 +1074,59 @@ def provider_merge(
 # end def
 
 
+@provider_app.command("group")
+def provider_group(
+    account_ids: Annotated[
+        list[str],
+        typer.Argument(help="Two or more account IDs to treat as the same real-world account."),
+    ],
+) -> None:
+    """Link accounts as aliases of the same real-world account (graphs/panels merge them)."""
+
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            try:
+                group_id = runtime.config.group_accounts(account_ids)
+            except (ValueError, KeyError) as exception:
+                raise click.ClickException(str(exception)) from exception
+            # end try
+            click.echo(f"Grouped {len(account_ids)} account(s) under group {group_id}.")
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
+
+
+@provider_app.command("ungroup")
+def provider_ungroup(
+    account: Annotated[str, typer.Argument(help="Account ID to remove from its alias group.")],
+) -> None:
+    """Remove an account from its alias group."""
+
+    async def execute() -> None:
+        runtime = Runtime(default_paths())
+        try:
+            await runtime.initialize()
+            try:
+                updated = runtime.config.ungroup_account(account)
+            except KeyError as exception:
+                raise click.ClickException(str(exception)) from exception
+            # end try
+            click.echo(f"Removed {updated.name} from its group.")
+        finally:
+            await runtime.close()
+        # end try
+    # end def
+
+    asyncio.run(execute())
+# end def
+
+
 def _default_host_identity(paths: Paths, hostname: str | None, host_id: str | None) -> HostIdentity:
     if hostname and host_id:
         return HostIdentity(hostname=hostname, host_id=host_id)
