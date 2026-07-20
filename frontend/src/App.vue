@@ -71,9 +71,16 @@ const accountLabels = computed<Record<string, string>>(() => {
   return labels;
 });
 
-async function load(autoWiden = false): Promise<void> {
-  loading.value = true;
-  error.value = "";
+interface LoadOptions {
+  autoWiden?: boolean;
+  silent?: boolean;
+}
+
+async function performLoad({ autoWiden = false, silent = false }: LoadOptions): Promise<void> {
+  if (!silent) {
+    loading.value = true;
+    error.value = "";
+  }
   try {
     const [start, end] =
       preset.value === "custom"
@@ -87,15 +94,27 @@ async function load(autoWiden = false): Promise<void> {
       const next = wideningOrder[wideningOrder.indexOf(preset.value) + 1];
       if (next) {
         preset.value = next;
-        await load(true);
+        await performLoad({ autoWiden: true, silent });
         return;
       }
     }
   } catch (reason) {
-    error.value = reason instanceof Error ? reason.message : String(reason);
+    if (silent) {
+      console.error("background refresh failed, keeping last chart", reason);
+    } else {
+      error.value = reason instanceof Error ? reason.message : String(reason);
+    }
   } finally {
-    loading.value = false;
+    if (!silent) loading.value = false;
   }
+}
+
+async function load(autoWiden = false): Promise<void> {
+  await performLoad({ autoWiden });
+}
+
+async function loadSilently(): Promise<void> {
+  await performLoad({ silent: true });
 }
 
 async function loadNotes(): Promise<void> {
@@ -137,7 +156,7 @@ onMounted(async () => {
     events.addEventListener("open", () => (connected.value = true));
     events.addEventListener("error", () => (connected.value = false));
     events.addEventListener("sample", () => {
-      void load();
+      void loadSilently();
       void loadNotes();
     });
   } catch (reason) {

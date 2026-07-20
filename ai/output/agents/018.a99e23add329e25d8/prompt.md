@@ -1,0 +1,1 @@
+List top-level files and directories in /home/user/git/luckydonald/ai-usage (repo root). Just run `ls -la` there and report result concisely.
