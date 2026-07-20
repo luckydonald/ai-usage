@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chartOption, computeWindowStats, noteTooltipHtml, percentThroughWindow, pointTooltipHtml, windowByPoint, windowTooltipHtml } from "./chart";
+import { chartOption, computeWindowStats, noteTooltipHtml, percentThroughWindow, pointTooltipHtml, seriesDisplayName, windowByPoint, windowTooltipHtml } from "./chart";
 import type { GraphSeries, GraphWindow, NoteRange } from "./types";
 
 const series: GraphSeries = {
@@ -23,6 +23,16 @@ const series: GraphSeries = {
     projected_end_percentage: 90,
   }],
 };
+
+describe("seriesDisplayName", () => {
+  it("falls back to a truncated account id when no label is known", () => {
+    expect(seriesDisplayName(series)).toBe("Five hours · app-server · account");
+  });
+
+  it("uses the resolved account label instead of the raw id when available", () => {
+    expect(seriesDisplayName(series, { account: "person@example.com" })).toBe("Five hours · app-server · person@example.com");
+  });
+});
 
 describe("chart rendering contract", () => {
   it("renders actual steps, projection, and a now-line (no reset-boundary line)", () => {
@@ -244,7 +254,8 @@ describe("tooltip HTML", () => {
     const [point] = series.points;
     if (!point) throw new Error("fixture must define a point");
     const html = pointTooltipHtml(series, point, window, { account: "person@example.com" });
-    expect(html).toContain("codex");
+    expect(html).toContain("Service: codex");
+    expect(html).toContain("Provider: app-server");
     expect(html).toContain("person@example.com");
     expect(html).toContain("20.0%");
   });
@@ -254,6 +265,7 @@ describe("tooltip HTML", () => {
     if (!window) throw new Error("fixture must define a window");
     const html = windowTooltipHtml(series, window, new Date("2026-07-17T12:00:00Z"), { account: "person@example.com" });
     expect(html).toContain("person@example.com");
+    expect(html).toContain("app-server");
     expect(html).toContain("40.0%");
   });
 
