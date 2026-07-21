@@ -327,7 +327,16 @@ describe("tooltip HTML", () => {
     };
     const html = windowTooltipHtml(series, overshooting, new Date("2026-07-17T12:00:00Z"), {});
     expect(html).toContain("hit 100% around");
-    expect(html).toContain("That's in");
+    expect(html).toContain("<span title=");
+  });
+
+  it("shows the window's start/end as relative time with the absolute time as a title tooltip", () => {
+    const [window] = series.windows;
+    if (!window) throw new Error("fixture must define a window");
+    const html = windowTooltipHtml(series, window, new Date("2026-07-17T12:00:00Z"), {});
+    expect(html).toContain(`title="${new Date(window.start).toLocaleString()}"`);
+    expect(html).toContain(`title="${new Date(window.end).toLocaleString()}"`);
+    expect(html).toContain("ago");
   });
 });
 

@@ -1,7 +1,7 @@
 import type { EChartsOption, SeriesOption } from "echarts";
 
 import { renderNoteMarkdown } from "./markdown";
-import { formatDuration } from "./time";
+import { formatDuration, formatRelative } from "./time";
 import type { GraphPoint, GraphSeries, GraphWindow, NoteRange } from "./types";
 
 export function seriesDisplayName(item: GraphSeries, accountLabels: Record<string, string> = {}): string {
@@ -125,10 +125,17 @@ export function pointTooltipHtml(
   return lines.join("<br/>");
 }
 
+// Relative time with the absolute timestamp as a native title tooltip — used only here, not in
+// the hover tooltip's own separate `compactWindowDetail`, which already shows its own countdown.
+function relativeTimeSpan(at: Date, now: Date): string {
+  const absolute = at.toLocaleString();
+  return `<span title="${absolute}">${formatRelative(at, now)}</span>`;
+}
+
 function windowDetailLines(item: GraphSeries, window: GraphWindow, now: Date): string[] {
   const stats = computeWindowStats(item.points, window, now);
   const lines = [
-    `${new Date(window.start).toLocaleString()} → ${new Date(window.end).toLocaleString()}`,
+    `${relativeTimeSpan(new Date(window.start), now)} → ${relativeTimeSpan(new Date(window.end), now)}`,
     `Peak usage: ${stats.maximumPercentage.toFixed(1)}%`,
   ];
   if (stats.burnRatePerHour !== null) {
@@ -144,8 +151,7 @@ function windowDetailLines(item: GraphSeries, window: GraphWindow, now: Date): s
     lines.push(`Projected to land at ${(100 - stats.projectedRemainingPercentageAtEnd).toFixed(1)}%`, `${stats.projectedRemainingPercentageAtEnd.toFixed(1)}% of your limit would be left to use`);
   } else if (stats.projectedExhaustedAt !== null) {
     const exhaustedAt = new Date(stats.projectedExhaustedAt);
-    const msUntilExhaustion = Math.max(0, exhaustedAt.getTime() - now.getTime());
-    lines.push(`At this rate, you'll hit 100% around ${exhaustedAt.toLocaleString()}`, `That's in ${formatDuration(msUntilExhaustion)}`);
+    lines.push(`At this rate, you'll hit 100% around ${relativeTimeSpan(exhaustedAt, now)}`);
   }
   return lines;
 }
