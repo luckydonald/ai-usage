@@ -89,6 +89,15 @@ export function formatDuration(ms: number): string {
   return `${sign}${minutes}m`;
 }
 
+// "in 2h 32m" / "2h 32m ago" / "just now" — built on `formatDuration`, which itself only
+// picks the two largest non-zero units and drops the sign into a leading "-".
+export function formatRelative(target: Date, now: Date): string {
+  const ms = target.getTime() - now.getTime();
+  if (Math.abs(ms) < MS_PER_MINUTE) return "just now";
+  const duration = formatDuration(Math.abs(ms));
+  return ms > 0 ? `in ${duration}` : `${duration} ago`;
+}
+
 // Both dates are inclusive: `startText`'s whole day through `endText`'s whole day, in local time.
 export function customRange(startText: string, endText: string): [Date, Date] {
   return [new Date(`${startText}T00:00:00`), new Date(`${endText}T23:59:59.999`)];

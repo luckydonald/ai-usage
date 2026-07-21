@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { customRange, formatDuration, paddedChartEnd, rangeForPreset, subtractCalendarMonth, toDateInputValue, wideningOrder } from "./time";
+import { customRange, formatDuration, formatRelative, paddedChartEnd, rangeForPreset, subtractCalendarMonth, toDateInputValue, wideningOrder } from "./time";
 import type { GraphSeries } from "./types";
 
 describe("calendar month range", () => {
@@ -127,6 +127,22 @@ describe("formatDuration", () => {
 
   it("formats days and hours", () => {
     expect(formatDuration(26 * 3_600_000)).toBe("1d 2h");
+  });
+});
+
+describe("formatRelative", () => {
+  const now = new Date("2026-07-17T12:00:00Z");
+
+  it("formats a future time as 'in <duration>'", () => {
+    expect(formatRelative(new Date("2026-07-17T14:30:00Z"), now)).toBe("in 2h 30m");
+  });
+
+  it("formats a past time as '<duration> ago'", () => {
+    expect(formatRelative(new Date("2026-07-17T09:30:00Z"), now)).toBe("2h 30m ago");
+  });
+
+  it("formats a time within a minute as 'just now'", () => {
+    expect(formatRelative(new Date("2026-07-17T12:00:30Z"), now)).toBe("just now");
   });
 });
 
