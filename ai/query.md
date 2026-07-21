@@ -1512,3 +1512,78 @@ But yeah, they shoud be united into one, if possible the one which not only show
 
 ❯ Finally the tooltip is somewhat pleasant. Add infos about the current=selected=hovered window, too.
 
+❯ /plan We're getting there. Good addition with the badges. Visual separation and grouping helps, just a wall of text is boring indeed.
+- I want to use the brand icons from the pip package `fontawesomefree` (claude, copilot, ~~codex~~ openai, …)
+  - for that create an endpoint serving them at `/img/icons/fontawesomefree/v{package-version}/brands/{icon}.svg`.
+  - that route shall be cached, they don't update
+  - also for easy frontend embedding provide `/img/icons/fontawesomefree/latest/brands/{icon}.svg` as redirect to that version, however as a 1-day cached redirect.
+  - create a svg embed `<Icon source="frontawesomefree" family="brand" version="latest" icon="claude">`, where the params except `icon` already have those defaults.
+  - if easier for routing with static file dir, `/api/img/…` would be possible, too.
+- resets of windows in the past show `(<1m)`
+- the boosted limit display should be rendered as markdown, and rather overflow than causing the tooltip to go out of bounds
+  - also it should be at the top.
+  - show all currently active ones at the top of the page.
+- for the info display below the graph, I want relative times, with the absolute ones as tooltip
+- the filter badges up top should also contain icons. Explain me how it currently figures out which filters to display, so I know how we best apply the icons
+  - if it is a hardcoded thing in vue, then the icons would too.
+  - if it's generated from the providers, it can be a constant in those classes
+
+❯ Task Notification:
+> - Task `a853514ccc31a8cf7` <kbd>completed</kbd>
+> - Tool `toolu_012f5uY7ujG9E4SCvsTdjoD6`
+> - > Agent "Investigate filter badge generation and catalog data flow" finished
+> - [Query (`2718` chars, `2.67 KB`)](output/agents/022.a853514ccc31a8cf7/prompt.md)
+> - [Answer (`7276` chars, `7.14 KB`)](output/agents/022.a853514ccc31a8cf7/result.md)
+> - [Raw log (`148729` chars, `145 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e919dd78-d3fd-47e2-8f73-11515d8a617b/tasks/a853514ccc31a8cf7.output)
+> - `17` tools, `33135` tokens, `1.55703 s`
+
+❯ Task Notification:
+> - Task `af7ac5dc67c7ec657` <kbd>completed</kbd>
+> - Tool `toolu_01JYxsAezzTbtCR9F1Tvz98A`
+> - > Agent "Investigate notes/promo rendering, tooltip overflow, and ServicePanels time display" finished
+> - [Query (`3484` chars, `3.42 KB`)](output/agents/023.af7ac5dc67c7ec657/prompt.md)
+> - [Answer (`9605` chars, `9.42 KB`)](output/agents/023.af7ac5dc67c7ec657/result.md)
+> - [Raw log (`217409` chars, `213 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e919dd78-d3fd-47e2-8f73-11515d8a617b/tasks/af7ac5dc67c7ec657.output)
+> - `20` tools, `46955` tokens, `1.5325 s`
+
+❯ Task Notification:
+> - Task `ae754cfee15515cb8` <kbd>completed</kbd>
+> - Tool `toolu_01Fq5vyGfJcLtXLhpDEJiXh9`
+> - > Agent "Investigate fontawesomefree package layout and static asset serving" finished
+> - [Query (`2773` chars, `2.72 KB`)](output/agents/024.ae754cfee15515cb8/prompt.md)
+> - [Answer (`9720` chars, `9.55 KB`)](output/agents/024.ae754cfee15515cb8/result.md)
+> - [Raw log (`145732` chars, `143 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e919dd78-d3fd-47e2-8f73-11515d8a617b/tasks/ae754cfee15515cb8.output)
+> - `13` tools, `34340` tokens, `8.37847 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. fontawesomefree 6.6.0 (only version on PyPI) has no claude/openai/copilot brand SVGs. How should the icon endpoint handle brands it doesn't have?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Missing brand icons** (1/1) <kbd>Single Select</kbd><br>
+>> fontawesomefree 6.6.0 (only version on PyPI) has no claude/openai/copilot brand SVGs. How should the icon endpoint handle brands it doesn't have?
+> - [ ] 1\. Add a local override folder (Recommended)
+>   - _Endpoint checks a small project-local `icons/brands/` folder first (you supply/commit claude.svg, openai.svg, copilot.svg yourself), falls back to the fontawesomefree package for everything else (github, google, microsoft, ...). Same URL scheme for both, just a different source directory internally._
+> - [ ] 2\. Only serve what fontawesomefree actually has
+>   - _Build the endpoint exactly as specified against the pip package only. <Icon icon="claude"> etc. will 404 until/unless a different icon source is added later. Simplest to build, but doesn't solve the actual motivating case._
+> - [ ] 3\. Pick a different icon package instead
+>   - _Look for an icon set that does include Claude/OpenAI/Copilot brand marks (e.g. a dedicated AI-logos npm/pip package) instead of fontawesomefree, changing the plan's endpoint path/versioning accordingly._
+> - [x] 4\. _Type something:_
+>   - > Use `fontawesome-free-pack` then, that's up to date.
+>
+> </details>
+>
+
+❯ Task Notification:
+> - Task `ad62066ac6bdbd7b3` <kbd>completed</kbd>
+> - Tool `toolu_01YBRWczwS89DNMSM8cfrDUe`
+> - > Agent "Inspect fontawesome-free-pack pip package for brand icons" finished
+> - [Query (`2163` chars, `2.12 KB`)](output/agents/025.ad62066ac6bdbd7b3/prompt.md)
+> - [Answer (`5181` chars, `5.09 KB`)](output/agents/025.ad62066ac6bdbd7b3/result.md)
+> - [Raw log (`72210` chars, `70.8 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e919dd78-d3fd-47e2-8f73-11515d8a617b/tasks/ad62066ac6bdbd7b3.output)
+> - `7` tools, `27743` tokens, `5.82532 s`
+

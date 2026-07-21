@@ -1,0 +1,10 @@
+I need you to verify a specific PyPI Python package before I write an implementation plan around it. Do NOT install it into any project venv — just download/inspect it in isolation (e.g. `pip download fontawesome-free-pack --no-deps -d /tmp/some-scratch-dir` or use `pip index versions fontawesome-free-pack`, then unzip/inspect the wheel contents directly with `unzip -l`/`python -m zipfile`).
+
+Report precisely:
+1. Does a PyPI package named exactly `fontawesome-free-pack` (or a very similar name — check for `fontawesome-free-pack`, `fontawesomefreepack`, `fontawesome_free_pack`) actually exist? What's its latest version, most recent release date, and how actively maintained does it look (release history)?
+2. What is its on-disk directory layout once installed/unzipped — specifically, where do brand SVG icon files live (e.g. `svgs/brands/*.svg` or similar)? List a sample of filenames in that directory.
+3. Critically: does this package's brand icon set include `claude.svg`, `openai.svg`, and `copilot.svg` (or reasonably named equivalents like `claude-ai.svg`, `microsoft-copilot.svg`)? Check exhaustively — list every brand SVG filename containing "claude", "openai", "copilot", "gpt", "anthropic", "microsoft", "github" so I can see the exact available naming.
+4. What license does this package ship under, and does its README/PyPI page say anything about being a more up-to-date fork/mirror of Font Awesome Free, or about which upstream Font Awesome version it tracks?
+5. Get the exact importable package name (what you'd write in `import ...`) since the PyPI distribution name and the importable module name can differ (e.g. distribution `fontawesome-free-pack` might import as `fontawesome_free_pack` or something else entirely) — this matters for writing `importlib.metadata.version(...)` calls correctly later.
+
+If the package does NOT exist on PyPI under that name, say so clearly and check if maybe the user meant a differently-cased/hyphenated name — search PyPI for anything close. Be precise and factual; this is going straight into an implementation plan so getting the exact filenames and package name right matters a lot more than speed.
