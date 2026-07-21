@@ -117,3 +117,4 @@ Selected + verified against the actual installed package (not guessed):
 - [ ] Cluster 4: extract reusable Chip.vue component
 - [ ] Cluster 5: markdown rendering + tooltip notes-first + overflow fix
 - [ ] Cluster 6: page-level active-promos banner
+- [ ] Cluster 7: relative time in ServicePanels
