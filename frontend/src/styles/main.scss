@@ -122,6 +122,13 @@ h1 {
   color: var(--color-error-text);
 }
 
+.banner-info {
+  background: var(--color-secondary);
+  color: var(--color-secondary-text);
+
+  a { color: inherit; text-decoration: underline; }
+}
+
 .toolbar {
   max-width: 1500px;
   margin: 0 auto 1rem;

@@ -2,9 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
+import { activeNotesAt } from "./chart";
 import Chip from "./components/Chip.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
+import { renderNoteMarkdown } from "./markdown";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
 import type { Catalog, Filters, GraphSeries, NoteRange } from "./types";
 
@@ -27,6 +29,8 @@ const includeWindowEnds = ref(localStorage.getItem("ai-usage-pad-window-ends") =
 const showDataPoints = ref(localStorage.getItem("ai-usage-show-data-points") === "true");
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 let events: EventSource | undefined;
+
+const activeNotes = computed(() => activeNotesAt(notes.value, Date.now()));
 
 const services = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.service))]);
 const providers = computed(() => [...new Set(catalog.value.metrics.filter((metric) => !filters.services.length || filters.services.includes(metric.service)).map((metric) => metric.provider))]);
@@ -178,6 +182,7 @@ onBeforeUnmount(() => events?.close());
       </div>
     </header>
     <p v-if="exposed" class="banner banner-error">This dashboard is exposed without authentication.</p>
+    <p v-for="note in activeNotes" :key="`${note.service}-${note.account_id}-${note.start}`" class="banner banner-info" v-html="renderNoteMarkdown(note.text)" />
 
     <section class="toolbar" aria-label="Graph filters">
       <div class="field">
