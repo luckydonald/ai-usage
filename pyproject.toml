@@ -16,6 +16,7 @@ dependencies = [
     "curl-cffi>=0.15.0",
     "fastapi>=0.116",
     "fastscheduler>=0.2.1",
+    "fontawesome-free-pack>=7.3.0",
     "httpx>=0.28",
     "pexpect>=4.9; sys_platform != 'win32'",
     "platformdirs>=4.3",
