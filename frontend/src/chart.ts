@@ -1,5 +1,6 @@
 import type { EChartsOption, SeriesOption } from "echarts";
 
+import { renderNoteMarkdown } from "./markdown";
 import { formatDuration } from "./time";
 import type { GraphPoint, GraphSeries, GraphWindow, NoteRange } from "./types";
 
@@ -166,7 +167,7 @@ export function windowTooltipHtml(
 export function noteTooltipHtml(note: NoteRange): string {
   const start = new Date(note.start).toLocaleDateString();
   const range = note.end ? `${start} → ${new Date(note.end).toLocaleDateString()}` : `${start} → now`;
-  return [`<strong>${note.text}</strong>`, range].join("<br/>");
+  return [renderNoteMarkdown(note.text), range].join("<br/>");
 }
 
 // The step-line chart holds each series flat at its last recorded value until the next
@@ -204,7 +205,7 @@ function projectedValueAt(last: GraphPoint, window: GraphWindow, atMs: number): 
   return last.percentage + (window.projected_end_percentage - last.percentage) * t;
 }
 
-function activeNotesAt(notes: NoteRange[], atMs: number): NoteRange[] {
+export function activeNotesAt(notes: NoteRange[], atMs: number): NoteRange[] {
   return notes.filter((note) => {
     const startMs = new Date(note.start).getTime();
     const endMs = note.end ? new Date(note.end).getTime() : Infinity;
@@ -294,7 +295,7 @@ export function axisTooltipHtml(
 
   const header = `<strong>${new Date(atMs).toLocaleString()}</strong>`;
   const noteLines = activeNotesAt(notes, atMs).map((note) => noteTooltipHtml(note));
-  return [header, ...blocks, ...noteLines].join("<br/>");
+  return [header, ...noteLines, ...blocks].join("<br/>");
 }
 
 export interface ChartOptions {
@@ -424,6 +425,7 @@ export function chartOption(
     tooltip: {
       trigger: "axis",
       confine: true,
+      extraCssText: "max-width: 22rem; white-space: normal; max-height: 60vh; overflow-y: auto;",
       backgroundColor: dark ? "#1f2937" : "#ffffff",
       borderColor: dark ? "#374151" : "#e5e7eb",
       textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
