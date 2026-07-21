@@ -12,8 +12,14 @@ from datetime import datetime
 from typing import Annotated, Any
 
 import uvicorn
-from fastapi import FastAPI, Query
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
@@ -23,6 +29,7 @@ from ai_usage.crawler import Crawler
 from ai_usage.database import Database
 from ai_usage.graph import build_series
 from ai_usage.history import HistoryStore
+from ai_usage.icons import FONTAWESOME_FREE_PACK_VERSION, resolve_icon_svg
 from ai_usage.notes import collect_note_ranges
 from ai_usage.orm import MetricSampleRecord
 from ai_usage.progress import ProgressReporter
@@ -205,6 +212,33 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
         # end def
 
         return StreamingResponse(stream(), media_type="text/event-stream")
+    # end def
+
+    @app.get("/img/icons/fontawesome-free-pack/v{icon_version}/{icon_set}/{icon_name}.svg")
+    async def fontawesome_icon(icon_version: str, icon_set: str, icon_name: str) -> Response:
+        if icon_version != FONTAWESOME_FREE_PACK_VERSION:
+            raise HTTPException(status_code=404, detail="unknown fontawesome-free-pack version")
+        # end if
+        svg = resolve_icon_svg(icon_set, icon_name)
+        if svg is None:
+            raise HTTPException(status_code=404, detail="unknown icon")
+        # end if
+        return Response(
+            content=svg,
+            media_type="image/svg+xml",
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
+    # end def
+
+    @app.get("/img/icons/fontawesome-free-pack/latest/{icon_set}/{icon_name}.svg")
+    async def fontawesome_icon_latest(icon_set: str, icon_name: str) -> RedirectResponse:
+        version = FONTAWESOME_FREE_PACK_VERSION
+        url = f"/img/icons/fontawesome-free-pack/v{version}/{icon_set}/{icon_name}.svg"
+        return RedirectResponse(
+            url=url,
+            status_code=307,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
     # end def
 
     if os.environ.get("SENTRY_ENABLE_SAMPLE_ROUTES") == "1":

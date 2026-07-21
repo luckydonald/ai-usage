@@ -14,6 +14,7 @@ dependencies = [
     { name = "curl-cffi" },
     { name = "fastapi" },
     { name = "fastscheduler" },
+    { name = "fontawesome-free-pack" },
     { name = "httpx" },
     { name = "pexpect", marker = "sys_platform != 'win32'" },
     { name = "platformdirs" },
@@ -51,6 +52,7 @@ requires-dist = [
     { name = "curl-cffi", specifier = ">=0.15.0" },
     { name = "fastapi", specifier = ">=0.116" },
     { name = "fastscheduler", specifier = ">=0.2.1" },
+    { name = "fontawesome-free-pack", specifier = ">=7.3.0" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.136" },
     { name = "pexpect", marker = "sys_platform != 'win32'", specifier = ">=4.9" },
@@ -398,6 +400,28 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/71/ed/51017b81b28f9d45cd3ce4a2d7274562291ef1ff44eb16ca69a6d3bd2def/fastscheduler-0.2.1.tar.gz", hash = "sha256:3ee84c9bc943c65b9493c8d8cacdcf8ea14b22cb57e4637cbc313a61e20ceda9", size = 31105, upload-time = "2026-01-29T04:56:45.518Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2e/87/dd0a405aa91662cd6579ad3e2f838a0e572b146c885f807ffe65fb59fcb7/fastscheduler-0.2.1-py3-none-any.whl", hash = "sha256:ec6ad97f509227bfd9cdbef1481429732904ef93c319876b738eb697e5ad149c", size = 36033, upload-time = "2026-01-29T04:56:47.755Z" },
+]
+
+[[package]]
+name = "fontawesome-free-pack"
+version = "7.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/00/4cef33dfd8ada93fd7ab300ff8b71dd634c96f50106365f08a7611ff4a08/fontawesome_free_pack-7.3.0.tar.gz", hash = "sha256:090d811c889ddb0eca0353173bbdec7992322a70831828d95252af247d92f527", size = 610269, upload-time = "2026-07-01T07:36:41.933Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/d4/e3f8b7ba6d0fefe106fc933ff1d84e8aa5e78a68c3c882bb795b51fcc351/fontawesome_free_pack-7.3.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:6824ee46911b93aa1f7eca532c9eecaedb7a21e0a08fbce031b165deff42a0a2", size = 1393907, upload-time = "2026-07-01T07:36:17.582Z" },
+    { url = "https://files.pythonhosted.org/packages/84/5e/33401bbc1aa077d6d6f3bdc305107ff86b1f5afa58115dffa5cada567c6d/fontawesome_free_pack-7.3.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:ab9aa738defd793ea29e30c5b6a0984a740300017996d8a54248d8df9468c394", size = 1439234, upload-time = "2026-07-01T07:36:19.37Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/68/2fb19dc6189bd064bd0d8debd9a4647221ce3c0f3e53d513964185a719f7/fontawesome_free_pack-7.3.0-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:48aff43c93964c4d4b3f18f2e05aa016b45d2f996d8a5495dcc3db8160f53e20", size = 1573463, upload-time = "2026-07-01T07:36:21.142Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/32/581a3b2d91b6e00769ca56cdf923e1b325e21db7e54156ff8b2859dd5b4c/fontawesome_free_pack-7.3.0-cp39-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:6cf9c474756e1cbbfd4f53111c5030e66f2b49d8d4b830a3d8c56b74a01aec48", size = 1517902, upload-time = "2026-07-01T07:36:22.765Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/bd/d34176bc29a0bb84c955fca530686cd05c85a240b1e18cb1ae64c9a4171f/fontawesome_free_pack-7.3.0-cp39-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:213aa3c64d6970fc5f1a2b700f46f5de82142125035a0d6efb8549de1908c76f", size = 1685263, upload-time = "2026-07-01T07:36:24.587Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/29/98940633fde2491cb7af8ba05b200909a16a988c040617cfbeab231a3a2a/fontawesome_free_pack-7.3.0-cp39-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:03c1c60bb6d1b5ce57ad2b28a45a138421c8cd6eacbe0fd7de06356eebd752bd", size = 1691871, upload-time = "2026-07-01T07:36:26.314Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/44/5f368c27cee52d9c89f3b5bcd015a6bad304815ae1b47ddcbf6590882fbe/fontawesome_free_pack-7.3.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7a80577dc2f0449d53d0263d30d33b48c74d93fd317ff3a67e19aa530f3eecae", size = 1500679, upload-time = "2026-07-01T07:36:27.994Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/fe/4618d4c9ba136f7778059774f6c0f80bdea8470a5f85d0dd3036b926ebbb/fontawesome_free_pack-7.3.0-cp39-abi3-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:7dc088dc96ef12a610caca736869d5a94d9bce4669c3fc30cfe12e33b8c0d774", size = 1507813, upload-time = "2026-07-01T07:36:29.773Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/75/6534961acbbc1c282f533f66959a83225e5d62e523c476427ccb65fcf619/fontawesome_free_pack-7.3.0-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:b974d6ba1ab79d797ebe3fff685b80abbd1910f4e3c22e16e956c840029a993f", size = 1749779, upload-time = "2026-07-01T07:36:31.536Z" },
+    { url = "https://files.pythonhosted.org/packages/96/9d/dfdacefb64ceb87a1486b584c6a5f96fc034e51856014b349f99eadcbfa0/fontawesome_free_pack-7.3.0-cp39-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:6c1ad3b479075ad9d4d3402f3a86c3ab77782ff1bd5aa930789fdca785436f37", size = 1793950, upload-time = "2026-07-01T07:36:33.335Z" },
+    { url = "https://files.pythonhosted.org/packages/be/29/094c6e9351c7a7451dfb4f777210eb3a97dcb2dd2bf21254a6c8c894ad84/fontawesome_free_pack-7.3.0-cp39-abi3-musllinux_1_2_i686.whl", hash = "sha256:e68292d1db4c75ae8a3186ad407faee77eb1ec649bda086b9622755790132792", size = 1725329, upload-time = "2026-07-01T07:36:35.174Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/36/3b5b0aefbb039ebd94cf4286bdb5d174e0044823dec1176d8ac13eb9b630/fontawesome_free_pack-7.3.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:af2b296951835f543ac1a18b7e4af70460a2f44fae9bc433ea68439a87d28216", size = 1740621, upload-time = "2026-07-01T07:36:36.776Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/f2/4b98c916e583bd00b2c1cb213b4c9239b3a09940de2fac34585fddd202ac/fontawesome_free_pack-7.3.0-cp39-abi3-win32.whl", hash = "sha256:a0e11f5f13a33079cee46f5a7c9ebdfe4070f58fe0400b78ecac4b4603288cd6", size = 1397901, upload-time = "2026-07-01T07:36:38.342Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/2c/0c2b89c2341c5a37aa815be59aea01ef794c064200d17e8acda70b2e6f1f/fontawesome_free_pack-7.3.0-cp39-abi3-win_amd64.whl", hash = "sha256:a15b2baf839f26c7bbb396fd5161dec4c20cec7f7c894b71f890bcaa65fc8933", size = 1387646, upload-time = "2026-07-01T07:36:40.274Z" },
 ]
 
 [[package]]
