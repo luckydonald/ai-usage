@@ -207,6 +207,26 @@ h1 {
   }
 }
 
+.icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  // fixed light background, not the theme surface: the SVGs are loaded via <img>, which
+  // renders each icon in its own document context, so `currentColor`/inherited text color
+  // never reaches it - the icon is always rendered black and needs a light backdrop to
+  // stay visible against dark-mode chips.
+  background: #fff;
+  flex: none;
+}
+
+.icon {
+  width: .7rem;
+  height: .7rem;
+}
+
 .graph-panel {
   max-width: 1500px;
   margin: 0 auto;
