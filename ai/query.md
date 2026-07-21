@@ -1587,3 +1587,35 @@ But yeah, they shoud be united into one, if possible the one which not only show
 > - [Raw log (`72210` chars, `70.8 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e919dd78-d3fd-47e2-8f73-11515d8a617b/tasks/ad62066ac6bdbd7b3.output)
 > - `7` tools, `27743` tokens, `5.82532 s`
 
+❯ Plan changes:
+- Change the svg URL to `fontawesome-free-pack` then, to keep it straight forward.
+- Brands `copilot` should be included since v`7.3.0`. Either way it should be added to `SERVICE_ICON_SLUGS`.
+- Feel free to extract the chip as component for better reuse.
+- Yeah, I want provider icons too, so that's why I was thinking about maybe putting those inside the `class` definition as static constant.
+  - you can go ahead and select those icons already from the available free icons.
+  - with now needing brand and free, therefore pack, version, set, name should be defined properly, instead of just the name, so others can be used in the future.
+- Use a proper markdown dependency to be future proof - the observed data is not under my control.
+- Make sure to escape if using raw HTML.
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Re-checked directly: fontawesome-free-pack 7.3.0 has zero Copilot-related constants (checked all 2160, including github-copilot/microsoft-copilot slug guesses). Claude and OpenAI exist, Copilot genuinely doesn't, at this or any version. How to handle it in SERVICE_ICON_SLUGS?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Copilot icon** (1/1) <kbd>Single Select</kbd><br>
+>> Re-checked directly: fontawesome-free-pack 7.3.0 has zero Copilot-related constants (checked all 2160, including github-copilot/microsoft-copilot slug guesses). Claude and OpenAI exist, Copilot genuinely doesn't, at this or any version. How to handle it in SERVICE_ICON_SLUGS?
+> - [ ] 1\. Omit it for now (Recommended)
+>   - _No SERVICE_ICON_SLUGS entry for copilot — chip just shows no icon, same graceful "missing key" handling already planned for any unmapped service. Revisit later if a Copilot glyph source turns up._
+> - [x] 2\. Use GitHub's icon as a stand-in
+>   - _Copilot is a GitHub product — map it to the existing `github` brand icon (which this package does have) as an approximate stand-in until/unless a real Copilot mark is sourced._
+> - [ ] 3\. Something else — tell me
+>   - _You have a different icon or source in mind for Copilot specifically._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
