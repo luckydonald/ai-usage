@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
-import Icon from "./components/Icon.vue";
+import Chip from "./components/Chip.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
@@ -220,44 +220,42 @@ onBeforeUnmount(() => events?.close());
       </template>
 
       <div class="chip-group" v-if="services.length > 1" aria-label="Services">
-        <button
+        <Chip
           v-for="item in services"
           :key="item"
-          type="button"
-          class="chip"
-          :class="{ active: filters.services.includes(item) }"
+          :label="item"
+          :active="filters.services.includes(item)"
+          :icon="catalog.service_icons?.[item]"
           @click="filters.services = toggleFilter(filters.services, item); load()"
-        ><Icon v-if="catalog.service_icons?.[item]" v-bind="catalog.service_icons[item]" /> {{ item }}</button>
+        />
       </div>
       <div class="chip-group" v-if="providers.length > 1" aria-label="Providers">
-        <button
+        <Chip
           v-for="item in providers"
           :key="item"
-          type="button"
-          class="chip"
-          :class="{ active: filters.providers.includes(item) }"
+          :label="item"
+          :active="filters.providers.includes(item)"
+          :icon="catalog.provider_icons?.[item]"
           @click="filters.providers = toggleFilter(filters.providers, item); load()"
-        ><Icon v-if="catalog.provider_icons?.[item]" v-bind="catalog.provider_icons[item]" /> {{ item }}</button>
+        />
       </div>
       <div class="chip-group" v-if="accounts.length > 1" aria-label="Accounts">
-        <button
+        <Chip
           v-for="item in accounts"
           :key="item.id"
-          type="button"
-          class="chip"
-          :class="{ active: filters.accounts.includes(item.id) }"
+          :label="accountLabel(item)"
+          :active="filters.accounts.includes(item.id)"
           @click="filters.accounts = toggleFilter(filters.accounts, item.id); load()"
-        >{{ accountLabel(item) }}</button>
+        />
       </div>
       <div class="chip-group" v-if="metricOptions.length > 1" aria-label="Metrics">
-        <button
+        <Chip
           v-for="item in metricOptions"
           :key="item.key"
-          type="button"
-          class="chip"
-          :class="{ active: filters.metrics.includes(item.key) }"
+          :label="item.name"
+          :active="filters.metrics.includes(item.key)"
           @click="filters.metrics = toggleFilter(filters.metrics, item.key); load()"
-        >{{ item.name }}</button>
+        />
       </div>
     </section>
 
