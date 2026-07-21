@@ -142,6 +142,30 @@ describe("noteTooltipHtml", () => {
     });
     expect(html).not.toContain(" → now");
   });
+
+  it("renders markdown formatting and links in the note text", () => {
+    const html = noteTooltipHtml({
+      service: "codex",
+      account_id: "account",
+      text: "Your [limit](https://example.com/promo) is **50% higher**",
+      start: "2026-07-01T00:00:00Z",
+      end: null,
+    });
+    expect(html).toContain("<strong>50% higher</strong>");
+    expect(html).toContain('<a href="https://example.com/promo">limit</a>');
+  });
+
+  it("escapes literal HTML in the note text instead of executing it", () => {
+    const html = noteTooltipHtml({
+      service: "codex",
+      account_id: "account",
+      text: "<img src=x onerror=alert(1)>gotcha",
+      start: "2026-07-01T00:00:00Z",
+      end: null,
+    });
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;img");
+  });
 });
 
 describe("windowByPoint", () => {
@@ -368,6 +392,22 @@ describe("axisTooltipHtml", () => {
     };
     const html = axisTooltipHtml([series, other], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now, [note]);
     expect(html.match(/\+50% weekly limits promo/g)?.length).toBe(1);
+  });
+
+  it("puts active notes right after the header, before the per-account blocks", () => {
+    const note: NoteRange = {
+      service: "codex",
+      account_id: "account",
+      text: "+50% weekly limits promo",
+      start: "2026-07-01T00:00:00Z",
+      end: null,
+    };
+    const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now, [note]);
+    const headerIndex = html.indexOf("7/17/2026");
+    const noteIndex = html.indexOf("+50% weekly limits promo");
+    const blockIndex = html.indexOf("Five hours");
+    expect(headerIndex).toBeLessThan(noteIndex);
+    expect(noteIndex).toBeLessThan(blockIndex);
   });
 
   it("skips a series with no sample at-or-before the hovered timestamp", () => {
