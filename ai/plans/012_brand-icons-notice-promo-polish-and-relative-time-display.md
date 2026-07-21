@@ -111,6 +111,6 @@ Selected + verified against the actual installed package (not guessed):
 - [x] Step 3: tree-shaken echarts/core import
 - [x] Tests + verification (vitest/vue-tsc/build + manual browser check)
 - [x] Fix: projection line shows no tooltip when hovered past last real sample
-- [ ] Cluster 1: backend icon-serving endpoint
+- [x] Cluster 1: backend icon-serving endpoint
 - [ ] Cluster 2: frontend Icon.vue component
 - [ ] Cluster 3: service+provider icon mappings, catalog API, App.vue wiring
