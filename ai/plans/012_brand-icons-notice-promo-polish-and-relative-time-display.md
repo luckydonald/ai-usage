@@ -116,3 +116,4 @@ Selected + verified against the actual installed package (not guessed):
 - [x] Cluster 3: service+provider icon mappings, catalog API, App.vue wiring
 - [ ] Cluster 4: extract reusable Chip.vue component
 - [ ] Cluster 5: markdown rendering + tooltip notes-first + overflow fix
+- [ ] Cluster 6: page-level active-promos banner
