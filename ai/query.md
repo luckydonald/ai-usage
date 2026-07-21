@@ -1619,3 +1619,19 @@ But yeah, they shoud be united into one, if possible the one which not only show
 > </details>
 >
 
+❯ /plan Plan changes:
+- Change the svg URL to `fontawesome-free-pack` then, to keep it straight forward.
+- Brands `copilot` should be included since v`7.3.0`. Either way it should be added to `SERVICE_ICON_SLUGS`.
+- Feel free to extract the chip as component for better reuse.
+- Yeah, I want provider icons too, so that's why I was thinking about maybe putting those inside the `class` definition as static constant.
+  - you can go ahead and select those icons already from the available free icons.
+  - with now needing brand and free, therefore pack, version, set, name should be defined properly, instead of just the name, so others can be used in the future.
+- Use a proper markdown dependency to be future proof - the observed data is not under my control.
+- Make sure to escape if using raw HTML.
+
+❯ Conversation compacted <kbd>auto</kbd>:
+> - [Result (`36680` chars, `36 KB`)](output/compact/005.d35a8493-5d1c-4464-ae34-170051963051/result.md)
+
+❯ Conversation compacted <kbd>manual</kbd>:
+> - [Result (`18867` chars, `18.6 KB`)](output/compact/006.d35a8493-5d1c-4464-ae34-170051963051/result.md)
+
