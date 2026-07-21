@@ -5,6 +5,7 @@ import hashlib
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
+from ai_usage.icons import IconRef
 from ai_usage.models import GraphPoint, GraphSeries, GraphWindow
 from ai_usage.orm import MetricSampleRecord
 
@@ -31,6 +32,15 @@ SERVICE_BASE_COLORS: dict[str, str] = {
     "cursor": "#72716D",
 }
 LIGHTNESS_OFFSETS = (-0.18, -0.09, 0.0, 0.09, 0.18)
+
+# Brand marks for the service filter chips. `copilot` has no Font Awesome Free icon of its own
+# (checked: no `copilot`/`github-copilot`/`microsoft-copilot` constant exists in any version) —
+# GitHub's mark is used as a stand-in.
+SERVICE_ICONS: dict[str, IconRef] = {
+    "claude": IconRef(set="brands", name="claude"),
+    "codex": IconRef(set="brands", name="openai"),
+    "copilot": IconRef(set="brands", name="github"),
+}
 
 
 def aware(value: datetime | None) -> datetime | None:

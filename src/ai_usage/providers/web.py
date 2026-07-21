@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 
+from ai_usage.icons import IconRef
 from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
 from ai_usage.providers.base import ConfigurationField, Provider, ProviderError
 
@@ -62,5 +63,6 @@ class CopilotEntitlementsProvider(PrivateWebProvider):
     service = "copilot"
     key = "entitlements"
     display_name = "Copilot private entitlement API"
+    icon = IconRef(set="solid", name="key")
 # end class
 

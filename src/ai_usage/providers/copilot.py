@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from ai_usage.icons import IconRef
 from ai_usage.models import AccountConfig, Metric, MinMaxUsage, ProviderFetchResult
 from ai_usage.providers.base import ConfigurationField, Provider, ProviderError
 
@@ -32,6 +33,7 @@ class CopilotBillingProvider(Provider):
     service = "copilot"
     key = "github-api"
     display_name = "GitHub AI-credit billing API"
+    icon = IconRef(set="brands", name="github")
     configuration_fields = (
         ConfigurationField(key="username", label="GitHub username", required=True),
         ConfigurationField(key="allowance", label="Monthly AI credits", kind="integer", required=True),

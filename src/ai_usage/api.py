@@ -27,7 +27,7 @@ from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
 from ai_usage.database import Database
-from ai_usage.graph import build_series
+from ai_usage.graph import SERVICE_ICONS, build_series
 from ai_usage.history import HistoryStore
 from ai_usage.icons import FONTAWESOME_FREE_PACK_VERSION, resolve_icon_svg
 from ai_usage.notes import collect_note_ranges
@@ -118,10 +118,17 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
             )
             metrics = [dict(row._mapping) for row in rows]
         # end with
+        provider_icons = {
+            provider.key: provider.icon._asdict()
+            for provider in state.providers.providers.values()
+            if provider.icon is not None
+        }
         return {
             "accounts": [account.model_dump(mode="json") for account in accounts],
             "metrics": metrics,
             "exhausted_color": "#6b7280",
+            "service_icons": {service: icon._asdict() for service, icon in SERVICE_ICONS.items()},
+            "provider_icons": provider_icons,
         }
     # end def
 

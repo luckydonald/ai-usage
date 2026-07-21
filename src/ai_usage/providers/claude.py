@@ -15,6 +15,7 @@ from typing import Any
 from curl_cffi.requests import AsyncSession
 from pydantic import BaseModel, ValidationError
 
+from ai_usage.icons import IconRef
 from ai_usage.models import (
     AccountConfig,
     AccountIdentity,
@@ -230,6 +231,7 @@ class ClaudeWebUsageProvider(Provider):
     service = "claude"
     key = "web"
     display_name = "Claude private web API"
+    icon = IconRef(set="solid", name="globe")
     configuration_fields = (
         ConfigurationField(
             key="org_id",
@@ -409,6 +411,7 @@ class ClaudeStatusProvider(Provider):
     service = "claude"
     key = "statusline"
     display_name = "Claude status line with /usage fallback"
+    icon = IconRef(set="solid", name="gauge")
     configuration_fields = (
         ConfigurationField(key="command", label="Claude executable", default="claude"),
         ConfigurationField(key="profile_dir", label="Claude profile", kind="path"),
@@ -478,6 +481,7 @@ class ClaudeStatusProvider(Provider):
 class ClaudeUsageProvider(ClaudeStatusProvider):
     key = "cli-usage"
     display_name = "Claude /usage"
+    icon = IconRef(set="solid", name="terminal")
 
     async def fetch(
         self,

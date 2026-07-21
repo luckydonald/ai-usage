@@ -1,14 +1,14 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    icon: string
-    source?: string
-    family?: string
+    name: string
+    set?: string
+    pack?: string
     version?: string
   }>(),
   {
-    source: "fontawesome-free-pack",
-    family: "brands",
+    pack: "fontawesome-free-pack",
+    set: "brands",
     version: "latest",
   },
 )
@@ -16,6 +16,6 @@ withDefaults(
 
 <template>
   <span class="icon-badge">
-    <img :src="`/img/icons/${source}/${version}/${family}/${icon}.svg`" :alt="icon" class="icon" />
+    <img :src="`/img/icons/${pack}/${version}/${set}/${name}.svg`" :alt="name" class="icon" />
   </span>
 </template>

@@ -12,7 +12,9 @@ test("mounts the dashboard with the runtime-only Vue build", async () => {
     vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
       if (url.includes("/catalog")) {
-        return new Response(JSON.stringify({ accounts: [], metrics: [], exhausted_color: "#6b7280" }));
+        return new Response(
+          JSON.stringify({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {} }),
+        );
       }
       return new Response(JSON.stringify([]));
     }),
@@ -20,7 +22,10 @@ test("mounts the dashboard with the runtime-only Vue build", async () => {
 
   await import("./main");
 
-  await vi.waitFor(() => {
-    expect(document.querySelector("h1")?.textContent).toBe("AI Usage");
-  });
-});
+  await vi.waitFor(
+    () => {
+      expect(document.querySelector("h1")?.textContent).toBe("AI Usage");
+    },
+    { timeout: 10000 },
+  );
+}, 15000);

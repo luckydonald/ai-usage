@@ -2,12 +2,13 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
+import Icon from "./components/Icon.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
 import type { Catalog, Filters, GraphSeries, NoteRange } from "./types";
 
-const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280" });
+const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {} });
 const series = ref<GraphSeries[]>([]);
 const notes = ref<NoteRange[]>([]);
 const preset = ref<TimePreset>("auto");
@@ -226,7 +227,7 @@ onBeforeUnmount(() => events?.close());
           class="chip"
           :class="{ active: filters.services.includes(item) }"
           @click="filters.services = toggleFilter(filters.services, item); load()"
-        >{{ item }}</button>
+        ><Icon v-if="catalog.service_icons?.[item]" v-bind="catalog.service_icons[item]" /> {{ item }}</button>
       </div>
       <div class="chip-group" v-if="providers.length > 1" aria-label="Providers">
         <button
@@ -236,7 +237,7 @@ onBeforeUnmount(() => events?.close());
           class="chip"
           :class="{ active: filters.providers.includes(item) }"
           @click="filters.providers = toggleFilter(filters.providers, item); load()"
-        >{{ item }}</button>
+        ><Icon v-if="catalog.provider_icons?.[item]" v-bind="catalog.provider_icons[item]" /> {{ item }}</button>
       </div>
       <div class="chip-group" v-if="accounts.length > 1" aria-label="Accounts">
         <button
