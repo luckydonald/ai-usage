@@ -30,10 +30,19 @@ export interface CatalogMetric {
   metric_name: string;
 }
 
+export interface IconRef {
+  name: string;
+  set: string;
+  pack: string;
+  version: string;
+}
+
 export interface Catalog {
   accounts: Account[];
   metrics: CatalogMetric[];
   exhausted_color: string;
+  service_icons: Record<string, IconRef>;
+  provider_icons: Record<string, IconRef>;
 }
 
 export interface LatestMetric {

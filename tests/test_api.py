@@ -49,6 +49,13 @@ async def test_api_catalog_latest_and_series(tmp_path, monkeypatch) -> None:
     # end with
     assert health.json() == {"status": "ok"}
     assert catalog.json()["metrics"][0]["metric_key"] == "five-hours"
+    assert catalog.json()["service_icons"]["claude"] == {
+        "name": "claude",
+        "set": "brands",
+        "pack": "fontawesome-free-pack",
+        "version": "latest",
+    }
+    assert catalog.json()["provider_icons"]["statusline"]["name"] == "gauge"
     assert latest.json()[0]["percentage"] == 42
     assert series.json()[0]["points"][0]["percentage"] == 42
     await runtime.close()

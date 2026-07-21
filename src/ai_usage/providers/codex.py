@@ -13,6 +13,7 @@ from typing import Any
 from curl_cffi.requests import AsyncSession
 from pydantic import BaseModel, ValidationError
 
+from ai_usage.icons import IconRef
 from ai_usage.models import (
     AccountConfig,
     AccountIdentity,
@@ -187,6 +188,7 @@ class CodexWebUsageProvider(Provider):
     service = "codex"
     key = "web"
     display_name = "Codex private web API"
+    icon = IconRef(set="solid", name="globe")
     login_url = "https://chatgpt.com/"
     login_button_selector = '[data-testid="login-button"]'
     # chatgpt.com's CSP forbids 'unsafe-eval', which is exactly how pywebview injects JS — the
@@ -348,6 +350,7 @@ class CodexAppServerProvider(Provider):
     service = "codex"
     key = "app-server"
     display_name = "Codex app-server"
+    icon = IconRef(set="solid", name="server")
     configuration_fields = (
         ConfigurationField(key="command", label="Codex executable", default="codex"),
         ConfigurationField(key="profile_dir", label="Codex profile", kind="path"),
@@ -431,6 +434,7 @@ class CodexStatusProvider(Provider):
     service = "codex"
     key = "cli-status"
     display_name = "Codex /status"
+    icon = IconRef(set="solid", name="terminal")
     configuration_fields = (
         ConfigurationField(key="command", label="Codex executable", default="codex"),
     )

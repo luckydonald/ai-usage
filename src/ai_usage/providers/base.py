@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from ai_usage.icons import IconRef
 from ai_usage.models import AccountConfig, ProviderFetchResult
 
 
@@ -38,6 +39,7 @@ class Provider(ABC):
     configuration_fields: tuple[ConfigurationField, ...] = ()
     login_url: str | None = None
     login_hint: str | None = None
+    icon: IconRef | None = None
 
     async def discover(self) -> list[DiscoveredAccount]:
         return []
