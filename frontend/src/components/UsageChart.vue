@@ -47,6 +47,12 @@ function closePinnedTooltip(): void {
   pinnedTooltipHtml.value = "";
 }
 
+// The overlay is `position: fixed` over the whole viewport, so without this the page
+// underneath keeps scrolling behind it — pausing on a pinned tooltip.
+watch(tooltipOpen, (open) => {
+  document.body.style.overflow = open ? "hidden" : "";
+});
+
 async function pinTooltip(offsetX: number, offsetY: number): Promise<void> {
   if (!chart || !chart.containPixel({ gridIndex: 0 }, [offsetX, offsetY])) return;
   const coordinate = chart.convertFromPixel({ gridIndex: 0 }, [offsetX, offsetY]);
@@ -135,6 +141,7 @@ watch(
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resize);
   window.removeEventListener("keydown", onKeydown);
+  if (tooltipOpen.value) document.body.style.overflow = "";
   chart?.dispose();
 });
 </script>
