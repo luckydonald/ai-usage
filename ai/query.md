@@ -1673,3 +1673,35 @@ Adiitionally it would be very helpful for moile which have only simulated mousem
 - it should run after the fetch phase, and not on it's own time schedule.
 - the push action may ask for an user login, which is blocking, so it needs a timeout.
 
+› I'm getting timeout errors with claude - And debugging showed me that `child.before` contains the following:
+@ai/errors/9.txt 
+Now my assumption is, that the CLI command is run somewhere in a weird temporary folder where it can't access the normal `~/.codex/` files, where it already would have the color configured - but more importantly the account login stored.
+
+› Question answered.
+> <details><summary>
+>
+>> 1. How should AI Usage handle an uninitialized or wrong Claude profile during its `/usage` fallback?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Desired fix** (1/1) <kbd>Single Select</kbd><br>
+>> How should AI Usage handle an uninitialized or wrong Claude profile during its `/usage` fallback?
+> - [x] 1\. Actionable failure (Recommended)
+>   - _Keep the configured profile untouched; detect the setup screen and report the exact profile path plus how to initialize or correct it._
+>   - > Also please investigate why it would currently not be the normal expected `~/.claude`.
+> - [ ] 2\. Use default profile
+>   - _Do not set CLAUDE_CONFIG_DIR for CLI collection, so it always uses the launching user's default Claude profile._
+> - [ ] 3\. Auto-complete setup
+>   - _Send the default theme choice automatically, allowing Claude to create configuration before continuing._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+> › Implement the [Plan](./plans/013_claude-cli-fallback-detect-first-run-setup-clearly.md).
+
+› I don't think it worked because of the escape sequences - it's still marked as general timeout error. See @ai/errors/9.txt - the detection method must match that file.
+I'd also like it to write to `/tmp/ai-usage/errors/claude-cli.<hash of content>.log` (and log that path afterwards).
+

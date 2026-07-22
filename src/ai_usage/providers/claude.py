@@ -1,6 +1,7 @@
 """Claude status-line ingestion and /usage provider."""
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -81,11 +82,66 @@ SECTION_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 PROMO_PATTERN = re.compile(r"^\s*\+\d+%.*promo.*$", re.IGNORECASE | re.MULTILINE)
+SETUP_TEXT_STYLE_PATTERN = re.compile(r"Choose\s+the\s+text\s+style", re.IGNORECASE)
+CLAUDE_ERROR_LOG_DIR = Path("/tmp/ai-usage/errors")
 
 
 def extract_claude_notes(output: str) -> list[str]:
     clean = ANSI_PATTERN.sub("", output).replace("\r", "")
     return [match.group(0).strip() for match in PROMO_PATTERN.finditer(clean)]
+# end def
+
+
+def claude_setup_required_message(
+    output: str | None,
+    command: str,
+    profile_dir: str | None,
+) -> str | None:
+    """Explain how to complete Claude's first-run text-style selection."""
+    clean = ANSI_PATTERN.sub(" ", output or "").replace("\r", "")
+    if not SETUP_TEXT_STYLE_PATTERN.search(clean):
+        return None
+    # end if
+    if profile_dir:
+        profile = str(Path(profile_dir).expanduser())
+        interactive_command = f"CLAUDE_CONFIG_DIR={shlex.quote(profile)} {shlex.quote(command)}"
+    else:
+        profile = "the default Claude profile"
+        interactive_command = shlex.quote(command)
+    # end if
+    return (
+        f"Claude is waiting for first-run setup in {profile}; run "
+        f"{interactive_command} interactively, choose a text style, then retry the crawl."
+    )
+# end def
+
+
+def write_claude_error_log(output: str) -> Path:
+    """Persist a failed Claude CLI transcript under a content-addressed temporary path."""
+    digest = hashlib.sha256(output.encode("utf-8")).hexdigest()
+    path = CLAUDE_ERROR_LOG_DIR / f"claude-cli.{digest}.log"
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if not path.exists():
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(output, encoding="utf-8")
+        temporary.chmod(0o600)
+        temporary.replace(path)
+    # end if
+    return path
+# end def
+
+
+def claude_cli_failure_message(output: str, command: str, profile_dir: str | None) -> str:
+    """Persist Claude CLI failures and return the most actionable error message."""
+    if output:
+        error_log = write_claude_error_log(output)
+        LOGGER.error("Saved Claude CLI transcript to %s", error_log)
+    # end if
+    setup_message = claude_setup_required_message(output, command, profile_dir)
+    if setup_message:
+        return setup_message
+    # end if
+    return "Claude /usage did not become ready; use Claude once to refresh the status relay"
 # end def
 
 
@@ -555,7 +611,7 @@ async def run_claude_usage(command: str, profile_dir: str | None) -> str:
             return child.before
         except (pexpect.TIMEOUT, pexpect.EOF) as exception:
             raise ProviderError(
-                "Claude /usage did not become ready; use Claude once to refresh the status relay"
+                claude_cli_failure_message(child.before or "", command, profile_dir)
             ) from exception
         finally:
             if child.isalive():
