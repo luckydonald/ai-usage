@@ -1,10 +1,7 @@
 """Claude status-line ingestion and /usage provider."""
 
-import asyncio
-import hashlib
 import json
 import logging
-import os
 import re
 import shlex
 import sys
@@ -32,6 +29,15 @@ from ai_usage.providers.base import (
     Provider,
     ProviderError,
 )
+from ai_usage.providers.claude_cli import (
+    canonical_claude_profile_dir,
+    claude_cli_failure_message,
+    claude_default_profile,
+    claude_profile_path,
+    claude_setup_required_message,
+)
+from ai_usage.providers.claude_direct import run_claude_usage_direct
+from ai_usage.providers.claude_interactive import run_claude_usage
 from ai_usage.webview_login import capture_cookies_via_webview
 
 LOGGER = logging.getLogger(__name__)
@@ -82,31 +88,6 @@ SECTION_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 PROMO_PATTERN = re.compile(r"^\s*\+\d+%.*promo.*$", re.IGNORECASE | re.MULTILINE)
-SETUP_TEXT_STYLE_PATTERN = re.compile(r"Choose\s+the\s+text\s+style", re.IGNORECASE)
-RAW_SETUP_TEXT_STYLE_PATTERN = re.compile(r"Choose.*?the.*?text.*?style", re.IGNORECASE)
-CLAUDE_ERROR_LOG_DIR = Path("/tmp/ai-usage/errors")
-
-
-def claude_default_profile() -> Path:
-    return Path.home() / ".claude"
-# end def
-
-
-def claude_profile_path(profile_dir: str | None) -> Path:
-    return Path(profile_dir).expanduser() if profile_dir else claude_default_profile()
-# end def
-
-
-def canonical_claude_profile_dir(profile_dir: str | None) -> str | None:
-    """Return an override only when the profile is not Claude's native default."""
-    profile = claude_profile_path(profile_dir)
-    if profile.resolve() == claude_default_profile().resolve():
-        return None
-    # end if
-    return str(profile)
-# end def
-
-
 def extract_claude_notes(output: str) -> list[str]:
     clean = normalize_claude_terminal_output(output)
     return [match.group(0).strip() for match in PROMO_PATTERN.finditer(clean)]
@@ -116,60 +97,6 @@ def extract_claude_notes(output: str) -> list[str]:
 def normalize_claude_terminal_output(output: str) -> str:
     """Replace terminal controls with spacing so cursor-positioned words stay separate."""
     return ANSI_PATTERN.sub(" ", output).replace("\r", "")
-# end def
-
-
-def claude_setup_required_message(
-    output: str | None,
-    command: str,
-    profile_dir: str | None,
-) -> str | None:
-    """Explain how to complete Claude's first-run text-style selection."""
-    clean = normalize_claude_terminal_output(output or "")
-    if not SETUP_TEXT_STYLE_PATTERN.search(clean):
-        return None
-    # end if
-    config_dir = canonical_claude_profile_dir(profile_dir)
-    if config_dir:
-        interactive_command = f"CLAUDE_CONFIG_DIR={shlex.quote(config_dir)} {shlex.quote(command)}"
-        profile = config_dir
-    else:
-        profile = "the default Claude profile"
-        interactive_command = shlex.quote(command)
-    # end if
-    return (
-        f"Claude is waiting for first-run setup in {profile}; run "
-        f"{interactive_command} interactively, choose a text style, then retry the crawl."
-    )
-# end def
-
-
-def write_claude_error_log(output: str) -> Path:
-    """Persist a failed Claude CLI transcript under a content-addressed temporary path."""
-    digest = hashlib.sha256(output.encode("utf-8")).hexdigest()
-    path = CLAUDE_ERROR_LOG_DIR / f"claude-cli.{digest}.log"
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if not path.exists():
-        temporary = path.with_suffix(".tmp")
-        temporary.write_text(output, encoding="utf-8")
-        temporary.chmod(0o600)
-        temporary.replace(path)
-    # end if
-    return path
-# end def
-
-
-def claude_cli_failure_message(output: str, command: str, profile_dir: str | None) -> str:
-    """Persist Claude CLI failures and return the most actionable error message."""
-    if output:
-        error_log = write_claude_error_log(output)
-        LOGGER.error("Saved Claude CLI transcript to %s", error_log)
-    # end if
-    setup_message = claude_setup_required_message(output, command, profile_dir)
-    if setup_message:
-        return setup_message
-    # end if
-    return "Claude /usage did not become ready; use Claude once to refresh the status relay"
 # end def
 
 
@@ -583,11 +510,15 @@ class ClaudeStatusProvider(Provider):
                 # of surfacing outdated numbers.
             # end if
         # end if
-        output = await run_claude_usage(
-            str(account.options.get("command", "claude")),
-            str(account.options["profile_dir"]) if account.options.get("profile_dir") else None,
-        )
+        command = str(account.options.get("command", "claude"))
+        profile_dir = str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
+        direct_output = await run_claude_usage_direct(command, profile_dir)
+        output = direct_output or ""
         metrics = parse_usage_output(output, observed)
+        if not metrics:
+            output = await run_claude_usage(command, profile_dir)
+            metrics = parse_usage_output(output, observed)
+        # end if
         if not metrics:
             raise ProviderError("Claude /usage output did not contain recognized usage sections")
         # end if
@@ -619,46 +550,6 @@ class ClaudeUsageProvider(ClaudeStatusProvider):
         return await super().fetch(direct, credential)
     # end def
 # end class
-
-
-async def run_claude_usage(command: str, profile_dir: str | None) -> str:
-    def run_terminal() -> str:
-        import pexpect
-
-        environment = dict(os.environ)
-        config_dir = canonical_claude_profile_dir(profile_dir)
-        if config_dir:
-            environment["CLAUDE_CONFIG_DIR"] = config_dir
-        # end if
-        child = pexpect.spawn(command, encoding="utf-8", timeout=30, env=environment)
-        try:
-            startup_state = child.expect([RAW_SETUP_TEXT_STYLE_PATTERN, "❯"], timeout=30)
-            startup_output = child.before + child.after
-            if startup_state == 0:
-                raise ProviderError(claude_cli_failure_message(startup_output, command, profile_dir))
-            # end if
-            child.sendline("/usage")
-            child.expect("Current", timeout=30)
-            usage_output = child.before + child.after
-            child.expect("session", timeout=30)
-            usage_output += child.before + child.after
-            time.sleep(1)
-            child.sendline("/exit")
-            child.expect(pexpect.EOF, timeout=10)
-            return usage_output + child.before
-        except (pexpect.TIMEOUT, pexpect.EOF) as exception:
-            raise ProviderError(
-                claude_cli_failure_message(child.before or "", command, profile_dir)
-            ) from exception
-        finally:
-            if child.isalive():
-                child.close(force=True)
-            # end if
-        # end try
-    # end def
-
-    return await asyncio.to_thread(run_terminal)
-# end def
 
 
 def write_relay_payload(path: Path, payload: dict[str, Any]) -> None:

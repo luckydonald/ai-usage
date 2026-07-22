@@ -1,0 +1,21 @@
+You are currently using your subscription to power your Claude Code usage
+
+Current session: 15% used · resets Jul 23, 1:09am (Europe/Berlin)
+Current week (all models): 14% used · resets Jul 28, 9:59pm (Europe/Berlin)
+
+What's contributing to your limits usage?
+Approximate, based on local sessions on this machine — does not include other devices or claude.ai. Behaviors are independent characteristics, not a breakdown.
+
+Last 24h · 762 requests · 9 sessions
+  72% of your usage was at >150k context
+  16% of your usage came from subagent-heavy sessions
+  Top skills: /commit-with-lplp-style 4%, /doctor 1%
+  Top subagents: Explore 3%, Plan 1%
+
+Last 7d · 5797 requests · 24 sessions
+  89% of your usage came from subagent-heavy sessions
+  87% of your usage was at >150k context
+  84% of your usage came from sessions active for 8+ hours
+  Top skills: /commit-with-lplp-style 1%
+  Top subagents: Explore 1%, general-purpose 1%
+  Top MCP servers: claude-in-chrome 17%
