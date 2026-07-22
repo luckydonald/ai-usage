@@ -102,8 +102,24 @@ export interface Filters {
   metrics: string[];
 }
 
+export interface FunnelMetric {
+  key: string;
+  name: string;
+}
+
+export interface FunnelAccount {
+  id: string;
+  label: string;
+  metrics: FunnelMetric[];
+}
+
+export interface FunnelProvider {
+  provider: string;
+  accounts: FunnelAccount[];
+}
+
 export interface FunnelBranch {
   service: string;
-  providers: string[];
+  providers: FunnelProvider[];
 }
 
