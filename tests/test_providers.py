@@ -1,7 +1,10 @@
+import hashlib
 import json
+import logging
 import os
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 
 import httpx
 import pytest
@@ -12,6 +15,7 @@ from ai_usage.providers.base import ProviderError
 from ai_usage.providers.claude import (
     ClaudeStatusProvider,
     ClaudeWebUsageProvider,
+    claude_cli_failure_message,
     claude_metric_model,
     extract_claude_notes,
     extract_claude_web_notes,
@@ -164,6 +168,42 @@ Current week (Fable)
     assert [metric.key for metric in metrics] == ["five-hours", "seven-days", "seven-days-fable"]
     assert [metric.usage.percentage for metric in metrics] == [12, 8, 0]
     assert [metric.model for metric in metrics] == [None, None, "Fable"]
+# end def
+
+
+def test_claude_cli_failure_reports_text_style_setup_from_recorded_transcript(
+    caplog,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    transcript_path = Path(__file__).parents[1] / "ai/errors/9.txt"
+    transcript = transcript_path.read_text(encoding="utf-8")
+    monkeypatch.setattr("ai_usage.providers.claude.CLAUDE_ERROR_LOG_DIR", tmp_path)
+
+    with caplog.at_level(logging.ERROR, logger="ai_usage.providers.claude"):
+        message = claude_cli_failure_message(transcript, "claude", "/profiles/claude")
+    # end with
+
+    assert message == (
+        "Claude is waiting for first-run setup in /profiles/claude; run "
+        "CLAUDE_CONFIG_DIR=/profiles/claude claude interactively, choose a text style, "
+        "then retry the crawl."
+    )
+    error_log = tmp_path / (
+        f"claude-cli.{hashlib.sha256(transcript.encode()).hexdigest()}.log"
+    )
+    assert error_log.read_text(encoding="utf-8") == transcript
+    assert any(str(error_log) in message for message in caplog.messages)
+# end def
+
+
+def test_claude_cli_failure_keeps_generic_error_for_other_timeouts(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr("ai_usage.providers.claude.CLAUDE_ERROR_LOG_DIR", tmp_path)
+
+    message = claude_cli_failure_message("Claude is still starting\n", "claude", "/profiles/claude")
+    assert message == (
+        "Claude /usage did not become ready; use Claude once to refresh the status relay"
+    )
 # end def
 
 

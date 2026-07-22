@@ -1,0 +1,48 @@
+pydev debugger: bytes arguments were passed to a new process creation function. Breakpoints may not work correctly.
+
+/usage
+7[r8[?25h[?25l[?2004h[?1004h[?2031hWelcome[9Gto[12GClaude[19GCode[24Gv2.1.217
+
+
+
+]11;?[c[>0q[c[2GLet's[8Gget[12Gstarted.
+
+
+
+[2GChoose[9Gthe[13Gtext[18Gstyle[24Gthat[29Glooks[35Gbest[40Gwith[45Gyour[50Gterminal
+
+[2GTo[5Gchange[12Gthis[17Glater,[24Grun[28G/theme
+
+
+
+[2G❯[4G1.[7GAuto[12G(match[19Gterminal)[29G✔
+
+[4G2.[7GDark[12Gmode
+
+[4G3.[7GLight[13Gmode
+
+[4G4.[7GDark[12Gmode[17G(colorblind-friendly)
+
+[4G5.[7GLight[13Gmode[18G(colorblind-friendly)
+
+[4G6.[7GDark[12Gmode[17G(ANSI[23Gcolors[30Gonly)
+
+[4G7.[7GLight[13Gmode[18G(ANSI[24Gcolors[31Gonly)
+
+
+
+[2G╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+[2G[38;5;231m[2m 1[5G[22m [38;5;81mfunction[38;5;231m [38;5;148mgreet[38;5;231m()[23G{[39m
+
+[2G[38;5;167m[48;5;52m 2 -[38;5;231m  console.log("Hello, World!");                                       [49m[39m
+
+[2G[38;5;77m[48;5;22m 2 +[38;5;231m  console.[38;5;148mlog[38;5;231m([38;5;186m"Hello, [48;5;28mClaude[48;5;22m!"[38;5;231m);                                      [49m[39m
+
+[2G[38;5;231m[2m 3[5G[22m }[39m
+
+[2G╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+[3GSyntax[10Gtheme:[17GMonokai[25GExtended[34G(ctrl+t[42Gto[45Gdisable)
+
+[1C[15A
