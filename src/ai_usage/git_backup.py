@@ -11,6 +11,7 @@ from ai_usage.settings import Paths
 LOGGER = logging.getLogger("ai_usage.git_backup")
 
 TRACKED_PATHS = (".gitignore", "history", "services")
+PUSH_TIMEOUT_SECONDS = 60
 
 
 def git_backup_enabled(config: ConfigStore) -> bool:
@@ -59,12 +60,19 @@ def maybe_run_git_backup(
             return
         # end if
         reporter(f"Done committing git backup changes in {paths.root}.")
-        push = subprocess.run(["git", "-C", str(paths.root), "push"], capture_output=True)
+        reporter("Started pushing git backup changes.")
+        push = subprocess.run(
+            ["git", "-C", str(paths.root), "push"],
+            capture_output=True,
+            timeout=PUSH_TIMEOUT_SECONDS,
+        )
         if push.returncode != 0:
             reporter(f"Git push failed: {push.stderr.decode(errors='replace').strip()}")
         else:
             reporter("Done pushing git backup changes.")
         # end if
+    except subprocess.TimeoutExpired:
+        reporter(f"Git push timed out after {PUSH_TIMEOUT_SECONDS} seconds.")
     except OSError as exception:
         reporter(f"Git backup failed: {exception}")
     # end try
