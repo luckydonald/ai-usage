@@ -1716,3 +1716,38 @@ I'd also like it to write to `/tmp/ai-usage/errors/claude-cli.<hash of content>.
 › I found something better, running `claude --ax-screen-reader --name=/usage --no-chrome --print --no-session-persistence --safe-mode '/usage'` directly. It terminates on it's own, and the format is quite parsable, see @ai/errors/11.output.txt 
 This shall be the first check, and if that doesn't work use the way we just have implemented. Both ways should be separate files to give the functions some space.
 
+❯ The recently implemented feature with click-to-reopen-the-graph-tooltip-as-a-static-overlay mode does not work - click does nothing.
+
+❯ Fix and write test.
+
+❯ Task Notification:
+> - Task `a9ca314084ba125f2` <kbd>completed</kbd>
+> - Tool `toolu_01Cb7CB67qwGFHHCSYEFKLFe`
+> - > Agent "Find tooltip click-to-pin code" finished
+> - [Query (`583` chars, `583 B`)](output/agents/028.a9ca314084ba125f2/prompt.md)
+> - [Answer (`4767` chars, `4.67 KB`)](output/agents/028.a9ca314084ba125f2/result.md)
+> - [Raw log (`71614` chars, `70 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e67f2c7e-89fb-47ce-8e82-4140f04af1a3/tasks/a9ca314084ba125f2.output)
+> - `4` tools, `22194` tokens, `0.4924 s`
+
+❯ Also add a browser-based test with a mock-data server and the real frontend.
+
+❯ Task Notification:
+> - Task `a27c8a84e9198cf8d` <kbd>completed</kbd>
+> - Tool `toolu_01VkMBMh1W77TiVK6ia2hYoG`
+> - > Agent "Explore backend API and test fixtures" finished
+> - [Query (`1990` chars, `1.95 KB`)](output/agents/029.a27c8a84e9198cf8d/prompt.md)
+> - [Answer (`11519` chars, `11.3 KB`)](output/agents/029.a27c8a84e9198cf8d/result.md)
+> - [Raw log (`189462` chars, `185 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e67f2c7e-89fb-47ce-8e82-4140f04af1a3/tasks/a27c8a84e9198cf8d.output)
+> - `16` tools, `41181` tokens, `1.56143 s`
+
+❯ The "current data" showing cards do display _56.5% of your limit would be left to use_ or _100.0% remaining at window end_, but nothing if you're burning through the rate faster than the window end. Then it should say something like "Used until aprox. {date-time}".
+
+❯ Task Notification:
+> - Task `aad9777d106d513d3` <kbd>completed</kbd>
+> - Tool `toolu_01PaXFSqGQvAVctUrd3Ea57i`
+> - > Agent "Find current-data card projection text" finished
+> - [Query (`1266` chars, `1.24 KB`)](output/agents/030.aad9777d106d513d3/prompt.md)
+> - [Answer (`7683` chars, `7.53 KB`)](output/agents/030.aad9777d106d513d3/result.md)
+> - [Raw log (`97759` chars, `95.6 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e67f2c7e-89fb-47ce-8e82-4140f04af1a3/tasks/aad9777d106d513d3.output)
+> - `3` tools, `27883` tokens, `0.5867 s`
+

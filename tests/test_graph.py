@@ -47,6 +47,21 @@ def test_graph_builds_step_points_window_and_projection() -> None:
 # end def
 
 
+def test_graph_projection_is_not_clamped_when_it_would_exceed_100() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now + timedelta(hours=2)
+    records = [
+        sample("one", now - timedelta(hours=2), 10, reset),
+        sample("two", now - timedelta(hours=1), 60, reset),
+    ]
+    series = build_series(records, now=now)[0]
+    # Burn rate is 50%/hour with 3 hours left in the window: 60 + 50 * 3 = 210, well past 100 —
+    # the frontend needs the real overshoot value, not a value clamped to 100, to tell "you're
+    # about to blow past your limit before this window ends" apart from "you'll land right at it".
+    assert series.windows[0].projected_end_percentage == 210
+# end def
+
+
 def test_graph_injects_zero_point_after_an_ended_window() -> None:
     now = datetime(2026, 7, 17, 12, tzinfo=UTC)
     reset = now - timedelta(hours=1)
