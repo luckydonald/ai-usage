@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
 import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
 import { activeNotesAt } from "./chart";
@@ -19,7 +19,27 @@ const customEndText = ref(toDateInputValue(new Date()));
 const loading = ref(true);
 const error = ref("");
 const connected = ref(false);
-const filters = reactive<Filters>({ services: [], providers: [], accounts: [], metrics: [] });
+function loadStoredFilters(): Filters {
+  const empty: Filters = { services: [], providers: [], accounts: [], metrics: [] };
+  try {
+    const raw = localStorage.getItem("ai-usage-filters");
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw) as Partial<Filters>;
+    return {
+      services: Array.isArray(parsed.services) ? parsed.services : [],
+      providers: Array.isArray(parsed.providers) ? parsed.providers : [],
+      accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [],
+      metrics: Array.isArray(parsed.metrics) ? parsed.metrics : [],
+    };
+  } catch {
+    return empty;
+  }
+}
+
+const filters = reactive<Filters>(loadStoredFilters());
+// Persisted as one blob (not per-toggle-site setItem calls like the other prefs below) since
+// `filters` is a single reactive object toggled from four separate template call sites.
+watch(filters, () => localStorage.setItem("ai-usage-filters", JSON.stringify(filters)), { deep: true });
 const hiddenSeriesKeys = ref<string[]>([]);
 const rangeStart = ref<Date>(new Date());
 const rangeEnd = ref<Date>(new Date());
@@ -157,6 +177,20 @@ async function loadNotes(): Promise<void> {
   notes.value = await fetchNotes();
 }
 
+// Drops filter values that no longer exist in the catalog (e.g. a removed account restored
+// from an older localStorage snapshot) — otherwise a stale selection would silently filter the
+// chart down to nothing with no matching chip left to click to undo it.
+function pruneStoredFilters(): void {
+  const validServices = new Set(catalog.value.metrics.map((metric) => metric.service));
+  const validProviders = new Set(catalog.value.metrics.map((metric) => metric.provider));
+  const validAccounts = new Set(catalog.value.accounts.map((account) => account.id));
+  const validMetrics = new Set(catalog.value.metrics.map((metric) => metric.metric_key));
+  filters.services = filters.services.filter((value) => validServices.has(value));
+  filters.providers = filters.providers.filter((value) => validProviders.has(value));
+  filters.accounts = filters.accounts.filter((value) => validAccounts.has(value));
+  filters.metrics = filters.metrics.filter((value) => validMetrics.has(value));
+}
+
 function pruneHiddenSeriesKeys(): void {
   const validKeys = new Set(series.value.map((item) => `${item.account_id}::${item.metric_key}`));
   hiddenSeriesKeys.value = hiddenSeriesKeys.value.filter((key) => validKeys.has(key));
@@ -187,6 +221,7 @@ function toggleShowDataPoints(): void {
 onMounted(async () => {
   try {
     catalog.value = await fetchCatalog();
+    pruneStoredFilters();
     await Promise.all([load(true), loadNotes()]);
     events = new EventSource("/api/v1/events");
     events.addEventListener("open", () => (connected.value = true));

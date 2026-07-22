@@ -1753,3 +1753,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - `7` tools, `26904` tokens, `0.897867 s`
 ❯ Uh the funnel is not complete, a (claude) web would contain a provider (here `Claude private web API (email@example.com's Organization)`, which itself then contains 2 metris, _Five hours_ and _Seven days_.
 
+❯ The filter shall be stored in local storage as well, so they survive a page reload.
+
