@@ -1,5 +1,5 @@
 import subprocess
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 
@@ -53,9 +53,10 @@ def test_backup_commits_tracked_paths_when_enabled(tmp_path, caplog) -> None:
         ["git", "log", "--oneline"], cwd=paths.root, capture_output=True, text=True
     )
     assert "Updated crawl results" in log.stdout
-    assert any("committed changes" in message for message in caplog.messages)
-    # no remote configured in this test repo, so the push attempt fails — logged as a warning
-    assert any("git push failed" in message for message in caplog.messages)
+    assert any("Started committing git backup changes" in message for message in caplog.messages)
+    assert any("Done committing git backup changes" in message for message in caplog.messages)
+    # No remote is configured in this test repo, so the push attempt reports its failure.
+    assert any("Git push failed" in message for message in caplog.messages)
 # end def
 
 
@@ -75,12 +76,12 @@ def test_backup_logs_push_success_when_a_remote_accepts_it(tmp_path, caplog) -> 
     with caplog.at_level("INFO"):
         maybe_run_git_backup(paths, config, datetime.now(UTC))
 
-    assert any("pushed successfully" in message for message in caplog.messages)
-    assert not any("git push failed" in message for message in caplog.messages)
+    assert any("Done pushing git backup changes" in message for message in caplog.messages)
+    assert not any("Git push failed" in message for message in caplog.messages)
 # end def
 
 
-def test_backup_is_debounced(tmp_path) -> None:
+def test_backup_runs_after_every_fetch(tmp_path) -> None:
     paths = temporary_paths(tmp_path)
     paths.ensure()
     _init_repo(paths.root)
@@ -91,12 +92,12 @@ def test_backup_is_debounced(tmp_path) -> None:
 
     maybe_run_git_backup(paths, config, now)
     (paths.root / "history" / "second.jsonl").write_text("{}\n", encoding="utf-8")
-    maybe_run_git_backup(paths, config, now + timedelta(seconds=1), debounce_seconds=600)
+    maybe_run_git_backup(paths, config, now)
 
     log = subprocess.run(
         ["git", "log", "--oneline"], cwd=paths.root, capture_output=True, text=True
     )
-    assert len(log.stdout.strip().splitlines()) == 1
+    assert len(log.stdout.strip().splitlines()) == 2
 # end def
 
 

@@ -1668,3 +1668,8 @@ The idea is that there can currently happen a scollbar, and there's no way to sc
 Clicking it would basically pause that move soverlay stuff.
 Adiitionally it would be very helpful for moile which have only simulated mousemove events on touch (=on click) anyways, so they would also be helped by a overlay..
 
+› Commit seperatly:
+- The commit & the push action shall both log their status like the crawler do, e.g. in `ai-usage up`.
+- it should run after the fetch phase, and not on it's own time schedule.
+- the push action may ask for an user login, which is blocking, so it needs a timeout.
+

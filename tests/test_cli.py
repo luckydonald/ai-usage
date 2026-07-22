@@ -75,7 +75,7 @@ def test_fetch_triggers_a_git_backup_attempt(tmp_path: Path, monkeypatch) -> Non
     monkeypatch.setenv("AI_USAGE_HOME", str(tmp_path))
     calls: list[object] = []
     monkeypatch.setattr(
-        ai_usage.cli, "maybe_run_git_backup", lambda paths, config, now: calls.append(now)
+        ai_usage.cli, "maybe_run_git_backup", lambda paths, config, now, reporter: calls.append(now)
     )
 
     result = CliRunner().invoke(main, ["fetch"])
