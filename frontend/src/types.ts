@@ -102,3 +102,8 @@ export interface Filters {
   metrics: string[];
 }
 
+export interface FunnelBranch {
+  service: string;
+  providers: string[];
+}
+

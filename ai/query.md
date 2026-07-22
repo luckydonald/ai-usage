@@ -386,9 +386,6 @@ Is the status line calling `ai-usage` in some way directly, hence actually writi
 - Disabling/enabling a graph legend entry does not sync with the filters.
 - utilize `yarn@4` aka `yarn berry`.
 
-
-
-
 ❯ Question answered.
 > <details><summary>
 >
@@ -416,7 +413,6 @@ Give me some options.
 
 ❯ Keep `enabled: bool` but _also_ add host allow/deny list on the account itself: `hosts: list[str] | None` on `AccountConfig`.
 I don't 100% trust hostnames to be unique, hence we should generate a uuid7 into our local folder and have `hosts: list[tuple[str, UUIDv7]]`.
-
 
 1. If no local id exists (file missing, i.e. directly after checkout on a fresh install)
    1. but hostname matches exactly one `(hostname, uuid)` pair: ask to restore that
@@ -532,7 +528,6 @@ Remove the 2-option misscount.
 - the range is not setting the graph's start/end, it's just filtering the data.
 - when I deselect a label, it's filtered, which in turn removes the data and hence the label.
     - disabling a metric shall just hide it.
-
 
 ❯ Question answered.
 > <details><summary>
@@ -771,7 +766,6 @@ Try to build models for those too.
     - have a file with a dict with the hashes to version numbers, `dict[str, int]` so it's less confusing to users.
       - add a unittest confirming the current hash is in that dict.
 
-
 ❯ Task Notification:
 > - Task `abfaaec099a0bbf06` <kbd>completed</kbd>
 > - Tool `toolu_018GPdx5UbFn5pyGqryywnVW`
@@ -983,7 +977,6 @@ Try to build models for those too.
     import webview
 ModuleNotFoundError: No module named 'webview'
 
-
 ❯ Apparently the `ai-usage provider add` path is not tested for codex/claude web login via TUI. Add those tests, and fix @ai/errors/3.txt
 
 ❯ You added tests? what's the next error i'm now getting at `webview.start()`, huh?
@@ -1168,7 +1161,6 @@ Neither stops if I click close on the window.
      - Codex CLI:
        - > `• You have 3 usage limit resets available. Run /usage to use one.`
    - should eventually end up in the graphs as well, so e.g. double the limits being active can be seen historically.
-
 
 ❯ plan it.
 
@@ -1358,12 +1350,10 @@ Back to the website, In case it's not _100.0% remaining at window end_, add usef
 
 ❯ Add a checkbox adding dot to the data collection points.
 
-
 ❯ /plan The graphes are still animating whenever there's new data, they even remove the dom node completely, making the page jump.
 You tried fixing this several times, are there better suited graphing libraries available to use?
 You may inspect the `ai/query.md` prompt to summarize the graph's requirements first (probably an agent not inheriting this lengthy history but just working on that file). Then I want to have a checklist of my features, and after that some recommendations.
 Also the overlay should show all data at that time, not only the log-points for a single line; but a vertical slice to that moment in time.
-
 
 ❯ Question answered.
 > <details><summary>
@@ -1751,3 +1741,13 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`97759` chars, `95.6 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e67f2c7e-89fb-47ce-8e82-4140f04af1a3/tasks/aad9777d106d513d3.output)
 > - `3` tools, `27883` tokens, `0.5867 s`
 
+❯ display the filter tags as a funnel diagram. I.e. codex -> app server, claude -> web & claude -> statusline & claude -> /usage
+
+❯ Task Notification:
+> - Task `aab3de0a94a2f3fb5` <kbd>completed</kbd>
+> - Tool `toolu_01FVRseVfedmnp1qoyDYuAdr`
+> - > Agent "Find filter tag/chip UI in frontend" finished
+> - [Query (`1867` chars, `1.83 KB`)](output/agents/031.aab3de0a94a2f3fb5/prompt.md)
+> - [Answer (`10778` chars, `10.6 KB`)](output/agents/031.aab3de0a94a2f3fb5/result.md)
+> - [Raw log (`109288` chars, `107 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/e67f2c7e-89fb-47ce-8e82-4140f04af1a3/tasks/aab3de0a94a2f3fb5.output)
+> - `7` tools, `26904` tokens, `0.897867 s`
