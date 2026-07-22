@@ -3,9 +3,9 @@ import { LineChart } from "echarts/charts";
 import { GridComponent, LegendComponent, LegendScrollComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent } from "echarts/components";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-import { chartOption, seriesDisplayName, seriesKey } from "../chart";
+import { axisTooltipHtml, chartOption, seriesDisplayName, seriesKey } from "../chart";
 import type { GraphSeries, NoteRange } from "../types";
 
 echarts.use([
@@ -38,7 +38,32 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
+const closeButton = ref<HTMLButtonElement>();
+const pinnedTooltipHtml = ref("");
+const tooltipOpen = computed(() => pinnedTooltipHtml.value !== "");
 let chart: echarts.ECharts | undefined;
+
+function closePinnedTooltip(): void {
+  pinnedTooltipHtml.value = "";
+}
+
+async function pinTooltip(offsetX: number, offsetY: number): Promise<void> {
+  if (!chart || !chart.containPixel({ gridIndex: 0 }, [offsetX, offsetY])) return;
+  const coordinate = chart.convertFromPixel({ xAxisIndex: 0 }, [offsetX, offsetY]);
+  const atMs = Array.isArray(coordinate) ? coordinate[0] : undefined;
+  if (typeof atMs !== "number") return;
+
+  const html = axisTooltipHtml(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes);
+  if (!html) return;
+  chart.dispatchAction({ type: "hideTip" });
+  pinnedTooltipHtml.value = html;
+  await nextTick();
+  closeButton.value?.focus();
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape") closePinnedTooltip();
+}
 
 function legendSelected(): Record<string, boolean> {
   const selected: Record<string, boolean> = {};
@@ -75,6 +100,9 @@ function render(recreate: boolean): void {
       const visible = params.selected[params.name] ?? true;
       if (item) emit("toggle-series", seriesKey(item), visible);
     });
+    chart.getZr().on("click", (event) => {
+      void pinTooltip(event.offsetX, event.offsetY);
+    });
   }
 }
 
@@ -85,6 +113,7 @@ function resize(): void {
 onMounted(() => {
   render(false);
   window.addEventListener("resize", resize);
+  window.addEventListener("keydown", onKeydown);
 });
 // Dark mode is no longer an echarts init-time "theme" (see the comment above `echarts.use`),
 // just a set of colors in chartOption() — a plain merge update is enough, no full recreate.
@@ -105,17 +134,79 @@ watch(
 );
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resize);
+  window.removeEventListener("keydown", onKeydown);
   chart?.dispose();
 });
 </script>
 
 <template>
   <div ref="container" class="usage-chart" role="img" aria-label="AI usage over time" />
+  <Teleport to="body">
+    <div v-if="tooltipOpen" class="tooltip-overlay" role="presentation" @click.self="closePinnedTooltip">
+      <section class="pinned-tooltip" role="dialog" aria-modal="true" aria-label="Usage details">
+        <button ref="closeButton" class="pinned-tooltip-close" type="button" aria-label="Close usage details" @click="closePinnedTooltip">×</button>
+        <div class="pinned-tooltip-content" v-html="pinnedTooltipHtml" />
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped lang="scss">
 .usage-chart {
   width: 100%;
   min-height: 34rem;
+}
+
+.tooltip-overlay {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(15 10 35 / 45%);
+}
+
+.pinned-tooltip {
+  position: relative;
+  width: min(32rem, 100%);
+  max-height: min(75vh, 42rem);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1.5rem 4rem rgb(15 10 35 / 35%);
+  line-height: 1.5;
+}
+
+.pinned-tooltip-close {
+  position: absolute;
+  top: .6rem;
+  right: .6rem;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-muted);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.pinned-tooltip-content {
+  max-height: min(75vh, 42rem);
+  overflow: auto;
+  padding: 1.25rem 3rem 1.25rem 1.25rem;
+}
+
+.pinned-tooltip-content :deep(a) {
+  color: var(--color-primary);
 }
 </style>

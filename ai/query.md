@@ -1662,3 +1662,9 @@ Make sure the crawling status messages go to info level.
 > - [Raw log (`144750` chars, `141 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/648b3832-d303-493f-b1ff-006f8272ffe1/tasks/a40d392a716bba415.output)
 > - `18` tools, `31114` tokens, `1.1857 s`
 
+› Clicking the graph shall open the tooltip like as a overlay, with a (x) button.
+The idea is that there can currently happen a scollbar, and there's no way to scroll that, as you can't reach it with the mouse (it moves with the mouse)
+
+Clicking it would basically pause that move soverlay stuff.
+Adiitionally it would be very helpful for moile which have only simulated mousemove events on touch (=on click) anyways, so they would also be helped by a overlay..
+
