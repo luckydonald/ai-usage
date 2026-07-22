@@ -1713,3 +1713,6 @@ I'd also like it to write to `/tmp/ai-usage/errors/claude-cli.<hash of content>.
 
 › It still isn't working because the output is horrible with many escape codes - see @ai/errors/11.txt
 
+› I found something better, running `claude --ax-screen-reader --name=/usage --no-chrome --print --no-session-persistence --safe-mode '/usage'` directly. It terminates on it's own, and the format is quite parsable, see @ai/errors/11.output.txt 
+This shall be the first check, and if that doesn't work use the way we just have implemented. Both ways should be separate files to give the functions some space.
+

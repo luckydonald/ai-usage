@@ -197,7 +197,7 @@ def test_claude_cli_failure_reports_text_style_setup_from_recorded_transcript(
 ) -> None:
     transcript_path = Path(__file__).parents[1] / "ai/errors/9.txt"
     transcript = transcript_path.read_text(encoding="utf-8")
-    monkeypatch.setattr("ai_usage.providers.claude.CLAUDE_ERROR_LOG_DIR", tmp_path)
+    monkeypatch.setattr("ai_usage.providers.claude_cli.CLAUDE_ERROR_LOG_DIR", tmp_path)
 
     with caplog.at_level(logging.ERROR, logger="ai_usage.providers.claude"):
         message = claude_cli_failure_message(transcript, "claude", "/profiles/claude")
@@ -217,7 +217,7 @@ def test_claude_cli_failure_reports_text_style_setup_from_recorded_transcript(
 
 
 def test_claude_cli_failure_keeps_generic_error_for_other_timeouts(monkeypatch, tmp_path) -> None:
-    monkeypatch.setattr("ai_usage.providers.claude.CLAUDE_ERROR_LOG_DIR", tmp_path)
+    monkeypatch.setattr("ai_usage.providers.claude_cli.CLAUDE_ERROR_LOG_DIR", tmp_path)
 
     message = claude_cli_failure_message("Claude is still starting\n", "claude", "/profiles/claude")
     assert message == (
@@ -643,6 +643,11 @@ async def test_claude_status_stale_relay_falls_back_to_cli_usage(tmp_path, monke
         return "Current session\n  ██ 44% used\n  Resets 7:50pm (Europe/Berlin)\n"
     # end def
 
+    async def no_direct_output(*args, **kwargs):
+        return None
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage_direct", no_direct_output)
     monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", fake_run_claude_usage)
     result = await ClaudeStatusProvider().fetch(account, None)
     assert result.status == FetchStatus.SUCCESS
@@ -658,9 +663,56 @@ async def test_claude_status_missing_relay_falls_back_and_raises(tmp_path, monke
         raise ProviderError("Claude /usage did not become ready; use Claude once to refresh the status relay")
     # end def
 
+    async def no_direct_output(*args, **kwargs):
+        return None
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage_direct", no_direct_output)
     monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", raise_provider_error)
     with pytest.raises(ProviderError, match="did not become ready"):
         await ClaudeStatusProvider().fetch(account, None)
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_status_uses_direct_screen_reader_output(tmp_path, monkeypatch) -> None:
+    account = relay_account(tmp_path / "missing.json")
+
+    async def direct_output(*args, **kwargs):
+        return "Current session: 15% used · resets Jul 23, 1:09am (Europe/Berlin)\n"
+    # end def
+
+    async def interactive_should_not_run(*args, **kwargs):
+        raise AssertionError("interactive fallback should not run")
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage_direct", direct_output)
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", interactive_should_not_run)
+
+    result = await ClaudeStatusProvider().fetch(account, None)
+
+    assert result.metrics[0].usage.percentage == 15
+# end def
+
+
+@pytest.mark.asyncio
+async def test_claude_status_falls_back_when_direct_output_is_unparseable(tmp_path, monkeypatch) -> None:
+    account = relay_account(tmp_path / "missing.json")
+
+    async def unparseable_direct_output(*args, **kwargs):
+        return "Claude direct usage was unavailable\n"
+    # end def
+
+    async def interactive_output(*args, **kwargs):
+        return "Current session\n  ██ 44% used\n  Resets 7:50pm (Europe/Berlin)\n"
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage_direct", unparseable_direct_output)
+    monkeypatch.setattr("ai_usage.providers.claude.run_claude_usage", interactive_output)
+
+    result = await ClaudeStatusProvider().fetch(account, None)
+
+    assert result.metrics[0].usage.percentage == 44
 # end def
 
 
