@@ -4,11 +4,12 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
 import { activeNotesAt } from "./chart";
 import Chip from "./components/Chip.vue";
+import FilterFunnel from "./components/FilterFunnel.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { renderNoteMarkdown } from "./markdown";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
-import type { Catalog, Filters, GraphSeries, NoteRange } from "./types";
+import type { Catalog, Filters, FunnelBranch, GraphSeries, NoteRange } from "./types";
 
 const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {} });
 const series = ref<GraphSeries[]>([]);
@@ -34,6 +35,18 @@ const activeNotes = computed(() => activeNotesAt(notes.value, Date.now()));
 
 const services = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.service))]);
 const providers = computed(() => [...new Set(catalog.value.metrics.filter((metric) => !filters.services.length || filters.services.includes(metric.service)).map((metric) => metric.provider))]);
+// Unfiltered service -> providers map (unlike `providers` above, which shrinks to the current
+// selection) so the funnel diagram always shows the full service/provider structure, with the
+// active selection just highlighted rather than the rest of the tree disappearing.
+const serviceProviderTree = computed<FunnelBranch[]>(() => {
+  const byService = new Map<string, string[]>();
+  for (const metric of catalog.value.metrics) {
+    const list = byService.get(metric.service) ?? [];
+    if (!list.includes(metric.provider)) list.push(metric.provider);
+    byService.set(metric.service, list);
+  }
+  return [...byService.entries()].map(([service, providerList]) => ({ service, providers: providerList }));
+});
 const accounts = computed(() => catalog.value.accounts.filter((account) => (!filters.services.length || filters.services.includes(account.service)) && (!filters.providers.length || filters.providers.includes(account.provider))));
 const metricOptions = computed(() => {
   const matching = catalog.value.metrics.filter(
@@ -224,26 +237,16 @@ onBeforeUnmount(() => events?.close());
         </div>
       </template>
 
-      <div class="chip-group" v-if="services.length > 1" aria-label="Services">
-        <Chip
-          v-for="item in services"
-          :key="item"
-          :label="item"
-          :active="filters.services.includes(item)"
-          :icon="catalog.service_icons?.[item]"
-          @click="filters.services = toggleFilter(filters.services, item); load()"
-        />
-      </div>
-      <div class="chip-group" v-if="providers.length > 1" aria-label="Providers">
-        <Chip
-          v-for="item in providers"
-          :key="item"
-          :label="item"
-          :active="filters.providers.includes(item)"
-          :icon="catalog.provider_icons?.[item]"
-          @click="filters.providers = toggleFilter(filters.providers, item); load()"
-        />
-      </div>
+      <FilterFunnel
+        v-if="services.length > 1 || providers.length > 1"
+        :tree="serviceProviderTree"
+        :active-services="filters.services"
+        :active-providers="filters.providers"
+        :service-icons="catalog.service_icons"
+        :provider-icons="catalog.provider_icons"
+        @toggle-service="(item) => { filters.services = toggleFilter(filters.services, item); load(); }"
+        @toggle-provider="(item) => { filters.providers = toggleFilter(filters.providers, item); load(); }"
+      />
       <div class="chip-group" v-if="accounts.length > 1" aria-label="Accounts">
         <Chip
           v-for="item in accounts"
