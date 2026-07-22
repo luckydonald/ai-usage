@@ -4,3 +4,4 @@
 - [Native GUI needs a real run](feedback_native_gui_needs_real_run.md) — pywebview/native-GUI code needs a genuine-tty smoke test, mocks can't catch thread/toolkit failures
 - [Verify third-party return shapes](feedback_verify_thirdparty_return_shapes.md) — read the actual library source for return shapes/threading model, don't assume from convention
 - [Cloudflare TLS fingerprint / Codex+Claude](project_cloudflare_tls_fingerprint_codex.md) — both are Cloudflare-protected; cf_clearance ties to TLS fingerprint, both now use curl_cffi impersonation not httpx
+- [History-master replay guards](2026-07-20-history-master-replay-guards.md) — TODO: summarize this file.
