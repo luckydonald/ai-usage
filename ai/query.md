@@ -1755,3 +1755,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ The filter shall be stored in local storage as well, so they survive a page reload.
 
+❯ Remember to add those tests you just did manually with the browser tool as playwright tests, too.
+

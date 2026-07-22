@@ -14,65 +14,26 @@ Requires `frontend/dist` to be built (`corepack yarn@4.9.2 build`) and the
 this is a heavier opt-in check, not part of the default `uv run pytest` run.
 """
 
-import asyncio
 import base64
-import contextlib
 import os
-import socket
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import pytest
-import uvicorn
 
-from ai_usage.api import create_app
 from ai_usage.models import Metric, ProviderFetchResult, Usage
+from tests.e2e_support import FRONTEND_DIST, running_app, skip_unless_frontend_built
 from tests.test_storage import temporary_paths
-
-playwright_async_api = pytest.importorskip("playwright.async_api")
-
-FRONTEND_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
-
-
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
-        probe.bind(("127.0.0.1", 0))
-        return probe.getsockname()[1]
-    # end with
-# end def
-
-
-@contextlib.asynccontextmanager
-async def _running_app(paths):
-    app = create_app(paths)
-    port = _free_port()
-    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", lifespan="on")
-    server = uvicorn.Server(config)
-    task = asyncio.create_task(server.serve())
-    while not server.started:
-        await asyncio.sleep(0.01)
-    # end while
-    try:
-        yield app.state.runtime, f"http://127.0.0.1:{port}"
-    finally:
-        server.should_exit = True
-        await task
-        await app.state.runtime.close()
-    # end try
-# end def
 
 
 @pytest.mark.asyncio
 async def test_chart_click_pins_tooltip_overlay(tmp_path, monkeypatch) -> None:
-    if not (FRONTEND_DIST / "index.html").exists():
-        pytest.skip("frontend/dist not built; run `corepack yarn@4.9.2 build` first")
-    # end if
+    skip_unless_frontend_built()
 
     monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
     paths = replace(temporary_paths(tmp_path), frontend=FRONTEND_DIST)
 
-    async with _running_app(paths) as (runtime, base_url):
+    async with running_app(paths) as (runtime, base_url):
         await runtime.initialize()
         now = datetime.now(UTC)
         await runtime.history.append_result(
