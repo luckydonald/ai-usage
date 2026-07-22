@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import socket
 import sys
 import types
@@ -81,6 +82,9 @@ config_app.add_typer(
 )
 
 
+CRAWL_LOGGER = logging.getLogger("ai_usage.crawl")
+
+
 class Runtime:
     def __init__(self, paths: Paths):
         paths.ensure()
@@ -94,7 +98,7 @@ class Runtime:
             self.database,
             self.history,
             self.providers,
-            reporter=click.echo,
+            reporter=CRAWL_LOGGER.info,
         )
     # end def
 
@@ -232,9 +236,36 @@ async def create_account(
 # end def
 
 
+LOG_LEVELS = ("debug", "info", "warning", "error", "critical")
+
+
+def configure_logging(log_level: str) -> None:
+    # force=True: without it, basicConfig is a no-op whenever the root logger already has a
+    # handler (e.g. under pytest, or if something else configured logging first), silently
+    # dropping --log-level.
+    logging.basicConfig(
+        level=log_level.upper(),
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        stream=sys.stderr,
+        force=True,
+    )
+# end def
+
+
 @app.callback(invoke_without_command=True)
-def main_callback(ctx: typer.Context) -> None:
+def main_callback(
+    ctx: typer.Context,
+    log_level: Annotated[
+        str,
+        typer.Option(
+            "--log-level",
+            click_type=click.Choice(LOG_LEVELS),
+            help="Log verbosity; pass 'debug' to also see outgoing provider requests.",
+        ),
+    ] = "info",
+) -> None:
     """Collect and visualize AI service usage."""
+    configure_logging(log_level)
     if ctx.invoked_subcommand != "completion":
         check_completion_staleness(default_paths(), main, interactive_terminal(False))
     # end if
@@ -1304,7 +1335,7 @@ def crawl(
                 runtime.collector,
                 runtime.config,
                 runtime.database,
-                reporter=click.echo,
+                reporter=CRAWL_LOGGER.info,
                 host_id=identity.host_id,
             )
             await crawler.run()
@@ -1492,7 +1523,7 @@ def run_all(
             paths,
             host,
             port,
-            reporter=click.echo,
+            reporter=CRAWL_LOGGER.info,
             explicit_port=explicit_port,
             host_id=identity.host_id,
         )

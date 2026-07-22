@@ -1,6 +1,6 @@
 """Alembic migration environment."""
 
-from logging.config import fileConfig
+import logging
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
@@ -8,9 +8,12 @@ from sqlalchemy import engine_from_config, pool
 from ai_usage.orm import Base
 
 config = context.config
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-# end if
+# Deliberately not calling logging.config.fileConfig(alembic.ini) here: it reconfigures the
+# root logger's handlers/level on every migrate() call, clobbering the app's own logging setup
+# (and, with disable_existing_loggers=True, silencing every already-created logger). Set only
+# what alembic.ini's logging section was actually for.
+logging.getLogger("alembic").setLevel(logging.INFO)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 target_metadata = Base.metadata
 
 
