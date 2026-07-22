@@ -204,6 +204,40 @@ def test_discovered_account_is_restored_with_same_identity(tmp_path: Path, monke
 # end def
 
 
+def test_claude_default_profile_is_stored_as_null(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+
+    async def exercise() -> None:
+        runtime = Runtime(paths)
+        await runtime.initialize()
+        discovered = DiscoveryChoice(
+            service="claude",
+            provider="statusline",
+            provider_name="Claude status line with /usage fallback",
+            account=DiscoveredAccount(
+                name="Claude",
+                options={"profile_dir": str(Path.home() / ".claude")},
+            ),
+        )
+        monkeypatch.setattr("ai_usage.cli.install_status_relay", lambda account, local: None)
+        first, first_action = await create_account(
+            runtime, "claude", "statusline", None, None, True, {}, discovered
+        )
+        existing, existing_action = await create_account(
+            runtime, "claude", "statusline", None, None, True, {}, discovered
+        )
+        await runtime.close()
+
+        assert first.id == existing.id
+        assert first.options["profile_dir"] is None
+        assert first_action == "added"
+        assert existing_action == "existing"
+    # end def
+
+    asyncio.run(exercise())
+# end def
+
+
 def test_discovered_credentials_are_encrypted(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
 

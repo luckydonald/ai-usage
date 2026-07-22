@@ -1,0 +1,121 @@
+(.venv) user@fedora:~/.ai-usage$ claude doctor
+Claude Code doctor
+
+Running: native (2.1.217)
+Commit: 9963b018d22c
+Platform: linux-x64
+Path: /home/user/.local/share/claude/versions/2.1.217
+Config install method: native
+Search: OK (bundled)
+Auto-updates: enabled
+Auto-update channel: latest
+Last update attempt: success → 2.1.217 (2026-07-21)
+
+Remote Control
+Remote Control is disabled by your organization's policy. Contact your organization admin for access.
+- Org policy does not allow Remote Control (allow_remote_control)
+
+No installation issues found.
+
+For a full setup checkup that can also fix issues, run /doctor in a Claude Code session.
+
+(.venv) user@fedora:~/.ai-usage$ CLAUDE_CONFIG_DIR=/home/user/.claude claude doctor
+Claude Code doctor
+
+Running: native (2.1.217)
+Commit: 9963b018d22c
+Platform: linux-x64
+Path: /home/user/.local/share/claude/versions/2.1.217
+Config install method: unknown
+Search: OK (bundled)
+Auto-updates: enabled
+Auto-update channel: latest
+Last update attempt: success → 2.1.217 (2026-07-21)
+
+Remote Control
+Remote Control is disabled by your organization's policy. Contact your organization admin for access.
+- Org policy does not allow Remote Control (allow_remote_control)
+- Remote Control rollout could not be verified for this account (no server response this session)
+
+1 warning found
+- Running native installation but config install method is 'unknown'
+  Fix: Run claude install to update configuration
+
+For a full setup checkup that can also fix issues, run /doctor in a Claude Code session.
+(.venv) user@fedora:~/.ai-usage$ claude doctor
+Claude Code doctor
+
+Running: native (2.1.217)
+Commit: 9963b018d22c
+Platform: linux-x64
+Path: /home/user/.local/share/claude/versions/2.1.217
+Config install method: native
+Search: OK (bundled)
+Auto-updates: enabled
+Auto-update channel: latest
+Last update attempt: success → 2.1.217 (2026-07-21)
+
+Remote Control
+Remote Control is disabled by your organization's policy. Contact your organization admin for access.
+- Org policy does not allow Remote Control (allow_remote_control)
+
+No installation issues found.
+
+For a full setup checkup that can also fix issues, run /doctor in a Claude Code session.
+(.venv) user@fedora:~/.ai-usage$ CLAUDE_CONFIG_DIR=/home/user/.claude claude doctor
+Claude Code doctor
+
+Running: native (2.1.217)
+Commit: 9963b
+018d22c
+Platform: linux-x64
+Path: /home/user/.local/share/claude/versions/2.1.217
+Config install method: unknown
+Search: OK (bundled)
+Auto-updates: enabled
+Auto-update channel: latest
+Last update attempt: success → 2.1.217 (2026-07-21)
+
+Remote Control
+Remote Control is disabled by your organization's policy. Contact your organization admin for access.
+- Org policy does not allow Remote Control (allow_remote_control)
+- Remote Control rollout could not be verified for this account (no server response this session)
+
+1 warning found
+- Running native installation but config install method is 'unknown'
+  Fix: Run claude install to update configuration
+
+For a full setup checkup that can also fix issues, run /doctor in a Claude Code session.
+
+(.venv) user@fedora:~/.ai-usage$ strace -f -e trace=openat -o /tmp/trace_default.txt claude doctor >/tmp/doctor_default.out 2>&1
+(.venv) user@fedora:~/.ai-usage$ grep -iE 'claude|\.json' /tmp/trace_default.txt
+3442339 openat(AT_FDCWD, "/home/user/.claude.json", O_RDONLY|O_NOCTTY|O_LARGEFILE) = 9
+3442328 openat(AT_FDCWD, "/home/user/.claude/settings.json", O_RDONLY|O_LARGEFILE) = 9
+3442328 openat(AT_FDCWD, "/home/user/.claude/.credentials.json", O_RDONLY|O_NOCTTY|O_LARGEFILE) = 9
+3442338 openat(AT_FDCWD, "/home/user/.claude.json", O_RDONLY|O_NOCTTY|O_LARGEFILE) = 16
+3442339 openat(AT_FDCWD, "/home/user/.claude/backups/.claude.json.backup.1784748260691", O_WRONLY|O_CREAT|O_LARGEFILE, 0600) = 17
+3442368 openat(AT_FDCWD, "/home/user/.claude.json.tmp.3442328.5a001d9c0cc3", O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE, 0666) = 16
+
+(.venv) user@fedora:~/.ai-usage$ CLAUDE_CONFIG_DIR=/home/user/.claude strace -f -e trace=openat -o /tmp/trace_envset.txt claude doctor >/tmp/doctor_envset.out 2>&1
+(.venv) user@fedora:~/.ai-usage$ grep -iE 'claude|\.json' /tmp/trace_envset.txt
+3442339 openat(AT_FDCWD, "/home/user/.claude/.claude.json", O_RDONLY|O_NOCTTY|O_LARGEFILE) = 9
+3442328 openat(AT_FDCWD, "/home/user/.claude/settings.json", O_RDONLY|O_LARGEFILE) = 9
+3442328 openat(AT_FDCWD, "/home/user/.claude/.credentials.json", O_RDONLY|O_NOCTTY|O_LARGEFILE) = 9
+3443429 openat(AT_FDCWD, "/home/user/.claude/.claude.json", O_WRONLY|O_CREAT|O_LARGEFILE, 0600) = 16
+3443429 openat(AT_FDCWD, "/home/user/.claude/.claude.json.tmp.3443429.30d456d8b960", O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE, 0666) = 16
+
+# diff of unique claude/json paths between the two traces:
+(.venv) user@fedora:~/.ai-usage$ diff <(grep -oE '"[^"]*"' /tmp/trace_default.txt | grep -iE 'claude|\.json' | sort -u) \
+                                       <(grep -oE '"[^"]*"' /tmp/trace_envset.txt  | grep -iE 'claude|\.json' | sort -u)
+8c8,9
+< "/home/user/.claude/backups/.claude.json.backup.1784748260691"
+---
+> "/home/user/.claude/.claude.json"
+> "/home/user/.claude/.claude.json.tmp.3443429.30d456d8b960"
+10,11d10
+< "/home/user/.claude.json"
+< "/home/user/.claude.json.tmp.3442328.5a001d9c0cc3"
+
+# conclusion: default reads/writes /home/user/.claude.json (sibling of config dir);
+# CLAUDE_CONFIG_DIR=/home/user/.claude reads/writes /home/user/.claude/.claude.json instead
+# (nested inside config dir) -> file doesn't exist -> fresh state -> "unknown" install method.

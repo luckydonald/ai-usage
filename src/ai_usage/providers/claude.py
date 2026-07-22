@@ -86,6 +86,26 @@ SETUP_TEXT_STYLE_PATTERN = re.compile(r"Choose\s+the\s+text\s+style", re.IGNOREC
 CLAUDE_ERROR_LOG_DIR = Path("/tmp/ai-usage/errors")
 
 
+def claude_default_profile() -> Path:
+    return Path.home() / ".claude"
+# end def
+
+
+def claude_profile_path(profile_dir: str | None) -> Path:
+    return Path(profile_dir).expanduser() if profile_dir else claude_default_profile()
+# end def
+
+
+def canonical_claude_profile_dir(profile_dir: str | None) -> str | None:
+    """Return an override only when the profile is not Claude's native default."""
+    profile = claude_profile_path(profile_dir)
+    if profile.resolve() == claude_default_profile().resolve():
+        return None
+    # end if
+    return str(profile)
+# end def
+
+
 def extract_claude_notes(output: str) -> list[str]:
     clean = ANSI_PATTERN.sub("", output).replace("\r", "")
     return [match.group(0).strip() for match in PROMO_PATTERN.finditer(clean)]
@@ -102,9 +122,10 @@ def claude_setup_required_message(
     if not SETUP_TEXT_STYLE_PATTERN.search(clean):
         return None
     # end if
-    if profile_dir:
-        profile = str(Path(profile_dir).expanduser())
-        interactive_command = f"CLAUDE_CONFIG_DIR={shlex.quote(profile)} {shlex.quote(command)}"
+    config_dir = canonical_claude_profile_dir(profile_dir)
+    if config_dir:
+        interactive_command = f"CLAUDE_CONFIG_DIR={shlex.quote(config_dir)} {shlex.quote(command)}"
+        profile = config_dir
     else:
         profile = "the default Claude profile"
         interactive_command = shlex.quote(command)
@@ -557,7 +578,7 @@ class ClaudeStatusProvider(Provider):
         # end if
         output = await run_claude_usage(
             str(account.options.get("command", "claude")),
-            str(account.options.get("profile_dir", "")) or None,
+            str(account.options["profile_dir"]) if account.options.get("profile_dir") else None,
         )
         metrics = parse_usage_output(output, observed)
         if not metrics:
@@ -598,8 +619,9 @@ async def run_claude_usage(command: str, profile_dir: str | None) -> str:
         import pexpect
 
         environment = dict(os.environ)
-        if profile_dir:
-            environment["CLAUDE_CONFIG_DIR"] = str(Path(profile_dir).expanduser())
+        config_dir = canonical_claude_profile_dir(profile_dir)
+        if config_dir:
+            environment["CLAUDE_CONFIG_DIR"] = config_dir
         # end if
         child = pexpect.spawn(command, encoding="utf-8", timeout=30, env=environment)
         try:
@@ -634,7 +656,9 @@ def write_relay_payload(path: Path, payload: dict[str, Any]) -> None:
 
 
 def install_status_relay(account: AccountConfig, local_root: Path) -> Path:
-    profile = Path(str(account.options.get("profile_dir", Path.home() / ".claude"))).expanduser()
+    profile = claude_profile_path(
+        str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
+    )
     settings_path = profile / "settings.json"
     profile.mkdir(mode=0o700, parents=True, exist_ok=True)
     settings: dict[str, Any] = {}
@@ -689,7 +713,9 @@ if command:
 
 
 def remove_status_relay(account: AccountConfig, local_root: Path) -> None:
-    profile = Path(str(account.options.get("profile_dir", Path.home() / ".claude"))).expanduser()
+    profile = claude_profile_path(
+        str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
+    )
     settings_path = profile / "settings.json"
     marker = f"ai-usage-relay-{account.id}"
     relay_root = local_root / "claude-relay"

@@ -1705,3 +1705,9 @@ Now my assumption is, that the CLI command is run somewhere in a weird temporary
 › I don't think it worked because of the escape sequences - it's still marked as general timeout error. See @ai/errors/9.txt - the detection method must match that file.
 I'd also like it to write to `/tmp/ai-usage/errors/claude-cli.<hash of content>.log` (and log that path afterwards).
 
+› I debugged it at `ai/errors/10.txt` (not so interesting) but it helped me to understand the reason, see @ai/errors/10.reason.md
+
+› the correction for that. Allow also `null` as value there, having the same effect as that literal string. This way ommiting is no longer an issue, which makes it even easier to set up. Adjust the setup tooling, for it, too, to use `null` if it's that standard location.
+
+> › Implement the [Plan](./plans/013_claude-default-profile-canonicalization.md).
+
