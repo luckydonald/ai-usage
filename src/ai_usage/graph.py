@@ -236,7 +236,11 @@ def projected_percentage(samples: list[MetricSampleRecord], end: datetime) -> fl
     if elapsed <= 0 or delta <= 0:
         return None
     # end if
+    # Deliberately not clamped to 100: the frontend (`computeWindowStats` in chart.ts) branches on
+    # whether this crosses 100 to decide between "N% would be left" and "exhaustion ETA" messaging —
+    # clamping here would make every overshooting window look identical to one landing exactly at 100,
+    # silently dropping the exhaustion-ETA case in the usage cards and hover tooltips.
     remaining = max(0.0, (end - last_at).total_seconds())
-    return min(100.0, max(last.percentage, last.percentage + delta / elapsed * remaining))
+    return max(last.percentage, last.percentage + delta / elapsed * remaining)
 # end def
 
