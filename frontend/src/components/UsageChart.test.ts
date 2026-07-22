@@ -54,17 +54,21 @@ function mountChart() {
 
 afterEach(() => {
   document.body.innerHTML = "";
+  document.body.style.overflow = "";
   vi.clearAllMocks();
 });
+
+function clickChart(): void {
+  const zr = chart.getZr.mock.results[0]?.value;
+  const click = zr.on.mock.calls.find(([eventName]: [string]) => eventName === "click")?.[1] as ((event: { offsetX: number; offsetY: number }) => void) | undefined;
+  if (!click) throw new Error("chart click handler must be registered");
+  click({ offsetX: 100, offsetY: 100 });
+}
 
 describe("UsageChart pinned tooltip", () => {
   it("opens a scrollable overlay from a click in the plot and closes it again", async () => {
     const wrapper = mountChart();
-    const zr = chart.getZr.mock.results[0]?.value;
-    const click = zr.on.mock.calls.find(([eventName]: [string]) => eventName === "click")?.[1] as ((event: { offsetX: number; offsetY: number }) => void) | undefined;
-    if (!click) throw new Error("chart click handler must be registered");
-
-    click({ offsetX: 100, offsetY: 100 });
+    clickChart();
     await flushPromises();
 
     const overlay = document.querySelector<HTMLElement>(".tooltip-overlay");
@@ -77,5 +81,28 @@ describe("UsageChart pinned tooltip", () => {
     closeButton.click();
     await wrapper.vm.$nextTick();
     expect(document.querySelector(".tooltip-overlay")).toBeNull();
+  });
+
+  it("disables body scroll while the overlay is open and restores it on close", async () => {
+    const wrapper = mountChart();
+    expect(document.body.style.overflow).toBe("");
+
+    clickChart();
+    await flushPromises();
+    expect(document.body.style.overflow).toBe("hidden");
+
+    document.querySelector<HTMLButtonElement>(".pinned-tooltip-close")!.click();
+    await wrapper.vm.$nextTick();
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("restores body scroll if the component unmounts while the overlay is open", async () => {
+    const wrapper = mountChart();
+    clickChart();
+    await flushPromises();
+    expect(document.body.style.overflow).toBe("hidden");
+
+    wrapper.unmount();
+    expect(document.body.style.overflow).toBe("");
   });
 });
