@@ -53,6 +53,7 @@ from ai_usage.provider_tui import SelectionChoice, select_choice
 from ai_usage.providers import Provider, ProviderRegistry, built_in_registry
 from ai_usage.providers.base import ProviderError
 from ai_usage.providers.claude import (
+    canonical_claude_profile_dir,
     install_status_relay,
     remove_status_relay,
     write_relay_payload,
@@ -178,6 +179,12 @@ async def create_account(
             options[field.key] = str(options[field.key]).casefold() in {"1", "true", "yes", "on"}
         # end if
     # end for
+    if service == "claude" and provider_key in {"statusline", "cli-usage"}:
+        profile_dir = options.get("profile_dir")
+        options["profile_dir"] = canonical_claude_profile_dir(
+            str(profile_dir) if profile_dir else None
+        )
+    # end if
     fingerprint = discovered.fingerprint if discovered else None
     existing = (
         runtime.config.find_discovered_account(

@@ -55,11 +55,10 @@ ai-usage provider add codex app-server \
 
 ai-usage provider add claude statusline \
   --name "Personal Claude" \
-  --profile-dir "$HOME/.claude" \
   --no-input
 ```
 
-The Claude status-line collector installs a composable relay in the Claude profile. If a status-line command already exists, AI Usage preserves it and forwards the same input to it. When the relay is missing or stale, the collector falls back to running `claude /usage` in a pseudo-terminal.
+The Claude command uses Claude Code's native default profile. Add `--profile-dir /path/to/profile` only for an alternate Claude profile. The status-line collector installs a composable relay in that profile. If a status-line command already exists, AI Usage preserves it and forwards the same input to it. When the relay is missing or stale, the collector falls back to running `claude /usage` in a pseudo-terminal.
 
 Fetch one sample from every configured account:
 

@@ -15,8 +15,12 @@ from ai_usage.providers.base import ProviderError
 from ai_usage.providers.claude import (
     ClaudeStatusProvider,
     ClaudeWebUsageProvider,
+    canonical_claude_profile_dir,
     claude_cli_failure_message,
+    claude_default_profile,
     claude_metric_model,
+    claude_profile_path,
+    claude_setup_required_message,
     extract_claude_notes,
     extract_claude_web_notes,
     install_status_relay,
@@ -204,6 +208,29 @@ def test_claude_cli_failure_keeps_generic_error_for_other_timeouts(monkeypatch, 
     assert message == (
         "Claude /usage did not become ready; use Claude once to refresh the status relay"
     )
+# end def
+
+
+def test_claude_default_profile_does_not_set_config_dir() -> None:
+    default_profile = str(claude_default_profile())
+
+    assert canonical_claude_profile_dir(None) is None
+    assert canonical_claude_profile_dir(default_profile) is None
+    assert claude_profile_path(None) == Path(default_profile)
+    assert canonical_claude_profile_dir("/profiles/claude") == "/profiles/claude"
+# end def
+
+
+def test_claude_setup_message_uses_plain_command_for_default_profile() -> None:
+    message = claude_setup_required_message(
+        "Choose the text style that looks best with your terminal",
+        "claude",
+        str(claude_default_profile()),
+    )
+
+    assert message is not None
+    assert "run claude interactively" in message
+    assert "CLAUDE_CONFIG_DIR" not in message
 # end def
 
 
@@ -645,4 +672,22 @@ def test_claude_relay_preserves_existing_command(tmp_path) -> None:
     assert "existing-status" in settings.read_text(encoding="utf-8")
     assert not (relay_root / "ai-usage-relay-relay-account.py").exists()
     assert not (relay_root / "relay-account.original.json").exists()
+# end def
+
+
+def test_claude_relay_uses_default_profile_for_null_option(tmp_path, monkeypatch) -> None:
+    profile = tmp_path / "claude"
+    profile.mkdir()
+    monkeypatch.setattr("ai_usage.providers.claude.claude_default_profile", lambda: profile)
+    account = AccountConfig(
+        id="relay-account",
+        service="claude",
+        provider="statusline",
+        name="Claude",
+        options={"profile_dir": None},
+    )
+
+    install_status_relay(account, tmp_path / "local")
+
+    assert (profile / "settings.json").exists()
 # end def
