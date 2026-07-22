@@ -3,7 +3,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const chart = vi.hoisted(() => ({
   containPixel: vi.fn(() => true),
-  convertFromPixel: vi.fn(() => [new Date("2026-07-17T10:00:00Z").getTime(), 50]),
+  // Mirrors real echarts: a `{ gridIndex }` finder returns a `[x, y]` pair; a lone
+  // `{ xAxisIndex }` finder returns a single (unusable-here) NaN, catching a regression
+  // to the wrong finder shape that silently broke click-to-pin.
+  convertFromPixel: vi.fn((finder: { gridIndex?: number; xAxisIndex?: number }) =>
+    "gridIndex" in finder ? [new Date("2026-07-17T10:00:00Z").getTime(), 50] : NaN,
+  ),
   dispatchAction: vi.fn(),
   dispose: vi.fn(),
   getZr: vi.fn(() => ({ on: vi.fn() })),

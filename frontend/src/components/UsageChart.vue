@@ -49,7 +49,7 @@ function closePinnedTooltip(): void {
 
 async function pinTooltip(offsetX: number, offsetY: number): Promise<void> {
   if (!chart || !chart.containPixel({ gridIndex: 0 }, [offsetX, offsetY])) return;
-  const coordinate = chart.convertFromPixel({ xAxisIndex: 0 }, [offsetX, offsetY]);
+  const coordinate = chart.convertFromPixel({ gridIndex: 0 }, [offsetX, offsetY]);
   const atMs = Array.isArray(coordinate) ? coordinate[0] : undefined;
   if (typeof atMs !== "number") return;
 
