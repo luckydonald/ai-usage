@@ -87,7 +87,7 @@ class SubscriptionStatus(BaseModel):
 
 
 class GitBackupConfig(BaseModel):
-    """Shared setting controlling the debounced git commit/push of the data directory."""
+    """Shared setting controlling git commit/push of the data directory after fetches."""
 
     enabled: bool = False
 # end class

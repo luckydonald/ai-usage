@@ -78,7 +78,7 @@ app.add_typer(
 )
 config_git_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
 config_app.add_typer(
-    config_git_app, name="git", help="Enable/disable the debounced git commit/push of the data directory."
+    config_git_app, name="git", help="Enable/disable git commit/push of the data directory after fetches."
 )
 
 
@@ -1300,7 +1300,7 @@ def fetch(
                 # end if
             # end for
             await asyncio.to_thread(
-                maybe_run_git_backup, runtime.paths, runtime.config, datetime.now(UTC)
+                maybe_run_git_backup, runtime.paths, runtime.config, datetime.now(UTC), click.echo
             )
             if results and all(result.status == FetchStatus.ERROR for result in results):
                 raise click.ClickException("every configured provider failed")
@@ -1422,7 +1422,7 @@ def uninstall() -> None:
 
 @config_git_app.command("enable")
 def config_git_enable() -> None:
-    """Turn on the debounced git commit/push of the data directory."""
+    """Turn on git commit/push of the data directory after each fetch."""
     paths = default_paths()
     paths.ensure()
     ConfigStore(paths).save_global_config({"git": {"enabled": True}})
@@ -1432,7 +1432,7 @@ def config_git_enable() -> None:
 
 @config_git_app.command("disable")
 def config_git_disable() -> None:
-    """Turn off the debounced git commit/push of the data directory."""
+    """Turn off git commit/push of the data directory after each fetch."""
     paths = default_paths()
     paths.ensure()
     ConfigStore(paths).save_global_config({"git": {"enabled": False}})

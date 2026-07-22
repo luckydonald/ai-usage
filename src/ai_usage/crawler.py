@@ -120,7 +120,9 @@ class Crawler:
         for account, result in zip(accounts, results, strict=True):
             await self.update_state(account, result, now)
         # end for
-        await asyncio.to_thread(maybe_run_git_backup, self.database.paths, self.config, now)
+        await asyncio.to_thread(
+            maybe_run_git_backup, self.database.paths, self.config, now, self.report
+        )
     # end def
 
     async def tick(self) -> None:
