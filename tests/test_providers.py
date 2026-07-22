@@ -175,6 +175,21 @@ Current week (Fable)
 # end def
 
 
+def test_claude_usage_output_parses_cursor_positioned_terminal_text() -> None:
+    output = (
+        "Current\x1b[15Gsession\n"
+        "\x1b[3G12%\x1b[8Gused\n"
+        "Resets\x1b[15G7:50pm (Europe/Berlin)\n"
+    )
+
+    metrics = parse_usage_output(output, datetime.now(UTC))
+
+    assert len(metrics) == 1
+    assert metrics[0].key == "five-hours"
+    assert metrics[0].usage.percentage == 12
+# end def
+
+
 def test_claude_cli_failure_reports_text_style_setup_from_recorded_transcript(
     caplog,
     monkeypatch,

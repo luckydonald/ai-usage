@@ -83,6 +83,7 @@ SECTION_PATTERN = re.compile(
 )
 PROMO_PATTERN = re.compile(r"^\s*\+\d+%.*promo.*$", re.IGNORECASE | re.MULTILINE)
 SETUP_TEXT_STYLE_PATTERN = re.compile(r"Choose\s+the\s+text\s+style", re.IGNORECASE)
+RAW_SETUP_TEXT_STYLE_PATTERN = re.compile(r"Choose.*?the.*?text.*?style", re.IGNORECASE)
 CLAUDE_ERROR_LOG_DIR = Path("/tmp/ai-usage/errors")
 
 
@@ -107,8 +108,14 @@ def canonical_claude_profile_dir(profile_dir: str | None) -> str | None:
 
 
 def extract_claude_notes(output: str) -> list[str]:
-    clean = ANSI_PATTERN.sub("", output).replace("\r", "")
+    clean = normalize_claude_terminal_output(output)
     return [match.group(0).strip() for match in PROMO_PATTERN.finditer(clean)]
+# end def
+
+
+def normalize_claude_terminal_output(output: str) -> str:
+    """Replace terminal controls with spacing so cursor-positioned words stay separate."""
+    return ANSI_PATTERN.sub(" ", output).replace("\r", "")
 # end def
 
 
@@ -118,7 +125,7 @@ def claude_setup_required_message(
     profile_dir: str | None,
 ) -> str | None:
     """Explain how to complete Claude's first-run text-style selection."""
-    clean = ANSI_PATTERN.sub(" ", output or "").replace("\r", "")
+    clean = normalize_claude_terminal_output(output or "")
     if not SETUP_TEXT_STYLE_PATTERN.search(clean):
         return None
     # end if
@@ -242,7 +249,7 @@ def parse_status_payload(payload: dict[str, Any], observed_at: datetime) -> list
 
 
 def parse_usage_output(output: str, observed_at: datetime) -> list[Metric]:
-    clean = ANSI_PATTERN.sub("", output).replace("\r", "")
+    clean = normalize_claude_terminal_output(output)
     metrics: list[Metric] = []
     for match in SECTION_PATTERN.finditer(clean):
         name = " ".join(match.group("name").split())
@@ -625,12 +632,20 @@ async def run_claude_usage(command: str, profile_dir: str | None) -> str:
         # end if
         child = pexpect.spawn(command, encoding="utf-8", timeout=30, env=environment)
         try:
+            startup_state = child.expect([RAW_SETUP_TEXT_STYLE_PATTERN, "❯"], timeout=30)
+            startup_output = child.before + child.after
+            if startup_state == 0:
+                raise ProviderError(claude_cli_failure_message(startup_output, command, profile_dir))
+            # end if
             child.sendline("/usage")
-            child.expect("Current session", timeout=30)
+            child.expect("Current", timeout=30)
+            usage_output = child.before + child.after
+            child.expect("session", timeout=30)
+            usage_output += child.before + child.after
             time.sleep(1)
             child.sendline("/exit")
             child.expect(pexpect.EOF, timeout=10)
-            return child.before
+            return usage_output + child.before
         except (pexpect.TIMEOUT, pexpect.EOF) as exception:
             raise ProviderError(
                 claude_cli_failure_message(child.before or "", command, profile_dir)
