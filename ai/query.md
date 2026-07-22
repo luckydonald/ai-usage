@@ -1711,3 +1711,5 @@ I'd also like it to write to `/tmp/ai-usage/errors/claude-cli.<hash of content>.
 
 > › Implement the [Plan](./plans/013_claude-default-profile-canonicalization.md).
 
+› It still isn't working because the output is horrible with many escape codes - see @ai/errors/11.txt
+

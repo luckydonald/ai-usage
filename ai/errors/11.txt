@@ -1,0 +1,24 @@
+/usage
+7[r8[?25h[?25l[?2004h[?1004h[?2031h]0;✳ Claude Code[?2026h[38;2;215;119;87m ▐[48;2;0;0;0m▛███▜[49m▌[12G[39m[1mClaude[19GCode[24G[22m[38;2;153;153;153mv2.1.217[39m
+[38;2;215;119;87m▝▜[48;2;0;0;0m█████[49m▛▘[12G[38;2;153;153;153mSonnet[19G5[21Gwith[26Gmedium[33Geffort[40G·[42GClaude[49GTeam[39m
+[38;2;215;119;87m [3G▘▘[6G▝▝[12G[38;2;153;153;153m~/git/luckydonald/ai-usage[39m
+
+
+[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────[39m
+❯ [38;2;177;185;249m/usage[39m
+[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────[39m
+[38;2;177;185;249m/usage[31GShow[36Gsession[44Gcost,[50Gplan[55Gusage,[62Gand[66Gactivity[39m
+[31G[38;2;177;185;249mstats[39m
+[38;2;153;153;153m/[38;2;177;185;249musage[38;2;153;153;153m-credits[31GConfigure[41G[38;2;177;185;249musage[38;2;153;153;153m credits[55Gor[58Grequest[66Gthem[71Gfrom[39m
+[31G[38;2;153;153;153myour[36Gadmin[42Gwhen[47Gyou[51Ghit[55Ga[57Glimit[39m
+[38;2;153;153;153m/caveman:caveman-stats[31G(caveman)[41GReal[46Gsession[54Gtoken[60G[38;2;177;185;249musage[38;2;153;153;153m +[68Glifetime[39m
+[31G[38;2;153;153;153msavings[39G+[41GUSD.[46GTweetable[56Gline[61Gvia[65G--share.[39m
+[38;2;153;153;153m/caveman:caveman-stats[31G(caveman)[41GShow[46Greal[51Gtoken[57G[38;2;177;185;249musage[38;2;153;153;153m and[67Gestimated[39m
+[31G[38;2;153;153;153msavings[39Gfor[43Gthe[47Gcurrent[55Gsession.[64GReads[70Gdirect…[39m
+[38;2;153;153;153m/context[31GVisualize[41Gcurrent[49Gcontext[57G[38;2;177;185;249musage[38;2;153;153;153m as[66Ga[68Gcolored[39m
+[31G[38;2;153;153;153mgrid[39m
+[38;2;153;153;153m/effort[31GSet[35Geffort[42Glevel[48Gfor[52Gmodel[58G[38;2;177;185;249musage[39m
+
+[8C[14A[?25h[?2026l]11;?[c[>0q[c[?2026h[?25l[8D[14B[2C[6A[38;2;153;153;153montext              [31GVisualize[41Gcurrent context[64Gs a colored[39m[K[30C[1B[38;2;153;153;153mgrid[39m[K[1C[1B[38;2;153;153;153meffort [31GSet effort lev[46Gl for model [38;2;177;185;249musage[39m[K[1B[38;2;153;153;153m/team-onboarding              Help teammates ramp on Claude Code with a[1B[39m                              [38;2;153;153;153mguid[36G [38Grom[42Gyour [38;2;177;185;249musage[39m[K
+
+[8C[14A[?25h[?2026l
