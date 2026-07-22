@@ -3,13 +3,12 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
 import { activeNotesAt } from "./chart";
-import Chip from "./components/Chip.vue";
 import FilterFunnel from "./components/FilterFunnel.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { renderNoteMarkdown } from "./markdown";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
-import type { Catalog, Filters, FunnelBranch, GraphSeries, NoteRange } from "./types";
+import type { Catalog, Filters, FunnelAccount, FunnelBranch, FunnelProvider, GraphSeries, NoteRange } from "./types";
 
 const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {} });
 const series = ref<GraphSeries[]>([]);
@@ -35,17 +34,36 @@ const activeNotes = computed(() => activeNotesAt(notes.value, Date.now()));
 
 const services = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.service))]);
 const providers = computed(() => [...new Set(catalog.value.metrics.filter((metric) => !filters.services.length || filters.services.includes(metric.service)).map((metric) => metric.provider))]);
-// Unfiltered service -> providers map (unlike `providers` above, which shrinks to the current
-// selection) so the funnel diagram always shows the full service/provider structure, with the
-// active selection just highlighted rather than the rest of the tree disappearing.
+// Unfiltered service -> provider -> account -> metric tree (unlike `providers`/`accounts`/
+// `metricOptions` above, which shrink to the current selection) so the funnel diagram always
+// shows the full structure, with the active selection just highlighted rather than the rest of
+// the tree disappearing.
 const serviceProviderTree = computed<FunnelBranch[]>(() => {
-  const byService = new Map<string, string[]>();
+  const byService = new Map<string, Map<string, Map<string, FunnelAccount["metrics"]>>>();
   for (const metric of catalog.value.metrics) {
-    const list = byService.get(metric.service) ?? [];
-    if (!list.includes(metric.provider)) list.push(metric.provider);
-    byService.set(metric.service, list);
+    const byProvider = byService.get(metric.service) ?? new Map();
+    byService.set(metric.service, byProvider);
+    const byAccount = byProvider.get(metric.provider) ?? new Map();
+    byProvider.set(metric.provider, byAccount);
+    const metrics: FunnelAccount["metrics"] = byAccount.get(metric.account_id) ?? [];
+    if (!metrics.some((entry) => entry.key === metric.metric_key)) {
+      metrics.push({ key: metric.metric_key, name: metric.metric_name });
+    }
+    byAccount.set(metric.account_id, metrics);
   }
-  return [...byService.entries()].map(([service, providerList]) => ({ service, providers: providerList }));
+  return [...byService.entries()].map(([service, byProvider]) => ({
+    service,
+    providers: [...byProvider.entries()].map(
+      ([provider, byAccount]): FunnelProvider => ({
+        provider,
+        accounts: [...byAccount.entries()].map(([accountId, metrics]) => ({
+          id: accountId,
+          label: accountLabels.value[accountId] ?? accountId.slice(0, 8),
+          metrics,
+        })),
+      }),
+    ),
+  }));
 });
 const accounts = computed(() => catalog.value.accounts.filter((account) => (!filters.services.length || filters.services.includes(account.service)) && (!filters.providers.length || filters.providers.includes(account.provider))));
 const metricOptions = computed(() => {
@@ -238,33 +256,19 @@ onBeforeUnmount(() => events?.close());
       </template>
 
       <FilterFunnel
-        v-if="services.length > 1 || providers.length > 1"
+        v-if="services.length > 1 || providers.length > 1 || accounts.length > 1 || metricOptions.length > 1"
         :tree="serviceProviderTree"
         :active-services="filters.services"
         :active-providers="filters.providers"
+        :active-accounts="filters.accounts"
+        :active-metrics="filters.metrics"
         :service-icons="catalog.service_icons"
         :provider-icons="catalog.provider_icons"
         @toggle-service="(item) => { filters.services = toggleFilter(filters.services, item); load(); }"
         @toggle-provider="(item) => { filters.providers = toggleFilter(filters.providers, item); load(); }"
+        @toggle-account="(item) => { filters.accounts = toggleFilter(filters.accounts, item); load(); }"
+        @toggle-metric="(item) => { filters.metrics = toggleFilter(filters.metrics, item); load(); }"
       />
-      <div class="chip-group" v-if="accounts.length > 1" aria-label="Accounts">
-        <Chip
-          v-for="item in accounts"
-          :key="item.id"
-          :label="accountLabel(item)"
-          :active="filters.accounts.includes(item.id)"
-          @click="filters.accounts = toggleFilter(filters.accounts, item.id); load()"
-        />
-      </div>
-      <div class="chip-group" v-if="metricOptions.length > 1" aria-label="Metrics">
-        <Chip
-          v-for="item in metricOptions"
-          :key="item.key"
-          :label="item.name"
-          :active="filters.metrics.includes(item.key)"
-          @click="filters.metrics = toggleFilter(filters.metrics, item.key); load()"
-        />
-      </div>
     </section>
 
     <main class="graph-panel">

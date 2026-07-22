@@ -5,43 +5,80 @@ import FilterFunnel from "./FilterFunnel.vue";
 import type { FunnelBranch } from "../types";
 
 const tree: FunnelBranch[] = [
-  { service: "claude", providers: ["web", "statusline", "usage-cli"] },
-  { service: "codex", providers: ["app-server"] },
+  {
+    service: "claude",
+    providers: [
+      {
+        provider: "web",
+        accounts: [
+          {
+            id: "account-1",
+            label: "Claude private web API (person@example.com's Organization)",
+            metrics: [
+              { key: "five-hours", name: "Five hours" },
+              { key: "seven-days", name: "Seven days" },
+            ],
+          },
+        ],
+      },
+      { provider: "statusline", accounts: [] },
+      { provider: "usage-cli", accounts: [] },
+    ],
+  },
+  { service: "codex", providers: [{ provider: "app-server", accounts: [] }] },
 ];
 
 describe("FilterFunnel", () => {
-  it("renders one branch per service with its providers nested underneath", () => {
+  it("renders one branch per service, nesting providers, accounts, and metrics underneath", () => {
     const wrapper = mount(FilterFunnel, {
-      props: { tree, activeServices: [], activeProviders: [] },
+      props: { tree, activeServices: [], activeProviders: [], activeAccounts: [], activeMetrics: [] },
     });
     const branches = wrapper.findAll(".funnel-branch");
-    expect(branches).toHaveLength(2);
-    const claudeBranch = branches[0]!;
-    expect(claudeBranch.text()).toContain("claude");
-    expect(claudeBranch.text()).toContain("web");
-    expect(claudeBranch.text()).toContain("statusline");
-    expect(claudeBranch.text()).toContain("usage-cli");
+    // 2 services + 4 providers + 1 account = 7 branch rows.
+    expect(branches).toHaveLength(7);
+    const text = wrapper.text();
+    expect(text).toContain("claude");
+    expect(text).toContain("web");
+    expect(text).toContain("statusline");
+    expect(text).toContain("usage-cli");
+    expect(text).toContain("Claude private web API (person@example.com's Organization)");
+    expect(text).toContain("Five hours");
+    expect(text).toContain("Seven days");
+    expect(text).toContain("codex");
+    expect(text).toContain("app-server");
   });
 
-  it("marks the selected service and provider chips as active", () => {
+  it("marks the selected chip at every level as active", () => {
     const wrapper = mount(FilterFunnel, {
-      props: { tree, activeServices: ["codex"], activeProviders: ["web"] },
+      props: {
+        tree,
+        activeServices: ["codex"],
+        activeProviders: ["web"],
+        activeAccounts: ["account-1"],
+        activeMetrics: ["seven-days"],
+      },
     });
-    const codexChip = wrapper.findAll(".chip").find((chip) => chip.text() === "codex");
-    const webChip = wrapper.findAll(".chip").find((chip) => chip.text() === "web");
-    const statuslineChip = wrapper.findAll(".chip").find((chip) => chip.text() === "statusline");
-    expect(codexChip?.classes()).toContain("active");
-    expect(webChip?.classes()).toContain("active");
-    expect(statuslineChip?.classes()).not.toContain("active");
+    const chip = (label: string) => wrapper.findAll(".chip").find((candidate) => candidate.text() === label);
+    expect(chip("codex")?.classes()).toContain("active");
+    expect(chip("web")?.classes()).toContain("active");
+    expect(chip("Claude private web API (person@example.com's Organization)")?.classes()).toContain("active");
+    expect(chip("Seven days")?.classes()).toContain("active");
+    expect(chip("statusline")?.classes()).not.toContain("active");
+    expect(chip("Five hours")?.classes()).not.toContain("active");
   });
 
-  it("emits toggle-service and toggle-provider when their chips are clicked", async () => {
+  it("emits a toggle event for the level whose chip was clicked", async () => {
     const wrapper = mount(FilterFunnel, {
-      props: { tree, activeServices: [], activeProviders: [] },
+      props: { tree, activeServices: [], activeProviders: [], activeAccounts: [], activeMetrics: [] },
     });
-    await wrapper.findAll(".chip").find((chip) => chip.text() === "codex")!.trigger("click");
-    await wrapper.findAll(".chip").find((chip) => chip.text() === "app-server")!.trigger("click");
+    const chip = (label: string) => wrapper.findAll(".chip").find((candidate) => candidate.text() === label)!;
+    await chip("codex").trigger("click");
+    await chip("app-server").trigger("click");
+    await chip("Claude private web API (person@example.com's Organization)").trigger("click");
+    await chip("Five hours").trigger("click");
     expect(wrapper.emitted("toggle-service")).toEqual([["codex"]]);
     expect(wrapper.emitted("toggle-provider")).toEqual([["app-server"]]);
+    expect(wrapper.emitted("toggle-account")).toEqual([["account-1"]]);
+    expect(wrapper.emitted("toggle-metric")).toEqual([["five-hours"]]);
   });
 });
