@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 import pytest
 
 from ai_usage.config import ConfigStore
-from ai_usage.git_backup import maybe_run_git_backup
+from ai_usage.git_backup import PUSH_TIMEOUT_SECONDS, maybe_run_git_backup
 from tests.test_storage import temporary_paths
 
 
@@ -78,6 +78,33 @@ def test_backup_logs_push_success_when_a_remote_accepts_it(tmp_path, caplog) -> 
 
     assert any("Done pushing git backup changes" in message for message in caplog.messages)
     assert not any("Git push failed" in message for message in caplog.messages)
+# end def
+
+
+def test_backup_reports_a_timed_out_push(tmp_path, monkeypatch) -> None:
+    paths = temporary_paths(tmp_path)
+    paths.ensure()
+    _init_repo(paths.root)
+    (paths.root / "config.yml").write_text("git:\n  enabled: true\n", encoding="utf-8")
+    (paths.root / "history").mkdir(exist_ok=True)
+    (paths.root / "history" / "sample.jsonl").write_text("{}\n", encoding="utf-8")
+    config = ConfigStore(paths)
+    messages: list[str] = []
+    original_run = subprocess.run
+
+    def run(*args, **kwargs):
+        if args[0][-1] == "push":
+            raise subprocess.TimeoutExpired(args[0], PUSH_TIMEOUT_SECONDS)
+        # end if
+        return original_run(*args, **kwargs)
+    # end def
+
+    monkeypatch.setattr("ai_usage.git_backup.subprocess.run", run)
+
+    maybe_run_git_backup(paths, config, datetime.now(UTC), messages.append)
+
+    assert "Started pushing git backup changes." in messages
+    assert f"Git push timed out after {PUSH_TIMEOUT_SECONDS} seconds." in messages
 # end def
 
 
