@@ -35,6 +35,45 @@ from ai_usage.webview_login import capture_cookies_via_webview
 
 LOGGER = logging.getLogger(__name__)
 
+AUTH_ERROR_STATUS_CODES = frozenset({401, 403})
+
+
+def reauth_hint(account_id: str) -> str:
+    return f"re-authenticate with: ai-usage provider login --account {account_id}"
+# end def
+
+
+def describe_fetch_failure(exception: Exception, account_id: str) -> str:
+    """Append a re-auth hint when an exception looks like an expired/blocked session."""
+    response = getattr(exception, "response", None)
+    status_code = getattr(response, "status_code", None)
+    if status_code in AUTH_ERROR_STATUS_CODES:
+        return f"{exception} — session likely expired or blocked; {reauth_hint(account_id)}"
+    # end if
+    return str(exception)
+# end def
+
+
+async def get_json(
+    client: AsyncSession,
+    path: str,
+    account_id: str,
+    params: dict[str, Any] | None = None,
+) -> Any:
+    """GET a Claude endpoint, logging the outgoing request and raising a labeled error on failure."""
+    LOGGER.debug("GET %s params=%s", path, params)
+    response = await client.get(path, params=params)
+    if response.status_code >= 400:
+        exception = RuntimeError(f"HTTP Error {response.status_code}")
+        exception.response = response
+        raise ProviderError(
+            f"GET {path} failed: {describe_fetch_failure(exception, account_id)}"
+        )
+    # end if
+    return response.json()
+# end def
+
+
 ANSI_PATTERN = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))")
 SECTION_PATTERN = re.compile(
     r"(?P<name>Current session|Current week \(all models\)|Current week \([^)]+\))"
@@ -307,11 +346,7 @@ class ClaudeWebUsageProvider(Provider):
             timeout=20, cookies=cookies, headers=headers, base_url="https://claude.ai",
             impersonate="chrome",
         ) as client:
-            usage_response = await client.get(f"/api/organizations/{org_id}/usage")
-            if usage_response.status_code != 200:
-                raise ProviderError(f"Claude usage endpoint returned HTTP {usage_response.status_code}")
-            # end if
-            usage_payload = usage_response.json()
+            usage_payload = await get_json(client, f"/api/organizations/{org_id}/usage", account.id)
             raw_payload["usage"] = usage_payload
             metrics = parse_claude_web_usage(usage_payload, observed)
             if not metrics:
@@ -320,9 +355,7 @@ class ClaudeWebUsageProvider(Provider):
 
             organization: ClaudeOrganizationPayload | None = None
             try:
-                organizations_response = await client.get("/api/organizations")
-                organizations_response.raise_for_status()
-                organizations_payload = organizations_response.json()
+                organizations_payload = await get_json(client, "/api/organizations", account.id)
                 raw_payload["organizations"] = organizations_payload
                 match = next(
                     (org for org in organizations_payload if org.get("uuid") == org_id), None
@@ -331,49 +364,57 @@ class ClaudeWebUsageProvider(Provider):
                     ClaudeOrganizationPayload.model_validate(match) if match is not None else None
                 )
             except Exception as exception:  # noqa: BLE001
-                LOGGER.warning("could not fetch Claude organization info: %s", exception)
+                LOGGER.warning(
+                    "could not fetch Claude organization info: %s",
+                    describe_fetch_failure(exception, account.id),
+                )
             # end try
 
             account_info: ClaudeAccountPayload | None = None
             try:
-                account_response = await client.get("/api/account")
-                account_response.raise_for_status()
-                account_payload = account_response.json()
+                account_payload = await get_json(client, "/api/account", account.id)
                 raw_payload["account"] = account_payload
                 account_info = ClaudeAccountPayload.model_validate(account_payload)
             except Exception as exception:  # noqa: BLE001
-                LOGGER.warning("could not fetch Claude account info: %s", exception)
+                LOGGER.warning(
+                    "could not fetch Claude account info: %s",
+                    describe_fetch_failure(exception, account.id),
+                )
             # end try
 
             subscription_info: ClaudeSubscriptionStatusPayload | None = None
             try:
-                status_response = await client.get(
-                    f"/api/organizations/{org_id}/subscription_status"
+                status_payload = await get_json(
+                    client, f"/api/organizations/{org_id}/subscription_status", account.id
                 )
-                status_response.raise_for_status()
-                status_payload = status_response.json()
                 raw_payload["subscription_status"] = status_payload
                 subscription_info = ClaudeSubscriptionStatusPayload.model_validate(status_payload)
             except Exception as exception:  # noqa: BLE001
-                LOGGER.warning("could not fetch Claude subscription status: %s", exception)
+                LOGGER.warning(
+                    "could not fetch Claude subscription status: %s",
+                    describe_fetch_failure(exception, account.id),
+                )
             # end try
 
             notes: list[str] = []
             try:
-                app_start_response = await client.get(
+                app_start_payload = await get_json(
+                    client,
                     f"/edge-api/bootstrap/{org_id}/app_start",
+                    account.id,
                     params={
                         "statsig_hashing_algorithm": "djb2",
                         "growthbook_format": "sdk",
                         "include_system_prompts": "false",
                     },
                 )
-                app_start_response.raise_for_status()
-                app_start_payload = app_start_response.json()
                 raw_payload["app_start"] = app_start_payload
                 notes = extract_claude_web_notes(app_start_payload)
             except Exception as exception:  # noqa: BLE001
-                LOGGER.warning("could not fetch Claude app_start bootstrap: %s", exception)
+                LOGGER.warning(
+                    "could not fetch Claude app_start bootstrap: %s",
+                    describe_fetch_failure(exception, account.id),
+                )
             # end try
         # end with
 
