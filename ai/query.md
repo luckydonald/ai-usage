@@ -2142,3 +2142,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › `login: null` is only a legacy value. It is never meant to be written newly, a creation of a provider with login:null is denied.
 
+› `user_identity` function:
+
