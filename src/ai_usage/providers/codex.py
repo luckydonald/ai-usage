@@ -23,7 +23,14 @@ from ai_usage.models import (
     SubscriptionStatus,
     Usage,
 )
-from ai_usage.providers.base import ConfigurationField, DiscoveredAccount, Provider, ProviderError
+from ai_usage.providers.base import (
+    ConfigurationField,
+    DiscoveredAccount,
+    Provider,
+    ProviderError,
+    ProviderLoginError,
+    canonical_login,
+)
 from ai_usage.webview_login import capture_cookies_via_webview
 
 LOGGER = logging.getLogger(__name__)
@@ -94,6 +101,17 @@ def parse_rate_limits(payload: dict[str, Any], observed_at: datetime) -> list[Me
         )
     # end for
     return metrics
+# end def
+
+
+def codex_app_server_email(payload: dict[str, Any]) -> str | None:
+    account = payload.get("account")
+    values = (
+        payload.get("email"),
+        account.get("email") if isinstance(account, dict) else None,
+        account.get("emailAddress") if isinstance(account, dict) else None,
+    )
+    return next((value for value in values if isinstance(value, str)), None)
 # end def
 
 
@@ -195,6 +213,13 @@ class CodexWebUsageProvider(Provider):
     # auto-click attempt (below) always fails there, so tell the user up front rather than let
     # them wonder why nothing happens.
     login_hint = "Click \"Log in\" once the page loads."
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del account
+        return canonical_login(
+            result.identity.email if result.identity else None, self.display_name
+        )
+    # end def
 
     async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
         del options
@@ -356,6 +381,13 @@ class CodexAppServerProvider(Provider):
         ConfigurationField(key="profile_dir", label="Codex profile", kind="path"),
     )
 
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del account
+        return canonical_login(
+            result.identity.email if result.identity else None, self.display_name
+        )
+    # end def
+
     async def discover(self) -> list[DiscoveredAccount]:
         auth_file = Path.home() / ".codex" / "auth.json"
         if auth_file.exists():
@@ -387,7 +419,7 @@ class CodexAppServerProvider(Provider):
             async with AppServerClient(
                 str(account.options.get("command", "codex")), environment
             ) as client:
-                await client.request("account/read", {"refreshToken": True})
+                account_result = await client.request("account/read", {"refreshToken": True})
                 result = await client.request("account/rateLimits/read")
             # end with
         except FileNotFoundError as exception:
@@ -403,6 +435,7 @@ class CodexAppServerProvider(Provider):
             account_id=account.id,
             fetched_at=observed,
             metrics=parse_rate_limits(result, observed),
+            identity=AccountIdentity(email=codex_app_server_email(account_result)),
         )
     # end def
 # end class
@@ -438,6 +471,11 @@ class CodexStatusProvider(Provider):
     configuration_fields = (
         ConfigurationField(key="command", label="Codex executable", default="codex"),
     )
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del account, result
+        raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
+    # end def
 
     async def fetch(
         self,
@@ -482,4 +520,3 @@ async def run_codex_status(command: str) -> str:
 
     return await asyncio.to_thread(run_terminal)
 # end def
-

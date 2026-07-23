@@ -13,6 +13,7 @@ from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.orm import FetchRunRecord
 from ai_usage.progress import ProgressReporter, percentage, quiet_reporter
 from ai_usage.providers import ProviderRegistry
+from ai_usage.providers.base import Provider
 
 
 class Collector:
@@ -36,8 +37,12 @@ class Collector:
         self,
         account: AccountConfig,
         result: ProviderFetchResult,
+        provider: Provider,
     ) -> None:
         updates: dict[str, object] = {}
+        if account.login is None:
+            updates["login"] = provider.user_identity(account, result)
+        # end if
         if result.identity is not None and result.identity != account.identity:
             updates["identity"] = result.identity
         # end if
@@ -68,7 +73,7 @@ class Collector:
             started = datetime.now(UTC)
             started_clock = time.monotonic()
             self.report(
-                f"Started {operation} {account.name} "
+                f"Started {operation} {account.login or 'unresolved'} "
                 f"({account.service}/{account.provider}, {account.id})."
             )
             run_id = str(uuid.uuid7())
@@ -92,14 +97,14 @@ class Collector:
                 provider = self.providers.get(account.service, account.provider)
                 previous = await self.history.latest_percentages(account.id)
                 result = await provider.fetch(account, credential)
-                self.remember_account_details(account, result)
+                self.remember_account_details(account, result, provider)
                 await self.history.append_result(result)
                 for metric in result.metrics:
                     old_value = previous.get(metric.key)
                     new_value = metric.usage.percentage
                     if old_value != new_value:
                         self.report(
-                            f"{account.name}'s {metric.name} got a new value to store "
+                            f"{account.login or account.id}'s {metric.name} got a new value to store "
                             f"({percentage(old_value)} -> {percentage(new_value)})."
                         )
                     # end if
@@ -129,14 +134,14 @@ class Collector:
             # end with
             elapsed = time.monotonic() - started_clock
             if success and result.status == FetchStatus.STALE:
-                self.report(f"{account.name}: {result.error} — reusing last known values.")
+                self.report(f"{account.login or account.id}: {result.error} — reusing last known values.")
             elif success:
                 self.report(
-                    f"Done {operation} {account.name} in {elapsed:.1f}s "
+                    f"Done {operation} {account.login or account.id} in {elapsed:.1f}s "
                     f"({len(result.metrics)} metrics)."
                 )
             else:
-                self.report(f"Failed {operation} {account.name} in {elapsed:.1f}s: {error}")
+                self.report(f"Failed {operation} {account.login or account.id} in {elapsed:.1f}s: {error}")
             # end if
             return result
         # end with

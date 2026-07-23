@@ -13,7 +13,7 @@ from ai_usage.cli import Runtime, create_account, main, select_discovered_accoun
 from ai_usage.config import ConfigStore
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
-from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
+from ai_usage.models import AccountConfig, AccountIdentity, Metric, ProviderFetchResult, Usage
 from ai_usage.orm import CrawlStateRecord, CredentialRecord, FetchRunRecord
 from ai_usage.provider_discovery import DiscoveryChoice
 from ai_usage.provider_tui import SelectionChoice
@@ -47,6 +47,7 @@ async def fake_verified_fetch(self, account, credential):
                 observed_at=datetime.now(UTC),
             )
         ],
+        identity=AccountIdentity(email="user@example.com"),
     )
 # end def
 
@@ -110,6 +111,8 @@ def test_list_and_ls_show_active_and_removed_accounts(tmp_path: Path, monkeypatc
     paths.ensure()
     config = ConfigStore(paths)
     active = config.create_account("codex", "app-server", "Personal", None, {})
+    active = active.model_copy(update={"login": "user@example.com"})
+    config.save_account(active)
     removed = config.create_account("claude", "statusline", "Old work", None, {})
     config.save_account(
         removed.model_copy(update={"enabled": False, "removed_at": datetime.now(UTC)})
@@ -119,6 +122,12 @@ def test_list_and_ls_show_active_and_removed_accounts(tmp_path: Path, monkeypatc
     aliased = CliRunner().invoke(main, ["provider", "ls", "codex"])
 
     assert listed.exit_code == 0
+    assert "SERVICE" in listed.output
+    assert "PARSER" in listed.output
+    assert "ACCOUNT" in listed.output
+    assert "CONFIG" in listed.output
+    assert "Personal" not in listed.output
+    assert "user@example.com" in listed.output
     assert active.id in listed.output
     assert removed.id in listed.output
     assert "removed" in listed.output
@@ -132,6 +141,7 @@ def test_new_alias_manually_configures_provider(tmp_path: Path, monkeypatch) -> 
     paths = configured_paths(tmp_path, monkeypatch)
     secret_file = tmp_path / "github.json"
     secret_file.write_text('{"token":"github-secret"}', encoding="utf-8")
+    monkeypatch.setattr("ai_usage.providers.copilot.CopilotBillingProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(
         main,
@@ -140,8 +150,6 @@ def test_new_alias_manually_configures_provider(tmp_path: Path, monkeypatch) -> 
             "new",
             "copilot",
             "github-api",
-            "--name",
-            "Work Copilot",
             "--secret-file",
             str(secret_file),
             "--username",
@@ -153,7 +161,7 @@ def test_new_alias_manually_configures_provider(tmp_path: Path, monkeypatch) -> 
     )
 
     assert result.exit_code == 0
-    assert "Added Work Copilot" in result.output
+    assert "Added lucy" in result.output
     account = ConfigStore(paths).list_accounts()[0]
     assert account.options["username"] == "lucy"
     assert account.options["allowance"] == 300
@@ -167,6 +175,18 @@ def test_new_alias_manually_configures_provider(tmp_path: Path, monkeypatch) -> 
     # end def
 
     assert asyncio.run(credential()) == {"token": "github-secret"}
+# end def
+
+
+def test_add_rejects_the_removed_name_option(tmp_path: Path, monkeypatch) -> None:
+    configured_paths(tmp_path, monkeypatch)
+
+    result = CliRunner().invoke(
+        main, ["provider", "add", "copilot", "github-api", "--name", "legacy", "--no-input"]
+    )
+
+    assert result.exit_code != 0
+    assert "--name was removed" in str(result.exception)
 # end def
 
 
@@ -408,37 +428,6 @@ def test_status_and_two_stage_removal(tmp_path: Path, monkeypatch) -> None:
 # end def
 
 
-def test_rename_updates_only_the_display_name(tmp_path: Path, monkeypatch) -> None:
-    paths = configured_paths(tmp_path, monkeypatch)
-    paths.ensure()
-    account = ConfigStore(paths).create_account("codex", "app-server", "Old name", None, {})
-
-    result = CliRunner().invoke(
-        main, ["provider", "rename", "--account", account.id, "--name", "New name", "--no-input"]
-    )
-
-    assert result.exit_code == 0
-    assert "Renamed Old name to New name." in result.output
-    renamed = ConfigStore(paths).get_account(account.id)
-    assert renamed.name == "New name"
-    assert renamed.id == account.id
-# end def
-
-
-def test_mv_is_an_alias_for_rename(tmp_path: Path, monkeypatch) -> None:
-    paths = configured_paths(tmp_path, monkeypatch)
-    paths.ensure()
-    account = ConfigStore(paths).create_account("codex", "app-server", "Old name", None, {})
-
-    result = CliRunner().invoke(
-        main, ["provider", "mv", "--account", account.id, "--name", "New name", "--no-input"]
-    )
-
-    assert result.exit_code == 0
-    assert ConfigStore(paths).get_account(account.id).name == "New name"
-# end def
-
-
 def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
 
@@ -534,36 +523,10 @@ def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> 
 # end def
 
 
-def test_group_links_accounts_and_ungroup_removes_one(tmp_path: Path, monkeypatch) -> None:
-    paths = configured_paths(tmp_path, monkeypatch)
-    paths.ensure()
-    config = ConfigStore(paths)
-    laptop = config.create_account("claude", "cli-usage", "Laptop", None, {})
-    web = config.create_account("claude", "web", "Web", None, {})
-
-    grouped = CliRunner().invoke(main, ["provider", "group", laptop.id, web.id])
-    assert grouped.exit_code == 0
-    assert "Grouped 2 account(s)" in grouped.output
-    laptop_after = config.get_account(laptop.id)
-    web_after = config.get_account(web.id)
-    assert laptop_after.group_id is not None
-    assert laptop_after.group_id == web_after.group_id
-
-    ungrouped = CliRunner().invoke(main, ["provider", "ungroup", laptop.id])
-    assert ungrouped.exit_code == 0
-    assert config.get_account(laptop.id).group_id is None
-    assert config.get_account(web.id).group_id == laptop_after.group_id
-# end def
-
-
-def test_group_requires_at_least_two_accounts(tmp_path: Path, monkeypatch) -> None:
-    paths = configured_paths(tmp_path, monkeypatch)
-    paths.ensure()
-    account = ConfigStore(paths).create_account("claude", "cli-usage", "Solo", None, {})
-
-    result = CliRunner().invoke(main, ["provider", "group", account.id])
-
-    assert result.exit_code != 0
+def test_legacy_group_commands_are_not_available() -> None:
+    runner = CliRunner()
+    assert runner.invoke(main, ["provider", "group"]).exit_code != 0
+    assert runner.invoke(main, ["provider", "ungroup"]).exit_code != 0
 # end def
 
 
@@ -789,7 +752,7 @@ def test_add_does_not_create_the_account_when_the_verification_fetch_fails(
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
     assert result.exit_code != 0
-    assert "first fetch failed" in str(result.exception)
+    assert "setup fetch failed" in str(result.exception)
     assert ConfigStore(paths).list_accounts() == []
 # end def
 

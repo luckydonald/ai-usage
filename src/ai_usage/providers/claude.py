@@ -28,6 +28,8 @@ from ai_usage.providers.base import (
     DiscoveredAccount,
     Provider,
     ProviderError,
+    ProviderLoginError,
+    canonical_login,
 )
 from ai_usage.providers.claude_cli import (
     canonical_claude_profile_dir,
@@ -291,6 +293,14 @@ class ClaudeWebUsageProvider(Provider):
     )
     login_url = "https://claude.ai/login"
 
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        email = canonical_login(
+            result.identity.email if result.identity else None, self.display_name
+        )
+        organization = canonical_login(account.options.get("org_id"), self.display_name)
+        return email if email == organization else f"{email}|{organization}"
+    # end def
+
     async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
         del options
         # pywebview must run on the main thread (it raises WebViewException otherwise), so this
@@ -470,6 +480,11 @@ class ClaudeStatusProvider(Provider):
         ConfigurationField(key="relay_file", label="Status relay file", kind="path"),
         ConfigurationField(key="stale_seconds", label="Relay staleness", kind="integer", default=120),
     )
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del account, result
+        raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
+    # end def
 
     async def discover(self) -> list[DiscoveredAccount]:
         settings = Path.home() / ".claude" / "settings.json"

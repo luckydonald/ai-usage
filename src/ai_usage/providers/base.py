@@ -14,6 +14,19 @@ class ProviderError(RuntimeError):
 # end class
 
 
+class ProviderLoginError(ProviderError):
+    pass
+# end class
+
+
+def canonical_login(value: object, provider_name: str) -> str:
+    if not isinstance(value, str) or not (login := value.strip()):
+        raise ProviderLoginError(f"{provider_name} could not determine the account login")
+    # end if
+    return login.casefold()
+# end def
+
+
 class ConfigurationField(BaseModel):
     key: str
     label: str
@@ -56,6 +69,12 @@ class Provider(ABC):
         return {}
     # end def
 
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        """Return the canonical login that identifies this provider configuration's real account."""
+        del account, result
+        raise NotImplementedError
+    # end def
+
     @abstractmethod
     async def fetch(
         self,
@@ -65,4 +84,3 @@ class Provider(ABC):
         raise NotImplementedError
     # end def
 # end class
-

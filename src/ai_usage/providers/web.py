@@ -7,7 +7,7 @@ import httpx
 
 from ai_usage.icons import IconRef
 from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
-from ai_usage.providers.base import ConfigurationField, Provider, ProviderError
+from ai_usage.providers.base import ConfigurationField, Provider, ProviderError, ProviderLoginError
 
 
 class PrivateWebProvider(Provider):
@@ -18,6 +18,11 @@ class PrivateWebProvider(Provider):
         ConfigurationField(key="metric_key", label="Metric key", default="usage"),
         ConfigurationField(key="metric_name", label="Metric name", default="Usage"),
     )
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del account, result
+        raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
+    # end def
 
     async def fetch(
         self,
@@ -65,4 +70,3 @@ class CopilotEntitlementsProvider(PrivateWebProvider):
     display_name = "Copilot private entitlement API"
     icon = IconRef(set="solid", name="key")
 # end class
-
