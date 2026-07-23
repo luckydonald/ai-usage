@@ -74,7 +74,13 @@ Open <http://localhost:4458>. Running `ai-usage` without a subcommand prints a s
 
 ## Add GitHub Copilot
 
-The Copilot collector reads monthly AI-credit usage from GitHub's billing API. Put a suitable GitHub token in a private JSON file so it does not appear in shell history:
+The recommended collector reuses the OAuth token the Copilot CLI already stores in `~/.copilot/config.json` (or `COPILOT_GITHUB_TOKEN`/`GH_TOKEN`/`GITHUB_TOKEN`) to read premium-request quota — no extra token to create or store:
+
+```shell
+ai-usage provider add copilot statusline --no-input
+```
+
+Alternatively, the billing-API collector reads monthly AI-credit usage from GitHub's billing API. Put a suitable GitHub token in a private JSON file so it does not appear in shell history:
 
 ```json
 {"token": "github_pat_..."}
@@ -139,6 +145,7 @@ Interactive removal asks whether the history should also be deleted and defaults
 | Codex | `cli-status` | Supported | Parses `codex /status`; invokes it twice to refresh stale output. |
 | Claude | `statusline` | Recommended | Uses the lightweight status relay and falls back to `claude /usage`. |
 | Claude | `cli-usage` | Supported | Always parses `claude /usage` in a pseudo-terminal. |
+| Copilot | `statusline` | Recommended | Reuses the Copilot CLI's own local token to read premium-request quota; no separate token needed. |
 | Copilot | `github-api` | Supported | Reads GitHub AI-credit billing usage with an encrypted token. |
 | Codex/Claude | `web` | Experimental | Generic private JSON endpoint adapter; private APIs may change without notice. |
 | Copilot | `entitlements` | Experimental | Generic private entitlement endpoint adapter. |
