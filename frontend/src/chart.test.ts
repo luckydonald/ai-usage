@@ -143,6 +143,19 @@ describe("noteTooltipHtml", () => {
     expect(html).not.toContain(" → now");
   });
 
+  it("renders as a small pill/badge rather than a plain full-width tooltip line", () => {
+    const html = noteTooltipHtml({
+      service: "codex",
+      account_id: "account",
+      text: "+50% weekly limits promo",
+      start: "2026-07-01T00:00:00Z",
+      end: null,
+    });
+    expect(html).toContain("display:inline-block");
+    expect(html).toContain("border-radius:999px");
+    expect(html).toContain("font-size:.75em");
+  });
+
   it("renders markdown formatting and links in the note text", () => {
     const html = noteTooltipHtml({
       service: "codex",
