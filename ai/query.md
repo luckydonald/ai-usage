@@ -2367,3 +2367,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ files long messy. I want split: provider.claude.api, provider.claude.status, etc. So class -> class in file
 
+❯ No sub-packages, no underscore
+
