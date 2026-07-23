@@ -31,6 +31,7 @@ describe("buildSankeyData", () => {
     const metricNodes = nodes.filter((node) => node.kind === "metric");
     expect(metricNodes).toHaveLength(1);
     expect(metricNodes[0]?.refId).toBe("five-hours");
+    expect(metricNodes[0]?.displayName).toBe("Five hours");
 
     const metricLinks = links.filter((link) => link.target === metricNodes[0]?.name);
     expect(metricLinks).toHaveLength(2);
@@ -53,31 +54,18 @@ describe("buildSankeyData", () => {
     expect(links).toHaveLength(6);
   });
 
-  it("renders the active/inactive signal on the label chip, not the node bar", () => {
-    // The node bar's own color depends on link partners too (see the link-opacity test below),
-    // so it's an unreliable "is this node selected" signal on its own — the chip label carries
-    // that signal instead, via its own solid background driven only by this node's active state.
+  it("never shows echarts' own node label (the Chip overlay draws the text/icon instead)", () => {
     const tree: FunnelBranch[] = [{ service: "codex", providers: [{ provider: "app-server", accounts: [] }] }];
-
-    const activeNode = buildSankeyData(tree, { ...noActive, services: ["codex"] }, false).nodes.find((node) => node.kind === "service");
-    const inactiveNode = buildSankeyData(tree, noActive, false).nodes.find((node) => node.kind === "service");
-
-    const chip = (node: typeof activeNode) => node?.label?.rich.name as { backgroundColor: string; color: string };
-    expect(chip(activeNode).backgroundColor).toBe("#6c0de9");
-    expect(chip(activeNode).color).toBe("#ffffff");
-    expect(chip(inactiveNode).backgroundColor).toBe("#f4f2fb");
-    expect(chip(inactiveNode).color).toBe("#16101f");
-
-    // The node bar itself is the same low-key outline color regardless of active state.
-    expect(activeNode?.itemStyle.color).toBe(inactiveNode?.itemStyle.color);
+    const node = buildSankeyData(tree, noActive, false).nodes.find((n) => n.kind === "service");
+    expect(node?.label).toEqual({ show: false });
   });
 
-  it("uses the dark-mode chip colors when `dark` is true", () => {
+  it("uses the same low-key node bar style regardless of dark mode's role vs. active state", () => {
     const tree: FunnelBranch[] = [{ service: "codex", providers: [{ provider: "app-server", accounts: [] }] }];
-    const node = buildSankeyData(tree, { ...noActive, services: ["codex"] }, true).nodes.find((n) => n.kind === "service");
-    const chip = node?.label?.rich.name as { backgroundColor: string };
-    expect(node?.itemStyle.color).toBe("#241a3d");
-    expect(chip.backgroundColor).toBe("#6c0de9");
+    const light = buildSankeyData(tree, noActive, false).nodes.find((n) => n.kind === "service");
+    const dark = buildSankeyData(tree, noActive, true).nodes.find((n) => n.kind === "service");
+    expect(light?.itemStyle.color).toBe("#f4f2fb");
+    expect(dark?.itemStyle.color).toBe("#241a3d");
   });
 
   it("only marks a link's color as active when both endpoints are active, but never fully transparent", () => {
@@ -90,25 +78,17 @@ describe("buildSankeyData", () => {
     expect(onlyOneActive?.lineStyle.opacity).toBe(0.15);
   });
 
-  it("attaches a resolved icon URL for a service/provider that has one in the catalog", () => {
+  it("attaches the raw icon ref for a service/provider that has one in the catalog, for the overlay to resolve", () => {
     const tree: FunnelBranch[] = [{ service: "codex", providers: [{ provider: "app-server", accounts: [] }] }];
     const icon = { name: "codex-icon", set: "brands", pack: "fontawesome-free-pack", version: "latest" };
 
     const { nodes } = buildSankeyData(tree, noActive, false, { codex: icon }, {});
     const serviceNode = nodes.find((node) => node.kind === "service");
+    const providerNode = nodes.find((node) => node.kind === "provider");
+    const accountAndMetricNodes = nodes.filter((node) => node.kind === "account" || node.kind === "metric");
 
-    expect(serviceNode?.label?.formatter).toContain("{icon|}");
-    expect((serviceNode?.label?.rich.icon as { backgroundColor: { image: string } }).backgroundColor.image).toBe(
-      "/img/icons/fontawesome-free-pack/latest/brands/codex-icon.svg",
-    );
-  });
-
-  it("still renders the label chip pill when a node has an icon", () => {
-    const tree: FunnelBranch[] = [{ service: "codex", providers: [{ provider: "app-server", accounts: [] }] }];
-    const icon = { name: "codex-icon", set: "brands", pack: "fontawesome-free-pack", version: "latest" };
-
-    const { nodes } = buildSankeyData(tree, { ...noActive, services: ["codex"] }, false, { codex: icon }, {});
-    const chip = nodes.find((node) => node.kind === "service")?.label?.rich.name as { backgroundColor: string };
-    expect(chip.backgroundColor).toBe("#6c0de9");
+    expect(serviceNode?.icon).toEqual(icon);
+    expect(providerNode?.icon).toBeUndefined();
+    expect(accountAndMetricNodes.every((node) => node.icon === undefined)).toBe(true);
   });
 });

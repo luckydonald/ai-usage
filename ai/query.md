@@ -1835,3 +1835,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ The contrast in both bright/dark mode of the funnel when not selected are way to low. Additionally there will only be background if the connecting side is selected as well, and even then it can be split as only parts of it would be selected, so that white text simply doesn't work at all. Please re-introduce the chips from before into that diagram, so they still look clickable, and the background color is an non-issue.
 
+❯ The icons should be part of that button as before.
+
