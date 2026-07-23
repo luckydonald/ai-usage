@@ -1839,3 +1839,75 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /plan a) the desected connections (the "background") is not visible, it should be, just not as active colored item. b) When I select a provider (e.g. _claude_) on the left, I would expect it's flow to the right to be fully selected (or deselected, follow the direction) - so all service types, all specific configured services of that (of _claude_), and all metrics that includes. If I select a parser type (i.e. _claude_'s _status line_, or _codex_'s _app server_), I expect both leftwards and rightwards selection (ensuring to the left that _codex_ is enabled/disabled as well, and to the right that it's configurations are enabled/disabled as well). For that the metrics should enable if no metric for one of those configurations is enabled (a configuration lacks any enabled metric -> enable all metrics this metric has). The goal here is to smartly show you that item if it would otherwise hidden, it shall now be shown; however if only a few metrics are selected (metrics are limited), then as long as we can display data we shouldn't enable them. For the disabling route, if that service was the last active one of that provider, the provider can be disabled, too. To the right, it should disable it's services. If a metric now no longer connects to anything (has no reason to stay on, disable it, too). If you deselect a config (3rd column), check left and right if a service parser or a metric no longer is connected to any config, and in that case disable those, with the common recursive way. For activating, it should make sure it's provider-parser is active, and for metrics use the previously discussed enable-only-if-nothing-would-be-displayed strategy. Last (4th) column, the metrics: Enabling with no config currently active it follows the enable-only-if-nothing-would-be-displayed strategy as well, enabling all it's configs, and with that parsers and recursively their provider. If there's a already an active config which would feed us (e.g. we enable weekly, and claude provides both 5h and 7d, and can be enabled because 5h was enabled, and now we can "establish" the some-claude-config to 7d metric) we do not need to auto-enable anything. The disable works analougus as disables before, at each step backwards to the providers recursively checking it it would leave any column without anything enabled, and then disabling those too instead of just the metric itself.
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Right now, empty filter lists mean "show everything" (unrestricted); clicking a chip narrows to that value. So "ensure X is active" leftward (e.g. clicking a provider ensures its service is included) could either (A) only add the ancestor to its filter list when that list is already non-empty AND excludes it — same conditional rule as the metric-side "only enable if otherwise hidden" — or (B) unconditionally add it every time, even when the ancestor list was empty (which would immediately narrow that list and could hide unrelated siblings that had nothing to do with this click, e.g. clicking claude's statusline provider while nothing else is selected would suddenly restrict services to just claude, hiding nothing extra right now but changing future clicks' baseline). Which matches your intent?
+>> 2. When toggling a whole SERVICE (leftmost column, e.g. "claude") ON, its providers and accounts underneath always get fully activated (structural, unconditional). For the METRICS reached this way, should it use the same "smart" per-account rule (only auto-enable an account's metrics if the metrics filter is already restricted and excludes all of them), or literally force-enable every reachable metric regardless?
+>> 3. For disabling (removing a chip), the described behavior across all your examples reduces to one general rule: after removing a value, repeatedly check each of the 4 filter dimensions that's still non-empty (restricted) — if a listed value there has zero remaining active neighbors in its immediately adjacent column(s) (checking only actual data connections, treating an empty adjacent filter as "everything there still counts active"), drop it too, and keep repeating until nothing more changes. Does that match what you had in mind, or did you intend something more specific per column that this general rule wouldn't capture?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Leftward ensure** (1/3) <kbd>Single Select</kbd><br>
+>> Right now, empty filter lists mean "show everything" (unrestricted); clicking a chip narrows to that value. So "ensure X is active" leftward (e.g. clicking a provider ensures its service is included) could either (A) only add the ancestor to its filter list when that list is already non-empty AND excludes it — same conditional rule as the metric-side "only enable if otherwise hidden" — or (B) unconditionally add it every time, even when the ancestor list was empty (which would immediately narrow that list and could hide unrelated siblings that had nothing to do with this click, e.g. clicking claude's statusline provider while nothing else is selected would suddenly restrict services to just claude, hiding nothing extra right now but changing future clicks' baseline). Which matches your intent?
+> - [ ] 1\. Conditional only (Recommended)
+>   - _Only touch the ancestor's filter list if it's already restricted and doesn't include this node — avoids ever narrowing a previously-unrestricted dimension as a side effect. Matches the "only show if otherwise hidden" goal you stated, applied symmetrically in both directions._
+>   - ```
+>     Nothing selected anywhere.
+>     Click "claude → statusline" (provider):
+>       - services filter: stays [] (unrestricted) — codex still shows fine
+>       - providers filter: ["statusline"]
+>
+>     Now ALSO click "codex → app-server":
+>       - services filter: still [] — both still show
+>       - providers filter: ["statusline","app-server"]
+>     ```
+> - [ ] 2\. Unconditional add
+>   - _Always add the ancestor value to its filter list on activation, even from an empty/unrestricted list — matches the literal "ensure codex is enabled" wording most directly, but narrows dimensions proactively._
+>   - ```text
+>     Nothing selected anywhere.
+>     Click "claude → statusline" (provider):
+>       - services filter: ["claude"]  ← narrowed immediately
+>       - providers filter: ["statusline"]
+>
+>     Now click "codex → app-server":
+>       - services filter: ["claude","codex"] (still needs union, not replace)
+>       - providers filter: ["statusline","app-server"]
+>     ```
+> - [x] 3\. _Notes:_
+>   - > Actually, the default (everything) will now be everything selected, once everything is deselected, nothing will be shown (instead a warning that you have not selected anything will be shown; shortly deselecting everything may be useful if you want to disable one and enable the other, briefly having nothing selected. Any "correction" would interfere with that and make the order (select the other first then deselect the first) important, which is annyoing).
+>
+>> **Service cascade** (2/3) <kbd>Single Select</kbd><br>
+>> When toggling a whole SERVICE (leftmost column, e.g. "claude") ON, its providers and accounts underneath always get fully activated (structural, unconditional). For the METRICS reached this way, should it use the same "smart" per-account rule (only auto-enable an account's metrics if the metrics filter is already restricted and excludes all of them), or literally force-enable every reachable metric regardless?
+> - [ ] 1\. Same smart rule everywhere (Recommended)
+>   - _Service → provider → account cascade is unconditional (structural), but metrics always use the conditional "only enable if otherwise hidden" rule — one consistent rule for the metric dimension no matter which column triggered the cascade._
+>   - ```
+>     Click "claude" (service), metrics filter already ["seven-days"] (restricted):
+>       - claude's accounts each get checked: if an account has NO metric in ["seven-days"] active, add ALL its metrics; if it already has "seven-days", leave metrics alone.
+>     ```
+> - [x] 2\. Always force-enable all metrics
+>   - _Selecting a whole service is a big, explicit action, so it unconditionally adds every metric_key reachable under it to the metrics filter, even if the metrics filter already showed some of that data._
+>   - ```text
+>     Click "claude" (service), metrics filter already ["seven-days"] (restricted):
+>       - metrics filter becomes ["seven-days","five-hours"] regardless of whether "seven-days" already covered an active account.
+>     ```
+> - [ ] 3\. _Notes: Add notes on this design._
+>
+>> **Disable rule** (3/3) <kbd>Single Select</kbd><br>
+>> For disabling (removing a chip), the described behavior across all your examples reduces to one general rule: after removing a value, repeatedly check each of the 4 filter dimensions that's still non-empty (restricted) — if a listed value there has zero remaining active neighbors in its immediately adjacent column(s) (checking only actual data connections, treating an empty adjacent filter as "everything there still counts active"), drop it too, and keep repeating until nothing more changes. Does that match what you had in mind, or did you intend something more specific per column that this general rule wouldn't capture?
+> - [x] 1\. Yes, that general rule (Recommended)
+>   - _One recursive orphan-pruning pass covers every disable case you described (service↔provider, provider↔account, account↔metric) without bespoke per-column logic._
+>   - ```
+>     Disable account "org-a" (its provider "web" had only org-a active → provider becomes orphaned → removed;
+>     if that was claude's only active provider → service "claude" removed too;
+>     any metric whose only active account was org-a → removed too).
+>     ```
+> - [ ] 2\. Something more specific
+>   - _Let me describe the exact per-column difference I have in mind instead._
+> - [ ] 3\. _Notes: Add notes on this design._
+>
+> </details>
+>
+
