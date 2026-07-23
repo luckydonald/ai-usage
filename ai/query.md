@@ -1831,3 +1831,7 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`143769` chars, `141 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/971b03a1-1dea-4cf5-b748-8bc63a1c039a/tasks/aecd35808ff67d1f1.output)
 > - `11` tools, `36839` tokens, `0.843083 s`
 
+❯ The contrast in both bright/dark mode of the funnel when not selected are way to low.
+
+❯ The contrast in both bright/dark mode of the funnel when not selected are way to low. Additionally there will only be background if the connecting side is selected as well, and even then it can be split as only parts of it would be selected, so that white text simply doesn't work at all. Please re-introduce the chips from before into that diagram, so they still look clickable, and the background color is an non-issue.
+
