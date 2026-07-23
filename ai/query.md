@@ -2469,3 +2469,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /plan Inspect `~/git/moritzfl/llm-subscription-usage-intellij` for parsers of AI agent usage, collect parser as plan items
 
+❯ /cavecrew
+
