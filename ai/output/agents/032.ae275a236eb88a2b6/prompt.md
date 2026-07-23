@@ -1,0 +1,14 @@
+In the repo /home/user/git/luckydonald/ai-usage (frontend Vue app), I'm investigating a UX issue with the filter funnel diagram component.
+
+Read these files fully and report back:
+1. /home/user/git/luckydonald/ai-usage/frontend/src/types.ts — especially `Filters`, `Catalog`, `CatalogMetric` (or similarly named), `FunnelBranch`, `FunnelProvider`, `FunnelAccount`, `FunnelMetric` interfaces. Quote their exact shapes.
+2. /home/user/git/luckydonald/ai-usage/frontend/src/App.vue — specifically the `serviceProviderTree` computed property (builds the nested funnel tree), `pruneStoredFilters`, `loadStoredFilters`, and wherever `Filters.metrics` / `filters.metrics` is actually used to filter/request series data (look for where filters get sent to the API, e.g. building query params for `/api/v1/series`).
+3. /home/user/git/luckydonald/ai-usage/frontend/src/components/FilterFunnel.vue and its test file FilterFunnel.test.ts.
+4. Backend: search for where `metric_key` is defined/generated (grep `metric_key` in src/ai_usage/*.py) — is `metric_key` (e.g. "five-hours", "seven-days") the SAME string across different accounts of the same provider, or does it get namespaced per-account?
+5. Check the API endpoint (probably in src/ai_usage or api.py) that returns the catalog (/api/v1/catalog or similar) — does the metric filter (`metric` query param) filter by metric_key alone (ignoring which account it belongs to), or is it scoped per account/provider combo?
+
+I specifically want to answer: if two different accounts (e.g. two Claude orgs) both have a metric with `metric_key: "five-hours"`, is `filters.metrics` a flat list of metric_key strings (so toggling "five-hours" under account A also affects account B's "five-hours" data in the actual filtering applied to the chart), or is metric selection somehow scoped per-account already?
+
+Also report: in `FilterFunnel.vue`'s current 4-level tree (service -> provider -> account -> metric), for a case with 2 accounts under the same service+provider, each having identical metric_key sets (e.g. both have "five-hours" and "seven-days"), does the tree render 2 separate metric chip nodes with the same label ("Five hours" appearing twice, once under each account)? Confirm by reading `serviceProviderTree`'s construction logic exactly (does it build one FunnelAccount node per account with its own `metrics: FunnelMetric[]` list, meaning yes — duplicate leaf chips render, one under each account, for metrics that share the same key)?
+
+Report concisely (under 400 words) with exact code snippets/line numbers for the key logic (tree building, filter application, metric_key generation).
