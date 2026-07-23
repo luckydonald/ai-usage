@@ -2311,3 +2311,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. How should the implementation handle duplicate `(service, primary account, organisation, provider)` configurations?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Duplicate configs** (1/1) <kbd>Single Select</kbd><br>
+>> How should the implementation handle duplicate `(service, primary account, organisation, provider)` configurations?
+> - [ ] 1\. Reject new; expose legacy (Recommended)
+>   - _Prevent new duplicates after login verification; retain existing duplicates as distinct UUID-badged rows so no history is hidden._
+> - [ ] 2\. Reject and require merge
+>   - _Block the frontend/data migration until users merge or remove every duplicate configuration._
+> - [ ] 3\. Allow silently
+>   - _Keep creating duplicates and aggregate them under one provider, losing a one-to-one path._
+> - [x] 4\. _Type something:_
+>   - > Reject new; expose legacy in logs as warning; display them both in the UI without giving that a special case - so yeah display "duplicates".
+>
+> </details>
+>
+
