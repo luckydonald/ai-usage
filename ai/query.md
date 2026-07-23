@@ -1766,3 +1766,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ Visually distinguish the currently active promotions/states in the graph hover overlay. It shall be way smaller, too. It's just a status effect active, so not more than a banner or bubble.
 
+❯ Extract the relative formatted date + with the absolute as tooltip to be a vue componet of it's own. Separate components are good.
+

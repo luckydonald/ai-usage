@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { windowTooltipHtml } from "../chart";
+import { computeWindowStats, type WindowStats } from "../chart";
+import { formatDuration } from "../time";
 import type { GraphSeries, GraphWindow } from "../types";
+import RelativeTime from "./RelativeTime.vue";
 
 const props = defineProps<{
   series: GraphSeries[];
   accountLabels: Record<string, string>;
 }>();
 
+interface EntryDetails {
+  window: GraphWindow;
+  stats: WindowStats;
+}
+
 interface PanelEntry {
   item: GraphSeries;
-  window: GraphWindow | undefined;
+  details: EntryDetails | undefined;
 }
 
 interface ServicePanel {
@@ -29,27 +36,24 @@ const panels = computed<ServicePanel[]>(() => {
     items.push(item);
     byAccount.set(key, items);
   }
+  const now = new Date();
   return [...byAccount.values()].map((items) => {
     const [first] = items;
     return {
       service: first!.service,
       accountId: first!.account_id,
       accountLabel: props.accountLabels[first!.account_id] ?? first!.account_id.slice(0, 8),
-      entries: items.map((item) => ({
-        item,
-        window: item.windows.find((window) => window.current) ?? item.windows.at(-1),
-      })),
+      entries: items.map((item) => {
+        const window = item.windows.find((entry) => entry.current) ?? item.windows.at(-1);
+        const details = window ? { window, stats: computeWindowStats(item.points, window, now) } : undefined;
+        return { item, details };
+      }),
     };
   });
 });
 
 function entryKey(entry: PanelEntry): string {
   return `${entry.item.account_id}::${entry.item.metric_key}`;
-}
-
-function statsHtml(entry: PanelEntry): string {
-  if (!entry.window) return "No window data yet.";
-  return windowTooltipHtml(entry.item, entry.window, new Date(), props.accountLabels, false);
 }
 </script>
 
@@ -59,7 +63,23 @@ function statsHtml(entry: PanelEntry): string {
       <h2>{{ panel.service }} <span class="account-chip">{{ panel.accountLabel }}</span></h2>
       <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric">
         <h3>{{ entry.item.metric_name }}</h3>
-        <p v-html="statsHtml(entry)" />
+        <template v-if="entry.details">
+          <p><RelativeTime :at="new Date(entry.details.window.start)" /> → <RelativeTime :at="new Date(entry.details.window.end)" /></p>
+          <p>Peak usage: {{ entry.details.stats.maximumPercentage.toFixed(1) }}%</p>
+          <p v-if="entry.details.stats.burnRatePerHour !== null">Burn rate: {{ entry.details.stats.burnRatePerHour.toFixed(1) }}%/h</p>
+          <p v-if="entry.details.stats.perfectLanding">Right on spot!</p>
+          <template v-else-if="entry.details.window.exhausted_from && entry.details.stats.exhaustedAfterMs !== null && entry.details.stats.blockedForMs !== null">
+            <p>Hit 100% after {{ formatDuration(entry.details.stats.exhaustedAfterMs) }}</p>
+            <p>Blocked for {{ formatDuration(entry.details.stats.blockedForMs) }}</p>
+          </template>
+          <p v-else-if="entry.details.stats.remainingPercentageAtEnd !== null">{{ entry.details.stats.remainingPercentageAtEnd.toFixed(1) }}% remaining at window end</p>
+          <template v-else-if="entry.details.stats.projectedRemainingPercentageAtEnd !== null">
+            <p>Projected to land at {{ (100 - entry.details.stats.projectedRemainingPercentageAtEnd).toFixed(1) }}%</p>
+            <p>{{ entry.details.stats.projectedRemainingPercentageAtEnd.toFixed(1) }}% of your limit would be left to use</p>
+          </template>
+          <p v-else-if="entry.details.stats.projectedExhaustedAt !== null">At this rate, you'll hit 100% around <RelativeTime :at="new Date(entry.details.stats.projectedExhaustedAt)" /></p>
+        </template>
+        <p v-else>No window data yet.</p>
       </div>
     </div>
   </section>
