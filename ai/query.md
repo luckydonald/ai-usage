@@ -2265,3 +2265,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. When an organisation has multiple configurations for the same provider, how should the UUID be presented?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Config UUID** (1/1) <kbd>Single Select</kbd><br>
+>> When an organisation has multiple configurations for the same provider, how should the UUID be presented?
+> - [ ] 1\. Provider badge + expand (Recommended)
+>   - _Show a compact config UUID badge under each provider, expanding into separate rows only when multiple configs share that provider._
+> - [ ] 2\. Always a tree level
+>   - _Always render provider → config UUID → metric, making provenance explicit at the cost of a deeper filter diagram._
+> - [ ] 3\. Provider metadata only
+>   - _Show UUIDs in tooltips/details but keep one provider node even if several configs contribute._
+> - [x] 4\. _Type something:_
+>   - > Is this for the filter selection or the info panels?
+>
+> </details>
+>
+
