@@ -84,7 +84,7 @@ class _SeriesRequestLog:
 
 
 @pytest.mark.asyncio
-async def test_service_filter_selection_survives_a_page_reload(tmp_path, monkeypatch) -> None:
+async def test_service_filter_deselection_survives_a_page_reload(tmp_path, monkeypatch) -> None:
     skip_unless_frontend_built()
 
     monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
@@ -103,24 +103,29 @@ async def test_service_filter_selection_survives_a_page_reload(tmp_path, monkeyp
             try:
                 page = await browser.new_page()
                 await page.goto(base_url)
+                # Everything is active by default now (empty filter lists mean "nothing
+                # selected", not "unrestricted" any more) — clicking an already-active chip
+                # disables it instead of narrowing to just that one.
                 codex_chip = page.locator(".chip").filter(has_text="codex").first
                 await codex_chip.wait_for(state="visible")
+                assert "active" in (await codex_chip.get_attribute("class") or "")
                 await codex_chip.click()
-                await page.wait_for_function("document.querySelectorAll('.chip.active').length > 0")
+                await page.wait_for_function(
+                    "!Array.from(document.querySelectorAll('.chip')).find(el => el.textContent.includes('codex'))?.classList.contains('active')"
+                )
 
                 stored = await page.evaluate("localStorage.getItem('ai-usage-filters')")
                 assert stored is not None
-                assert json.loads(stored)["services"] == ["codex"]
+                assert json.loads(stored)["services"] == ["claude"]
 
                 requests = _SeriesRequestLog(page)
                 await page.reload()
                 await requests.wait_for_settled(page)
-                assert requests.last_query().get("service") == ["codex"]
+                assert requests.last_query().get("service") == ["claude"]
 
                 codex_chip = page.locator(".chip").filter(has_text="codex").first
                 await codex_chip.wait_for(state="visible")
-                await page.wait_for_function("document.querySelectorAll('.chip.active').length > 0")
-                assert "active" in (await codex_chip.get_attribute("class") or "")
+                assert "active" not in (await codex_chip.get_attribute("class") or "")
             finally:
                 await browser.close()
             # end try
@@ -130,12 +135,13 @@ async def test_service_filter_selection_survives_a_page_reload(tmp_path, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_stale_filter_from_an_older_catalog_is_pruned_instead_of_hiding_everything(tmp_path, monkeypatch) -> None:
+async def test_stale_filter_value_from_an_older_catalog_is_pruned_without_hiding_the_rest(tmp_path, monkeypatch) -> None:
     skip_unless_frontend_built()
 
     monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
     paths = replace(temporary_paths(tmp_path), frontend=FRONTEND_DIST)
     _write_account(paths, "claude", "web", "acct-web", "Claude web")
+    _write_account(paths, "codex", "app-server", "acct-codex", "Codex app server")
 
     async with running_app(paths) as (runtime, base_url):
         await runtime.initialize()
@@ -148,20 +154,25 @@ async def test_stale_filter_from_an_older_catalog_is_pruned_instead_of_hiding_ev
             try:
                 page = await browser.new_page()
                 await page.goto(base_url)
-                # A service that no longer exists in this catalog (e.g. an account removed since
-                # the value was stored) must not silently filter the chart down to nothing.
+                # An otherwise-fully-selected, explicit filter set (as if the user had already
+                # customized it) plus one stale value that no longer exists in this catalog (e.g.
+                # an account removed since it was stored) — the stale value must get scrubbed
+                # without zeroing out the rest of the (still valid, still explicit) selection.
                 await page.evaluate(
-                    "localStorage.setItem('ai-usage-filters', JSON.stringify("
-                    "{services: ['long-removed-service'], providers: [], accounts: [], metrics: []}))"
+                    "localStorage.setItem('ai-usage-filters', JSON.stringify({"
+                    "services: ['claude', 'codex', 'long-removed-service'],"
+                    "providers: ['web', 'app-server'],"
+                    "accounts: ['acct-web', 'acct-codex'],"
+                    "metrics: ['five-hours']}))"
                 )
 
                 requests = _SeriesRequestLog(page)
                 await page.reload()
                 await requests.wait_for_settled(page)
-                assert "service" not in requests.last_query()
+                assert set(requests.last_query().get("service", [])) == {"claude", "codex"}
 
                 stored = await page.evaluate("localStorage.getItem('ai-usage-filters')")
-                assert json.loads(stored)["services"] == []
+                assert set(json.loads(stored)["services"]) == {"claude", "codex"}
             finally:
                 await browser.close()
             # end try
