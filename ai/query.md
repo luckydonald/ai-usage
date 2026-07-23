@@ -2146,3 +2146,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › `user_identity` function returns only `str`, not `None`;  A provider that cannot determine a login raises a exception accordingly (i.e. if it's not implemented at all, an NotImplemented exception).
 
+› Should we keep the _graph/API synthetic-series grouping_ stuff around to act on the same `login`?
+
