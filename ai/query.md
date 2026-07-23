@@ -2412,3 +2412,24 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /plan it
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Split already done + tests green. What should plan mode target now?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Plan target** (1/1) <kbd>Single Select</kbd><br>
+>> Split already done + tests green. What should plan mode target now?
+> - [ ] 1\. Commit the split
+>   - _Plan a commit for the claude provider split (new package + updated tests)_
+> - [ ] 2\. Something else
+>   - _Different task — describe via Other_
+> - [x] 3\. _Type something:_
+>   - > No plan then.
+>
+> </details>
+>
+
