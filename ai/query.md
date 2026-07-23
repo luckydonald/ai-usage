@@ -2288,3 +2288,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. For multiple configurations of the same provider under one organisation, where should separate UUID rows appear?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Duplicate configs** (1/1) <kbd>Single Select</kbd><br>
+>> For multiple configurations of the same provider under one organisation, where should separate UUID rows appear?
+> - [ ] 1\. Both filter and panels (Recommended)
+>   - _Each config is individually selectable and gets its own metric subsection, preserving provenance everywhere._
+> - [ ] 2\. Filter only
+>   - _The filter supports exact UUID selection, while panels aggregate the provider and list contributing UUID badges._
+> - [ ] 3\. Panels only
+>   - _Panels retain separate config sections, but filters select only at provider level._
+> - [x] 4\. _Type something:_
+>   - > Basically I believe it's unneeded, as the path `Service (claude) → account (user@example.com) [→ organisation (it@company.example.net)] → provider` points to exactly one config, right?
+>
+> </details>
+>
+
