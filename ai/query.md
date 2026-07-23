@@ -2243,3 +2243,25 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Which series mode should be the dashboard default after this change?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Default view** (1/1) <kbd>Single Select</kbd><br>
+>> Which series mode should be the dashboard default after this change?
+> - [x] 1\. Detailed raw (Recommended)
+>   - _Default to the new provenance-preserving account/organisation/provider hierarchy; users may opt into the legacy merged view._
+> - [ ] 2\. Legacy merged
+>   - _Keep today’s synthesized comparison as the default while users opt into detailed raw series._
+> - [ ] 3\. Remember-only
+>   - _Use the user’s saved choice when present; otherwise no fixed product default._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
