@@ -2148,3 +2148,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Should we keep the _graph/API synthetic-series grouping_ stuff around to act on the same `login`?
 
+› Question answered.
+> <details><summary>
+>
+>> 1. How should the plan handle the existing synthetic-series machinery?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Series grouping** (1/1) <kbd>Single Select</kbd><br>
+>> How should the plan handle the existing synthetic-series machinery?
+> - [ ] 1\. Remove now; redesign later (Recommended)
+>   - _Delete the default grouping path now; a later account-summary view can introduce a provenance-preserving aggregate contract._
+> - [ ] 2\. Keep as opt-in API
+>   - _Retain/refactor it behind an explicit `group_by=login` API option, separate from normal config-level series._
+> - [ ] 3\. Keep internal only
+>   - _Leave the helper code unused for a later frontend feature, without exposing it in the API._
+> - [x] 4\. _Type something:_
+>   - > But that would make sense to keep the current UI as is, right? We don't have grouping per account yet.
+>
+> </details>
+>
+
