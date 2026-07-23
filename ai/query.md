@@ -1915,3 +1915,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › when I look at the `ACCOUNT` column of `ai-usage provider ls`, I get the uuid we set for that config file, yes? Not the actual account username of the account subscription? I would rather see that, and possibly a `CONFIG` column with that uuid.
 
+› Question answered.
+> <details><summary>
+>
+>> 1. When a provider has not reported an identity yet (or cannot report one), what should `ACCOUNT` display?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **No identity** (1/1) <kbd>Single Select</kbd><br>
+>> When a provider has not reported an identity yet (or cannot report one), what should `ACCOUNT` display?
+> - [ ] 1\. Use config name (Recommended)
+>   - _Show the existing human label, with CONFIG still providing the stable UUID for every row._
+> - [x] 2\. Show a dash
+>   - _Make missing provider identity explicit, while CONFIG remains the only identifier._
+>   - > the name of the config shall be no longer displayed. Going forward I want to only identify them (visually) by provider-subtype + account. So I can have an api and local scraper for the same claude account, but on a long term they would understood as one when displaying (basically _then_ merging them, **but never merging the data** which shall stay separated in the future too - by config uuid.)
+> - [ ] 3\. Keep UUID there
+>   - _Preserve the current fallback in ACCOUNT as well as the new CONFIG column._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
