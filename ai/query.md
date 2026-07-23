@@ -1972,3 +1972,38 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Where should the required provider-specific `user_identity` contract live?
+>> 2. For configs grouped as one real-world account, how should the dashboard label them?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Identity contract** (1/2) <kbd>Single Select</kbd><br>
+>> Where should the required provider-specific `user_identity` contract live?
+> - [x] 1\. Provider adapter method (Recommended)
+>   - _Require every Provider subclass to implement a method that turns its stored identity into the single display string; each adapter chooses email, username, or no value._
+>   - > no value shall be a proper `None`, so we can handle that down the line, if so desired.
+> - [ ] 2\. Shared identity field
+>   - _Add a `user_identity` field to the common persisted account identity; providers populate it directly during fetch._
+> - [ ] 3\. Both
+>   - _Persist a common `user_identity` field and require each Provider subclass to declare/derive it via a shared method._
+> - [ ] 4\. _Type something._
+>
+>> **Group behavior** (2/2) <kbd>Single Select</kbd><br>
+>> For configs grouped as one real-world account, how should the dashboard label them?
+> - [ ] 1\. One identity label (Recommended)
+>   - _Keep the existing visual grouping; label the group with the shared user identity and retain individual UUIDs only in configuration/underlying data._
+> - [ ] 2\. Identity plus types
+>   - _Show the shared identity followed by the participating provider subtypes in the grouped label._
+> - [ ] 3\. No visual merge
+>   - _Keep separate dashboard series even when configurations identify the same user._
+> - [x] 4\. _Type something:_
+>   - > Add another column for the account - so it be: **provider** | **parser** | **config** (uuid, possibly name for now) | **account** | **metric**
+>
+> </details>
+>
+
