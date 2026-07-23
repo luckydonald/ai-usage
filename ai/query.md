@@ -2369,3 +2369,24 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ No sub-packages, no underscore
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. File naming for split (no sub-packages, no underscore)?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Naming** (1/1) <kbd>Single Select</kbd><br>
+>> File naming for split (no sub-packages, no underscore)?
+> - [ ] 1\. claudeapi.py, claudestatus.py, clauderelay.py
+>   - _Flat files in providers/, prefix 'claude', no underscore/separator_
+> - [ ] 2\. claude.py stays, add claudeApi.py style (camelCase)
+>   - _camelCase suffix instead of concatenated lowercase_
+> - [x] 3\. _Type something:_
+>   - > yes subpackage
+>
+> </details>
+>
+
