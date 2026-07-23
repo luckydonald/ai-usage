@@ -2011,3 +2011,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Gimme pro/con list
 
+› Alright, document the thoughs gone into the frontend, but do not implement that yet, just the underlaying data models/configs/cli commands.
+
