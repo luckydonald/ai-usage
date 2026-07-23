@@ -2,12 +2,19 @@ import type { FunnelBranch, IconRef } from "./types";
 
 export type NodeKind = "service" | "provider" | "account" | "metric";
 
+// The node's visual/interactive representation (icon, label, active/inactive color, click
+// target) is a real `Chip.vue` overlaid in `FilterSankey.vue` on top of the node's rendered
+// position — not drawn by echarts itself. echarts rich-text labels can't combine a solid
+// pill background with an image icon in the same token, so a genuine "icon inside the button"
+// look (matching the old chip-tree component) needs a real DOM element, not a canvas label.
 export interface SankeyNodeDatum {
   name: string;
   kind: NodeKind;
   refId: string;
+  displayName: string;
+  icon?: IconRef;
   itemStyle: { color: string; borderColor: string; borderWidth: number };
-  label?: { formatter: string; rich: Record<string, unknown> };
+  label: { show: false };
 }
 
 export interface SankeyLinkDatum {
@@ -29,57 +36,18 @@ export interface SankeyData {
   links: SankeyLinkDatum[];
 }
 
-const ACTIVE_TEXT_COLOR = "#ffffff";
-// Mirrors `--color-primary` / `--surface-muted` / `--border` / `--text` in `styles/main.scss`,
-// and the `.chip`/`.chip.active` rule built on top of them — kept as explicit hex here (not a CSS
-// var) since these values feed an echarts option object, not a stylesheet.
+// Mirrors `--color-primary` / `--surface-muted` / `--border` in `styles/main.scss` — kept as
+// explicit hex here (not a CSS var) since these values feed an echarts option object, not a
+// stylesheet. Only used for the link ribbons and the node bars' low-key outline now; the actual
+// active/inactive chip coloring lives in `Chip.vue`'s own styles via the overlay.
 const ACTIVE_COLOR = "#6c0de9";
 const INACTIVE_COLOR = { light: "#f4f2fb", dark: "#241a3d" };
-const INACTIVE_TEXT_COLOR = { light: "#16101f", dark: "#f1edfb" };
 const BORDER_COLOR = { light: "#ded9f0", dark: "#3a2c5c" };
 
-function iconUrl(icon: IconRef): string {
-  return `/img/icons/${icon.pack}/${icon.version}/${icon.set}/${icon.name}.svg`;
-}
-
-// A node's own bar/link colors depend on which OTHER nodes it's linked to being active too (see
-// `linkStyle` below), so they're a poor, easily-misread signal for "is this node itself
-// selected" — a bar can look faint even for an active node if its neighbor isn't active, and
-// look colored even for an inactive node via a partly-active ribbon passing behind it. The label
-// is rendered as an actual chip pill instead (own solid background/border/text color driven only
-// by this node's own active state, via rich-text tokens) — same colors as the plain `Chip.vue`
-// buttons this replaces, so it reads as clickable and stays legible regardless of link state.
-function chipRich(active: boolean, dark: boolean): { backgroundColor: string; borderColor: string; borderWidth: number; borderRadius: number; padding: number[]; color: string; fontWeight: number; fontSize: number } {
-  return {
-    backgroundColor: active ? ACTIVE_COLOR : dark ? INACTIVE_COLOR.dark : INACTIVE_COLOR.light,
-    borderColor: active ? ACTIVE_COLOR : dark ? BORDER_COLOR.dark : BORDER_COLOR.light,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: [6, 12],
-    color: active ? ACTIVE_TEXT_COLOR : dark ? INACTIVE_TEXT_COLOR.dark : INACTIVE_TEXT_COLOR.light,
-    fontWeight: 600,
-    fontSize: 12,
-  };
-}
-
-// The node bar itself just needs to be a visible anchor for its links, not carry the active/
-// inactive signal (that's the chip label's job now) — a low-key, always-visible outline color.
+// The node bar itself is just a low-key, always-visible anchor for its links — the overlaid
+// `Chip` carries the actual active/inactive signal and the icon, so the bar doesn't need to.
 function nodeStyle(dark: boolean): { color: string; borderColor: string; borderWidth: number } {
   return { color: dark ? INACTIVE_COLOR.dark : INACTIVE_COLOR.light, borderColor: dark ? BORDER_COLOR.dark : BORDER_COLOR.light, borderWidth: 1 };
-}
-
-function labelFor(name: string, active: boolean, dark: boolean, icon: IconRef | undefined): SankeyNodeDatum["label"] {
-  const chip = chipRich(active, dark);
-  if (!icon) {
-    return { formatter: `{name|${name}}`, rich: { name: chip } };
-  }
-  return {
-    formatter: `{icon|}{name|${name}}`,
-    rich: {
-      icon: { height: 16, width: 16, backgroundColor: { image: iconUrl(icon) } },
-      name: chip,
-    },
-  };
 }
 
 function linkStyle(active: boolean, dark: boolean): SankeyLinkDatum["lineStyle"] {
@@ -102,11 +70,11 @@ export function buildSankeyData(
   const links: SankeyLinkDatum[] = [];
 
   // Sankey identifies/links nodes by `name`, which must be unique — so `name` holds the
-  // (unique) node id, and the human-readable text is drawn separately via a custom `label`
-  // formatter instead of relying on echarts' default (which would just print `name`, i.e. the id).
-  function addNode(id: string, displayName: string, kind: NodeKind, refId: string, isActive: boolean, icon: IconRef | undefined): void {
+  // (unique) node id, and the human-readable text is drawn by the `Chip` overlay instead of an
+  // echarts label (see `SankeyNodeDatum`'s doc comment for why).
+  function addNode(id: string, displayName: string, kind: NodeKind, refId: string, icon: IconRef | undefined): void {
     if (nodes.has(id)) return;
-    nodes.set(id, { name: id, kind, refId, itemStyle: nodeStyle(dark), label: labelFor(displayName, isActive, dark, icon) });
+    nodes.set(id, { name: id, kind, refId, displayName, icon, itemStyle: nodeStyle(dark), label: { show: false } });
   }
 
   function addLink(sourceId: string, targetId: string, isActive: boolean): void {
@@ -116,24 +84,24 @@ export function buildSankeyData(
   for (const branch of tree) {
     const serviceId = `service:${branch.service}`;
     const serviceActive = active.services.includes(branch.service);
-    addNode(serviceId, branch.service, "service", branch.service, serviceActive, serviceIcons[branch.service]);
+    addNode(serviceId, branch.service, "service", branch.service, serviceIcons[branch.service]);
 
     for (const providerNode of branch.providers) {
       const providerId = `provider:${branch.service}:${providerNode.provider}`;
       const providerActive = active.providers.includes(providerNode.provider);
-      addNode(providerId, providerNode.provider, "provider", providerNode.provider, providerActive, providerIcons[providerNode.provider]);
+      addNode(providerId, providerNode.provider, "provider", providerNode.provider, providerIcons[providerNode.provider]);
       addLink(serviceId, providerId, serviceActive && providerActive);
 
       for (const accountNode of providerNode.accounts) {
         const accountId = `account:${accountNode.id}`;
         const accountActive = active.accounts.includes(accountNode.id);
-        addNode(accountId, accountNode.label, "account", accountNode.id, accountActive, undefined);
+        addNode(accountId, accountNode.label, "account", accountNode.id, undefined);
         addLink(providerId, accountId, providerActive && accountActive);
 
         for (const metric of accountNode.metrics) {
           const metricId = `metric:${metric.key}`;
           const metricActive = active.metrics.includes(metric.key);
-          addNode(metricId, metric.name, "metric", metric.key, metricActive, undefined);
+          addNode(metricId, metric.name, "metric", metric.key, undefined);
           addLink(accountId, metricId, accountActive && metricActive);
         }
       }
