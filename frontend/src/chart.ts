@@ -170,10 +170,17 @@ export function windowTooltipHtml(
   return lines.join("<br/>");
 }
 
+// Rendered as a small pill/banner (not a full tooltip row) since it's just a transient status
+// effect (a promo/notice active at the hovered time), not a metric value — it shouldn't compete
+// visually with the actual usage numbers above it.
 export function noteTooltipHtml(note: NoteRange): string {
   const start = new Date(note.start).toLocaleDateString();
   const range = note.end ? `${start} → ${new Date(note.end).toLocaleDateString()}` : `${start} → now`;
-  return [renderNoteMarkdown(note.text), range].join("<br/>");
+  return (
+    `<span style="display:inline-block;margin:2px 4px 2px 0;padding:1px 8px;border-radius:999px;` +
+    `background:rgba(250,204,21,.18);border:1px solid rgba(250,204,21,.55);font-size:.75em;line-height:1.4;">` +
+    `${renderNoteMarkdown(note.text)} <span style="opacity:.7;">(${range})</span></span>`
+  );
 }
 
 // The step-line chart holds each series flat at its last recorded value until the next
