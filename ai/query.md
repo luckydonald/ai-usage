@@ -2435,3 +2435,25 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ for claude "/usage" parser: to get account: email use /status
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Info noted: /status give account email for claude /usage parser. What now?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Next step** (1/1) <kbd>Single Select</kbd><br>
+>> Info noted: /status give account email for claude /usage parser. What now?
+> - [x] 1\. Implement it (Recommended)
+>   - _Add /status run to ClaudeStatusProvider, parse email, wire into user_identity (currently raises ProviderLoginError)_
+> - [ ] 2\. Just remember for later
+>   - _Save as project/reference memory only, no code change now_
+> - [ ] 3\. Something else
+>   - _Tell me what you actually want_
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
