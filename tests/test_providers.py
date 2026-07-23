@@ -10,8 +10,8 @@ import httpx
 import pytest
 import respx
 
-from ai_usage.models import AccountConfig, FetchStatus
-from ai_usage.providers.base import ProviderError
+from ai_usage.models import AccountConfig, AccountIdentity, FetchStatus, ProviderFetchResult
+from ai_usage.providers.base import ProviderError, ProviderLoginError
 from ai_usage.providers.claude import (
     ClaudeStatusProvider,
     ClaudeWebUsageProvider,
@@ -28,6 +28,7 @@ from ai_usage.providers.claude import (
     parse_status_payload,
     parse_usage_output,
     remove_status_relay,
+    run_claude_auth_status,
 )
 from ai_usage.providers.codex import (
     CodexStatusProvider,
@@ -706,10 +707,16 @@ def write_relay(path, five_hour_percentage=23.5) -> None:
 
 
 @pytest.mark.asyncio
-async def test_claude_status_fresh_relay_is_success(tmp_path) -> None:
+async def test_claude_status_fresh_relay_is_success(tmp_path, monkeypatch) -> None:
     relay_file = tmp_path / "relay.json"
     write_relay(relay_file)
     account = relay_account(relay_file, stale_seconds=120)
+
+    async def no_identity(*args, **kwargs):
+        return None
+    # end def
+
+    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_identity)
     result = await ClaudeStatusProvider().fetch(account, None)
     assert result.status == FetchStatus.SUCCESS
     assert result.metrics[0].usage.percentage == 23.5
@@ -738,6 +745,7 @@ async def test_claude_status_stale_relay_falls_back_to_cli_usage(tmp_path, monke
     monkeypatch.setattr(
         "ai_usage.providers.claude.status.run_claude_usage", fake_run_claude_usage
     )
+    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_direct_output)
     result = await ClaudeStatusProvider().fetch(account, None)
     assert result.status == FetchStatus.SUCCESS
     assert result.metrics[0].usage.percentage == 44
@@ -764,6 +772,7 @@ async def test_claude_status_missing_relay_falls_back_and_raises(tmp_path, monke
     monkeypatch.setattr(
         "ai_usage.providers.claude.status.run_claude_usage", raise_provider_error
     )
+    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_direct_output)
     with pytest.raises(ProviderError, match="did not become ready"):
         await ClaudeStatusProvider().fetch(account, None)
 # end def
@@ -781,12 +790,17 @@ async def test_claude_status_uses_direct_screen_reader_output(tmp_path, monkeypa
         raise AssertionError("interactive fallback should not run")
     # end def
 
+    async def no_identity(*args, **kwargs):
+        return None
+    # end def
+
     monkeypatch.setattr(
         "ai_usage.providers.claude.status.run_claude_usage_direct", direct_output
     )
     monkeypatch.setattr(
         "ai_usage.providers.claude.status.run_claude_usage", interactive_should_not_run
     )
+    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_identity)
 
     result = await ClaudeStatusProvider().fetch(account, None)
 
@@ -806,16 +820,93 @@ async def test_claude_status_falls_back_when_direct_output_is_unparseable(tmp_pa
         return "Current session\n  ██ 44% used\n  Resets 7:50pm (Europe/Berlin)\n"
     # end def
 
+    async def no_identity(*args, **kwargs):
+        return None
+    # end def
+
     monkeypatch.setattr(
         "ai_usage.providers.claude.status.run_claude_usage_direct", unparseable_direct_output
     )
     monkeypatch.setattr(
         "ai_usage.providers.claude.status.run_claude_usage", interactive_output
     )
+    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_identity)
 
     result = await ClaudeStatusProvider().fetch(account, None)
 
     assert result.metrics[0].usage.percentage == 44
+# end def
+
+
+class FakeAuthStatusProcess:
+    def __init__(self, stdout: bytes, returncode: int = 0) -> None:
+        self._stdout = stdout
+        self.returncode = returncode
+    # end def
+
+    async def communicate(self):
+        return self._stdout, b""
+    # end def
+
+    def kill(self):
+        pass
+    # end def
+
+    async def wait(self):
+        return None
+    # end def
+
+
+@pytest.mark.asyncio
+async def test_run_claude_auth_status_parses_email(monkeypatch) -> None:
+    payload = json.dumps({"email": "user@example.com", "orgName": "Acme"}).encode("utf-8")
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        return FakeAuthStatusProcess(payload)
+    # end def
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+    identity = await run_claude_auth_status("claude", None)
+    assert identity is not None
+    assert identity.email == "user@example.com"
+    assert identity.name == "Acme"
+# end def
+
+
+@pytest.mark.asyncio
+async def test_run_claude_auth_status_returns_none_on_failure(monkeypatch) -> None:
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        return FakeAuthStatusProcess(b"", returncode=1)
+    # end def
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+    assert await run_claude_auth_status("claude", None) is None
+# end def
+
+
+def test_claude_status_user_identity_uses_fetched_email() -> None:
+    account = AccountConfig(id="acct", service="claude", provider="statusline", name="Claude")
+    result = ProviderFetchResult(
+        service="claude",
+        provider="statusline",
+        account_id="acct",
+        fetched_at=datetime.now(UTC),
+        identity=AccountIdentity(email="User@Example.com"),
+    )
+    assert ClaudeStatusProvider().user_identity(account, result) == "user@example.com"
+# end def
+
+
+def test_claude_status_user_identity_raises_without_identity() -> None:
+    account = AccountConfig(id="acct", service="claude", provider="statusline", name="Claude")
+    result = ProviderFetchResult(
+        service="claude",
+        provider="statusline",
+        account_id="acct",
+        fetched_at=datetime.now(UTC),
+    )
+    with pytest.raises(ProviderLoginError):
+        ClaudeStatusProvider().user_identity(account, result)
 # end def
 
 
