@@ -2198,3 +2198,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. For a Claude organisation nested under the primary account, what should its visible label be? The backend currently has a provider-returned organisation name and the configured UUID, but no organisation email.
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Organisation label** (1/1) <kbd>Single Select</kbd><br>
+>> For a Claude organisation nested under the primary account, what should its visible label be? The backend currently has a provider-returned organisation name and the configured UUID, but no organisation email.
+> - [ ] 1\. Name + short UUID (Recommended)
+>   - _Show the provider-returned organisation name, with its UUID as a secondary badge/fallback for clarity and stable identification._
+> - [ ] 2\. UUID only
+>   - _Use only the configured organization UUID; simplest and always available but less readable._
+> - [ ] 3\. Custom configured label
+>   - _Add a user-managed organization label to configuration, requiring a new editable setting and migration behavior._
+> - [x] 4\. _Type something:_
+>   - > Name, the uuid can be displayed as tooltip. Detect `"{user_email}' Organization"` (Example given earlier) and in that case hide it (assume it to be None, etc.)
+>
+> </details>
+>
+
