@@ -2484,3 +2484,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /caveman:caveman
 
+❯ /cavecrew
+
