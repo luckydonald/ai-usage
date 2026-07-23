@@ -1938,3 +1938,37 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Should this naming rule apply only to `provider ls`, or everywhere users visually select/read accounts?
+>> 2. When available, which provider identity should the visible `ACCOUNT` label use?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Display scope** (1/2) <kbd>Single Select</kbd><br>
+>> Should this naming rule apply only to `provider ls`, or everywhere users visually select/read accounts?
+> - [ ] 1\. CLI management (Recommended)
+>   - _Update listing, status, prompts, confirmations, and success messages; leave the web dashboard unchanged for now._
+> - [x] 2\. CLI and dashboard
+>   - _Also replace dashboard labels and grouped-series headings with the fetched account identity._
+> - [ ] 3\. Listing only
+>   - _Change only `provider ls` / `provider list`._
+> - [ ] 4\. _Type something._
+>
+>> **Identity value** (2/2) <kbd>Single Select</kbd><br>
+>> When available, which provider identity should the visible `ACCOUNT` label use?
+> - [x] 1\. Email first (Recommended)
+>   - _Use the subscription/login email; fall back to a provider-reported name only when email is absent, otherwise show a dash._
+>   - > I believe copilot may use username. But that could be a `@property` `user_identity` on a provider's data definition. That property (or field) shall be required by a shared superclass.
+> - [ ] 2\. Name first
+>   - _Prefer a provider-reported display/organization name, with email as fallback._
+> - [ ] 3\. Email only
+>   - _Show only email; use a dash whenever the provider does not report one._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
