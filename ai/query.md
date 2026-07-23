@@ -2482,3 +2482,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /plan Inspect `~/git/DimazzzZ/tokenpulse-intellij-plugin` for parsers of AI agent usage, collect parser as plan items
 
+❯ /caveman:caveman
+
