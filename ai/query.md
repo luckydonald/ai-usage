@@ -2171,3 +2171,7 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+> › Implement the [Plan](./plans/016_canonical-provider-logins-with-compatibility-graph-grouping.md).
+
+› do not remove the autocommited plan, create yours without a number in there. Then go ahead.
+

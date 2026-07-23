@@ -23,6 +23,7 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
+from ai_usage.account_groups import account_group_ids
 from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
@@ -106,6 +107,7 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
     @app.get("/api/v1/catalog")
     async def catalog() -> dict[str, Any]:
         accounts = state.config.list_accounts(False)
+        groups = account_group_ids(accounts)
         async with state.database.sessions() as session:
             rows = await session.execute(
                 select(
@@ -124,7 +126,10 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
             if provider.icon is not None
         }
         return {
-            "accounts": [account.model_dump(mode="json") for account in accounts],
+            "accounts": [
+                account.model_dump(mode="json") | {"group_id": groups.get(account.id)}
+                for account in accounts
+            ],
             "metrics": metrics,
             "exhausted_color": "#6b7280",
             "service_icons": {service: icon._asdict() for service, icon in SERVICE_ICONS.items()},
@@ -165,13 +170,12 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
         samples = await state.history.samples(start, end, service, provider, account, metric)
         colors: dict[tuple[str, str], str] = {}
         account_groups: dict[str, str] = {}
-        for configured in state.config.list_accounts(False):
+        configured_accounts = state.config.list_accounts(False)
+        account_groups = account_group_ids(configured_accounts)
+        for configured in configured_accounts:
             for metric_key, color in configured.colors.items():
                 colors[(configured.id, metric_key)] = color
             # end for
-            if configured.group_id:
-                account_groups[configured.id] = configured.group_id
-            # end if
         # end for
         return [
             item.model_dump(mode="json")

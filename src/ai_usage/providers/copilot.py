@@ -8,7 +8,7 @@ import httpx
 
 from ai_usage.icons import IconRef
 from ai_usage.models import AccountConfig, Metric, MinMaxUsage, ProviderFetchResult
-from ai_usage.providers.base import ConfigurationField, Provider, ProviderError
+from ai_usage.providers.base import ConfigurationField, Provider, ProviderError, canonical_login
 
 
 def next_billing_reset(now: datetime, day: int) -> datetime:
@@ -40,6 +40,11 @@ class CopilotBillingProvider(Provider):
         ConfigurationField(key="billing_day", label="Billing cycle day", kind="integer", default=1),
         ConfigurationField(key="api_url", label="GitHub API URL", default="https://api.github.com"),
     )
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del result
+        return canonical_login(account.options.get("username"), self.display_name)
+    # end def
 
     async def fetch(
         self,
@@ -87,4 +92,3 @@ class CopilotBillingProvider(Provider):
         )
     # end def
 # end class
-

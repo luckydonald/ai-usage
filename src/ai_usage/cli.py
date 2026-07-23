@@ -6,6 +6,7 @@ import logging
 import socket
 import sys
 import types
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -33,7 +34,7 @@ from ai_usage.host_identity import (
     resolve_host_identity,
     save_local_host_identity,
 )
-from ai_usage.models import AccountConfig, FetchStatus
+from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.provider_accounts import (
     AccountStatus,
     account_status,
@@ -159,6 +160,7 @@ async def create_account(
     no_input: bool,
     dynamic_options: dict[str, Any],
     discovered: DiscoveryChoice | None = None,
+    login: str | None = None,
 ) -> tuple[AccountConfig, Literal["added", "existing", "restored"]]:
     provider = runtime.providers.get(service, provider_key)
     options = dict(discovered.account.options) if discovered else {}
@@ -239,7 +241,41 @@ async def create_account(
         runtime.config.save_account(account)
         install_status_relay(account, runtime.paths.local)
     # end if
+    if login is not None and account.login != login:
+        account = account.model_copy(update={"login": login})
+        runtime.config.save_account(account)
+    # end if
     return account, action
+# end def
+
+
+async def verify_provider_setup(
+    provider: Provider,
+    account: AccountConfig,
+    credential: dict[str, Any] | None,
+) -> tuple[ProviderFetchResult, str]:
+    try:
+        result = await provider.fetch(account, credential)
+    except ProviderError as exception:
+        raise click.ClickException(
+            f"{provider.display_name} setup fetch failed: {exception}"
+        ) from exception
+    # end try
+    if result.status == FetchStatus.ERROR:
+        raise click.ClickException(
+            f"{provider.display_name} setup fetch failed: {result.error}"
+        )
+    # end if
+    try:
+        login = provider.user_identity(account, result)
+    except NotImplementedError as exception:
+        raise click.ClickException(
+            f"{provider.display_name} does not implement account-login discovery"
+        ) from exception
+    except ProviderError as exception:
+        raise click.ClickException(str(exception)) from exception
+    # end try
+    return result, login
 # end def
 
 
@@ -416,7 +452,6 @@ def provider_add(
     ctx: typer.Context,
     service: Annotated[str | None, typer.Argument()] = None,
     provider_key: Annotated[str | None, typer.Argument()] = None,
-    name: Annotated[str | None, typer.Option("--name")] = None,
     secret_json: Annotated[
         str | None, typer.Option("--secret-json", help="Credential JSON to encrypt in local SQLite.")
     ] = None,
@@ -453,6 +488,11 @@ def provider_add(
         try:
             await runtime.initialize()
             dynamic_options = parse_dynamic_options(tuple(ctx.args))
+            if "name" in dynamic_options:
+                raise click.UsageError(
+                    "--name was removed; the account login is discovered during setup"
+                )
+            # end if
             selected: DiscoveryChoice | None = None
             selected_target: tuple[str, str] | None = None
             if resolved_service is None or resolved_provider is None:
@@ -500,7 +540,6 @@ def provider_add(
                 credential = selected.account.credential
             # end if
             provider = runtime.providers.get(resolved_service, resolved_provider)
-            via_browser_login = False
             if credential is None and provider.login_url and interactive_terminal(no_input):
                 click.echo(f"Opening a login window for {provider.display_name}...")
                 if provider.login_hint:
@@ -516,52 +555,40 @@ def provider_add(
                         f"login for {provider.display_name} did not complete"
                     )
                 # end if
-                via_browser_login = True
             # end if
             if credential is not None:
                 for key, value in (await provider.discover_options(credential)).items():
                     dynamic_options.setdefault(key, value)
                 # end for
             # end if
-            if via_browser_login:
-                click.echo(f"Verifying {provider.display_name} credentials...")
-                probe_account = AccountConfig(
-                    id="probe",
-                    service=resolved_service,
-                    provider=resolved_provider,
-                    name=name or provider.display_name,
-                    options=dynamic_options,
-                )
-                try:
-                    probe_result = await provider.fetch(probe_account, credential)
-                except ProviderError as exception:
-                    raise click.ClickException(
-                        f"{provider.display_name} login succeeded but the first fetch failed: "
-                        f"{exception}"
-                    ) from exception
-                # end try
-                if probe_result.status == FetchStatus.ERROR:
-                    raise click.ClickException(
-                        f"{provider.display_name} login succeeded but the first fetch failed: "
-                        f"{probe_result.error}"
-                    )
-                # end if
-                click.echo(f"Verified: fetched {len(probe_result.metrics)} metric(s).")
-            # end if
+            click.echo(f"Verifying {provider.display_name} setup...")
+            probe_account = AccountConfig(
+                id=str(uuid.uuid7()),
+                service=resolved_service,
+                provider=resolved_provider,
+                name=provider.display_name,
+                options=dynamic_options,
+            )
+            probe_result, login = await verify_provider_setup(provider, probe_account, credential)
+            click.echo(f"Verified {login}: fetched {len(probe_result.metrics)} metric(s).")
             account, action = await create_account(
                 runtime,
                 resolved_service,
                 resolved_provider,
-                name,
+                None,
                 credential,
                 no_input or not interactive_terminal(no_input),
                 dynamic_options,
                 discovered=selected,
+                login=login,
+            )
+            await runtime.history.append_result(
+                probe_result.model_copy(update={"account_id": account.id})
             )
             verb = {"added": "Added", "existing": "Already configured", "restored": "Restored"}[
                 action
             ]
-            click.echo(f"{verb} {account.name} ({account.id})")
+            click.echo(f"{verb} {account.login} ({account.id})")
         finally:
             await runtime.close()
         # end try
@@ -633,8 +660,20 @@ def provider_login(
             credential_id = await runtime.database.put_credential(
                 account.provider, account.name, credential
             )
-            runtime.config.save_account(account.model_copy(update={"credential_id": credential_id}))
-            click.echo(f"Stored refreshed credentials for {account.name}.")
+            updates: dict[str, object] = {"credential_id": credential_id}
+            if account.login is None:
+                try:
+                    updates["login"] = provider.user_identity(account, probe_result)
+                except NotImplementedError as exception:
+                    raise click.ClickException(
+                        f"{provider.display_name} does not implement account-login discovery"
+                    ) from exception
+                except ProviderError as exception:
+                    raise click.ClickException(str(exception)) from exception
+                # end try
+            # end if
+            runtime.config.save_account(account.model_copy(update=updates))
+            click.echo(f"Stored refreshed credentials for {account_reference(account)}.")
         finally:
             await runtime.close()
         # end try
@@ -694,11 +733,29 @@ async def run_provider_add_wizard(runtime: "Runtime") -> None:
         return
     # end if
     credential = selected.account.credential if selected else None
-    account, action = await create_account(
-        runtime, resolved_service, resolved_provider, None, credential, True, {}, discovered=selected
+    provider = runtime.providers.get(resolved_service, resolved_provider)
+    probe = AccountConfig(
+        id=str(uuid.uuid7()),
+        service=resolved_service,
+        provider=resolved_provider,
+        name=provider.display_name,
+        options=dict(selected.account.options) if selected else {},
     )
+    result, login = await verify_provider_setup(provider, probe, credential)
+    account, action = await create_account(
+        runtime,
+        resolved_service,
+        resolved_provider,
+        None,
+        credential,
+        True,
+        {},
+        discovered=selected,
+        login=login,
+    )
+    await runtime.history.append_result(result.model_copy(update={"account_id": account.id}))
     verb = {"added": "Added", "existing": "Already configured", "restored": "Restored"}[action]
-    click.echo(f"{verb} {account.name} ({account.id})")
+    click.echo(f"{verb} {account.login} ({account.id})")
 # end def
 
 
@@ -720,14 +777,14 @@ async def run_first_crawl_wizard(runtime: "Runtime", identity: HostIdentity, res
         if selected == "enable":
             sub_options = [SelectionChoice("back", "« back")]
             sub_options += [
-                SelectionChoice(f"account-{index}", f"{account.service}/{account.provider} — {account.name}")
+                SelectionChoice(f"account-{index}", account_reference(account))
                 for index, account in enumerate(configured)
             ]
             picked = await select_choice("Enable which account on this device?", sub_options)
             if picked and picked != "back":
                 account = configured[int(picked.removeprefix("account-"))]
                 updated = add_host_to_account(runtime.config, account, identity)
-                click.echo(f"Enabled {updated.name} on this device.")
+                click.echo(f"Enabled {account_reference(updated)} on this device.")
             # end if
         elif selected == "create":
             await run_provider_add_wizard(runtime)
@@ -765,14 +822,20 @@ def print_accounts(accounts: list[AccountConfig]) -> None:
         click.echo("No configured accounts")
         return
     # end if
-    click.echo(f"{'STATE':<10} {'SERVICE/PROVIDER':<30} {'NAME':<24} ACCOUNT")
+    click.echo(f"{'STATE':<10} {'SERVICE':<14} {'PARSER':<18} {'ACCOUNT':<32} CONFIG")
     for account in accounts:
         click.echo(
             f"{account_state(account):<10} "
-            f"{account.service + '/' + account.provider:<30} "
-            f"{account.name:<24} {account.id}"
+            f"{account.service:<14} "
+            f"{account.provider:<18} "
+            f"{account.login or '-':<32} {account.id}"
         )
     # end for
+# end def
+
+
+def account_reference(account: AccountConfig) -> str:
+    return f"{account.service}/{account.provider} — {account.login or 'unresolved'} — {account.id}"
 # end def
 
 
@@ -828,8 +891,8 @@ async def resolve_account(
         [
             SelectionChoice(
                 key,
-                account.name,
-                f"{account.service}/{account.provider} — {account_state(account)}",
+                account.login or "unresolved account",
+                f"{account_reference(account)} — {account_state(account)}",
             )
             for key, account in selection_accounts.items()
         ],
@@ -865,8 +928,10 @@ def render_time(value: datetime | None) -> str:
 
 def print_account_status(status: AccountStatus) -> None:
     account = status.account
-    click.echo(f"Account: {account.name} ({account.id})")
-    click.echo(f"Provider: {account.service}/{account.provider}")
+    click.echo(f"Account: {account.login or 'unresolved'}")
+    click.echo(f"Service: {account.service}")
+    click.echo(f"Parser: {account.provider}")
+    click.echo(f"Config: {account.id}")
     click.echo(f"State: {account_state(account)}")
     if account.removed_at:
         click.echo(f"Removed: {render_time(account.removed_at)}")
@@ -985,7 +1050,8 @@ def provider_remove(
             purge = delete_history
             if interactive_terminal(no_input) and not delete_history:
                 purge = click.confirm(
-                    f"Also permanently delete {account_config.name}'s historical usage?",
+                    "Also permanently delete "
+                    f"{account_reference(account_config)} historical usage?",
                     default=False,
                 )
             # end if
@@ -1004,54 +1070,14 @@ def provider_remove(
             if purge:
                 await purge_history(runtime.paths, runtime.database, removed)
                 runtime.config.delete_account(removed)
-                click.echo(f"Removed {account_config.name} and permanently deleted its history.")
+                click.echo(
+                    f"Removed {account_reference(account_config)} and permanently deleted its history."
+                )
             else:
-                click.echo(f"Removed {account_config.name}; historical usage was preserved.")
+                click.echo(
+                    f"Removed {account_reference(account_config)}; historical usage was preserved."
+                )
             # end if
-        finally:
-            await runtime.close()
-        # end try
-    # end def
-
-    asyncio.run(execute())
-# end def
-
-
-@provider_app.command("rename")
-def provider_rename(
-    service: Annotated[str | None, typer.Argument()] = None,
-    provider_key: Annotated[str | None, typer.Argument()] = None,
-    account: Annotated[str | None, typer.Argument()] = None,
-    account_option: Annotated[str | None, typer.Option("--account")] = None,
-    new_name: Annotated[str, typer.Option("--name")] = ...,
-    no_input: Annotated[bool, typer.Option("--no-input")] = False,
-) -> None:
-    """Rename a configured account's display name."""
-    target_id = requested_account_id(account, account_option)
-    candidates = matching_accounts(ConfigStore(default_paths()), service, provider_key)
-    if (
-        target_id is None
-        and not interactive_terminal(no_input)
-        and not (service is not None and provider_key is not None and len(candidates) == 1)
-    ):
-        print_accounts(candidates)
-        return
-    # end if
-
-    async def execute() -> None:
-        runtime = Runtime(default_paths())
-        try:
-            await runtime.initialize()
-            account_config = await resolve_account(
-                runtime, service, provider_key, target_id, no_input, "rename"
-            )
-            if account_config is None:
-                return
-            # end if
-            old_name = account_config.name
-            renamed = account_config.model_copy(update={"name": new_name})
-            runtime.config.save_account(renamed)
-            click.echo(f"Renamed {old_name} to {new_name}.")
         finally:
             await runtime.close()
         # end try
@@ -1091,8 +1117,8 @@ def provider_merge(
                 raise click.ClickException("source and target accounts must be different")
             # end if
             if interactive_terminal(no_input) and not click.confirm(
-                f"Merge {source_account.name}'s history into {target_account.name} "
-                f"and delete {source_account.name}?",
+                f"Merge {account_reference(source_account)} history into {account_reference(target_account)} "
+                f"and delete the source configuration?",
                 default=False,
             ):
                 return
@@ -1102,60 +1128,10 @@ def provider_merge(
                 remove_status_relay(source_account, runtime.paths.local)
             # end if
             runtime.config.delete_account(source_account)
-            click.echo(f"Merged {source_account.name} into {target_account.name} and deleted {source_account.name}.")
-        finally:
-            await runtime.close()
-        # end try
-    # end def
-
-    asyncio.run(execute())
-# end def
-
-
-@provider_app.command("group")
-def provider_group(
-    account_ids: Annotated[
-        list[str],
-        typer.Argument(help="Two or more account IDs to treat as the same real-world account."),
-    ],
-) -> None:
-    """Link accounts as aliases of the same real-world account (graphs/panels merge them)."""
-
-    async def execute() -> None:
-        runtime = Runtime(default_paths())
-        try:
-            await runtime.initialize()
-            try:
-                group_id = runtime.config.group_accounts(account_ids)
-            except (ValueError, KeyError) as exception:
-                raise click.ClickException(str(exception)) from exception
-            # end try
-            click.echo(f"Grouped {len(account_ids)} account(s) under group {group_id}.")
-        finally:
-            await runtime.close()
-        # end try
-    # end def
-
-    asyncio.run(execute())
-# end def
-
-
-@provider_app.command("ungroup")
-def provider_ungroup(
-    account: Annotated[str, typer.Argument(help="Account ID to remove from its alias group.")],
-) -> None:
-    """Remove an account from its alias group."""
-
-    async def execute() -> None:
-        runtime = Runtime(default_paths())
-        try:
-            await runtime.initialize()
-            try:
-                updated = runtime.config.ungroup_account(account)
-            except KeyError as exception:
-                raise click.ClickException(str(exception)) from exception
-            # end try
-            click.echo(f"Removed {updated.name} from its group.")
+            click.echo(
+                f"Merged {account_reference(source_account)} into {account_reference(target_account)} "
+                "and deleted the source configuration."
+            )
         finally:
             await runtime.close()
         # end try
@@ -1220,7 +1196,9 @@ def provider_hosts_add(
             # end if
             identity = _default_host_identity(runtime.paths, hostname, host_id)
             updated = add_host_to_account(runtime.config, selected, identity)
-            click.echo(f"Added host {identity.hostname} ({identity.host_id}) to {updated.name}.")
+            click.echo(
+                f"Added host {identity.hostname} ({identity.host_id}) to {account_reference(updated)}."
+            )
         finally:
             await runtime.close()
         # end try
@@ -1268,7 +1246,9 @@ def provider_hosts_remove(
             # end if
             identity = _default_host_identity(runtime.paths, hostname, host_id)
             updated = remove_host_from_account(runtime.config, selected, identity.host_id)
-            click.echo(f"Removed host {identity.hostname} ({identity.host_id}) from {updated.name}.")
+            click.echo(
+                f"Removed host {identity.hostname} ({identity.host_id}) from {account_reference(updated)}."
+            )
         finally:
             await runtime.close()
         # end try
@@ -1628,9 +1608,6 @@ _provider_click.add_command(_provider_click.commands["list"], "ls")
 _provider_click.add_command(_provider_click.commands["status"], "info")
 _provider_click.add_command(_provider_click.commands["remove"], "del")
 _provider_click.add_command(_provider_click.commands["remove"], "rm")
-_provider_click.add_command(_provider_click.commands["rename"], "name")
-_provider_click.add_command(_provider_click.commands["rename"], "mv")
-
 _hosts_click = _provider_click.commands["hosts"]
 _hosts_click.add_command(_hosts_click.commands["remove"], "rm")
 

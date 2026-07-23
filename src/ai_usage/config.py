@@ -91,10 +91,11 @@ class ConfigStore:
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
         path = directory / f"{account.id}.yml"
         temporary = path.with_suffix(".yml.tmp")
-        temporary.write_text(
-            yaml.safe_dump(account.model_dump(mode="json"), sort_keys=False),
-            encoding="utf-8",
-        )
+        payload = account.model_dump(mode="json")
+        if payload["login"] is None:
+            del payload["login"]
+        # end if
+        temporary.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
         temporary.replace(path)
         return path
     # end def
@@ -155,36 +156,6 @@ class ConfigStore:
             raise ValueError(f"multiple accounts match discovered provider {service}/{provider}")
         # end if
         return matches[0] if matches else None
-    # end def
-
-    def group_accounts(self, account_ids: list[str]) -> str:
-        """Link the given accounts as aliases of the same real-world account, sharing a `group_id`.
-
-        Reuses an existing `group_id` if any of the accounts already has one, so grouping an
-        already-grouped account with a new one extends the group instead of splitting it.
-        """
-        if len(account_ids) < 2:
-            raise ValueError("grouping requires at least two accounts")
-        # end if
-        accounts = [self.get_account(account_id) for account_id in account_ids]
-        existing_group_ids = {account.group_id for account in accounts if account.group_id}
-        if len(existing_group_ids) > 1:
-            raise ValueError("accounts already belong to different groups; ungroup them first")
-        # end if
-        group_id = next(iter(existing_group_ids), None) or str(uuid.uuid7())
-        for account in accounts:
-            if account.group_id != group_id:
-                self.save_account(account.model_copy(update={"group_id": group_id}))
-            # end if
-        # end for
-        return group_id
-    # end def
-
-    def ungroup_account(self, account_id: str) -> AccountConfig:
-        account = self.get_account(account_id)
-        updated = account.model_copy(update={"group_id": None})
-        self.save_account(updated)
-        return updated
     # end def
 
     def intervals_for(self, account: AccountConfig) -> dict[str, int]:

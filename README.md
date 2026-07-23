@@ -49,12 +49,10 @@ Running `ai-usage provider add` in a terminal opens a selection screen containin
 
 ```shell
 ai-usage provider add codex app-server \
-  --name "Personal Codex" \
   --profile-dir "$HOME/.codex" \
   --no-input
 
 ai-usage provider add claude statusline \
-  --name "Personal Claude" \
   --no-input
 ```
 
@@ -86,7 +84,6 @@ Then configure the account:
 
 ```shell
 ai-usage provider add copilot github-api \
-  --name "Work Copilot" \
   --username octocat \
   --allowance 300 \
   --billing-day 1 \
