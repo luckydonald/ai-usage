@@ -2459,3 +2459,7 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ But use direct call method, not claude cli mode
 
+❯ Argh! commit separately with LPLP style!
+
+❯ commit those too, based on the allowed commands
+
