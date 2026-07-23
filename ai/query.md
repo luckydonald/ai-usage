@@ -2365,3 +2365,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 ❯ Conversation compacted <kbd>manual</kbd>:
 > - [Result (`46825` chars, `45.9 KB`)](output/compact/008.4c419ab2-40ce-4192-afb5-916036e5b6ba/result.md)
 
+❯ files long messy. I want split: provider.claude.api, provider.claude.status, etc. So class -> class in file
+
