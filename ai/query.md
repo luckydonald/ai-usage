@@ -2433,3 +2433,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+❯ for claude "/usage" parser: to get account: email use /status
+
