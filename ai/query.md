@@ -1768,3 +1768,66 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ Extract the relative formatted date + with the absolute as tooltip to be a vue componet of it's own. Separate components are good.
 
+❯ /plan On the filter selector, we wanted a funnel diagram like display of those filters, but right now it would duplicate the final metrics; i.e. having two claude instances, there would still be two 5h & 7d buttons. Yes they are synced in state (good past decision) but they are not visually grouped as one, as you would expect from a funnel diagram.
+
+❯ Task Notification:
+> - Task `ae275a236eb88a2b6` <kbd>completed</kbd>
+> - Tool `toolu_01GBThdi13ddwNjeTRz779P4`
+> - > Agent "Explore filter funnel data model and filtering semantics" finished
+> - [Query (`2637` chars, `2.58 KB`)](output/agents/032.ae275a236eb88a2b6/prompt.md)
+> - [Answer (`3046` chars, `2.99 KB`)](output/agents/032.ae275a236eb88a2b6/result.md)
+> - [Raw log (`114405` chars, `112 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/971b03a1-1dea-4cf5-b748-8bc63a1c039a/tasks/ae275a236eb88a2b6.output)
+> - `9` tools, `29868` tokens, `0.501417 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Metric filter is account-independent already (same metric_key toggle affects all accounts sharing it). Funnel duplicates the metric leaf once per account instead of showing it once. Fix: move metrics up to be a single deduped row directly under the provider (sibling to the accounts row), not nested inside each account. How should provider's two facets (accounts, metrics) be laid out?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Funnel layout** (1/1) <kbd>Single Select</kbd><br>
+>> Metric filter is account-independent already (same metric_key toggle affects all accounts sharing it). Funnel duplicates the metric leaf once per account instead of showing it once. Fix: move metrics up to be a single deduped row directly under the provider (sibling to the accounts row), not nested inside each account. How should provider's two facets (accounts, metrics) be laid out?
+> - [ ] 1\. Two stacked rows under provider (Recommended)
+>   - _Provider branch fans into an accounts row (chips) and, below it, one deduped metrics row (chips) — reuses existing funnel-branch/funnel-leaves CSS, minimal change._
+>   - ```
+>     claude
+>       └ web
+>           ├─ [acct-org-a] [acct-org-b]      (accounts row)
+>           └─ [Five hours] [Seven days]     (metrics row, shown once)
+>     ```
+> - [ ] 2\. Side-by-side two columns under provider
+>   - _Accounts column and metrics column laid out horizontally instead of stacked — same dedup, different visual arrangement, needs new flex/grid CSS._
+>   - ```text
+>     claude
+>       └ web ─── [acct-org-a]      [Five hours]
+>                [acct-org-b]      [Seven days]
+>     ```
+> - [x] 3\. _Notes:_
+>   - > Please explain me what a funnel diagram is, so we are on the same page.
+>
+> </details>
+>
+
+❯ Ah! My bad entirely, I meant to build a Sankey diagram, or more specifically a Alluvial diagram.
+
+❯ Task Notification:
+> - Task `a697491ba3c8eb84e` <kbd>completed</kbd>
+> - Tool `toolu_01AZo7dWxqc5DUBdRT6kpZdK`
+> - > Agent "Explore echarts Sankey capability and click patterns" finished
+> - [Query (`2444` chars, `2.4 KB`)](output/agents/033.a697491ba3c8eb84e/prompt.md)
+> - [Answer (`3566` chars, `3.5 KB`)](output/agents/033.a697491ba3c8eb84e/result.md)
+> - [Raw log (`117730` chars, `115 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/971b03a1-1dea-4cf5-b748-8bc63a1c039a/tasks/a697491ba3c8eb84e.output)
+> - `9` tools, `31860` tokens, `0.706067 s`
+
+❯ Task Notification:
+> - Task `aecd35808ff67d1f1` <kbd>completed</kbd>
+> - Tool `toolu_01L4HyQu731EP1e23yPtp2E2`
+> - > Agent "Design Sankey/alluvial filter diagram replacement" finished
+> - [Query (`8273` chars, `8.11 KB`)](output/agents/034.aecd35808ff67d1f1/prompt.md)
+> - [Answer (`6456` chars, `6.33 KB`)](output/agents/034.aecd35808ff67d1f1/result.md)
+> - [Raw log (`143769` chars, `141 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/971b03a1-1dea-4cf5-b748-8bc63a1c039a/tasks/aecd35808ff67d1f1.output)
+> - `11` tools, `36839` tokens, `0.843083 s`
+

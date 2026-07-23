@@ -1,0 +1,12 @@
+Repo: /home/user/git/luckydonald/ai-usage (Vue 3 + TypeScript frontend, uses tree-shaken `echarts/core` imports).
+
+I'm evaluating replacing a manually-built HTML/CSS "filter funnel" tree component (`frontend/src/components/FilterFunnel.vue`) with an actual echarts Sankey-diagram-based interactive filter selector (service -> provider -> account -> metric flow diagram, click a node to toggle it as an active filter). Report back (under 350 words):
+
+1. Check `frontend/package.json` for the exact `echarts` version installed.
+2. Check whether `echarts/charts` exports `SankeyChart` for this installed version (look in `node_modules/echarts/types/dist/echarts.d.ts` or `node_modules/echarts/charts.d.ts` — grep for `SankeyChart`, `SankeySeriesOption`). Also check if `TooltipComponent`/`GraphicComponent` etc. needed alongside it are already imported anywhere.
+3. Read `frontend/src/components/UsageChart.vue` fully — specifically how it registers echarts components (`echarts.use([...])`), how it initializes the chart (`echarts.init`), how it listens for clicks (`chart.getZr().on("click", ...)` AND/OR any series-level `chart.on(...)` click handling used for `legendselectchanged`), and how dark-mode theming/colors are threaded into `chartOption()` in `frontend/src/chart.ts`. Quote the exact click-handling code.
+4. Grep the echarts type defs for `SankeySeriesOption` fields relevant to: node click events (does `chart.on('click', ...)` fire with `params.dataType === 'node'` and `params.data` for sankey series — check `echarts/types/dist/echarts.d.ts` or online knowledge is fine if types aren't locally documented well), node coloring/highlighting per-node (`itemStyle` per data entry), and whether Sankey supports emphasis/highlight of connected links when hovering/selecting a node (`emphasis: {focus: 'adjacency'}` option — grep for `"adjacency"` or `focus` in the sankey type defs).
+5. Report the current `FilterFunnel.vue` and `FilterFunnel.test.ts` file sizes (line counts) and briefly summarize the props/emits contract (`tree`, `activeServices` etc, `toggle-service` etc emits) since a replacement must decide whether to keep the same props/emits contract or change it.
+6. Grep for any existing Vitest mocking pattern for `echarts/core` (used in `UsageChart.test.ts`) — quote the mock shape briefly, since a new component would need a similar mock.
+
+Do not write any code or plan — just report findings with file:line references.
