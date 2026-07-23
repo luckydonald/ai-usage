@@ -2486,3 +2486,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /cavecrew
 
+❯ Task Notification:
+> - Task `aa5cb39a3d02058c0` <kbd>completed</kbd>
+> - Tool `toolu_01WhCJKU8GyV4wc4GyRzjuCw`
+> - > Agent "Find usage parsers in tokenpulse plugin" finished
+> - [Query (`952` chars, `952 B`)](output/agents/036.aa5cb39a3d02058c0/prompt.md)
+> - [Answer (`7664` chars, `7.57 KB`)](output/agents/036.aa5cb39a3d02058c0/result.md)
+> - [Raw log (`130454` chars, `128 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c6fca863-d547-4a84-b663-3f359db10838/tasks/aa5cb39a3d02058c0.output)
+> - `10` tools, `31418` tokens, `1.3492 s`
+
