@@ -1761,3 +1761,6 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ push
 
+❯ Conversation compacted <kbd>manual</kbd>:
+> - [Result (`24525` chars, `24 KB`)](output/compact/007.665caad9-c180-4432-ae56-f496a50653db/result.md)
+
