@@ -2013,3 +2013,38 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Alright, document the thoughs gone into the frontend, but do not implement that yet, just the underlaying data models/configs/cli commands.
 
+› Question answered.
+> <details><summary>
+>
+>> 1. How should the existing `group_id` / `provider group` behavior evolve under the new account identity model?
+>> 2. When should a config’s account identity be stored?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Group migration** (1/2) <kbd>Single Select</kbd><br>
+>> How should the existing `group_id` / `provider group` behavior evolve under the new account identity model?
+> - [x] 1\. Replace it (Recommended)
+>   - _Retire the synthetic merged-series grouping; derive visual account membership from same-service equal `user_identity`, with configs/history always separate._
+>   - > I mean that was the initial idea for that grouping - having the same account configured with multiple scrapers - possibly on different computers. So in a way, this is still the same field, just now automatically computed...
+> - [ ] 2\. Keep as manual override
+>   - _Keep `provider group` as an explicit override for configs whose identities are unavailable/different, but change it to visual membership only._
+> - [ ] 3\. Keep unchanged
+>   - _Leave current merged-series grouping intact and add identity labels alongside it._
+> - [ ] 4\. _Type something._
+>
+>> **Identity timing** (2/2) <kbd>Single Select</kbd><br>
+>> When should a config’s account identity be stored?
+> - [ ] 1\. Every successful fetch (Recommended)
+>   - _Persist it from each successful result; browser-login verification also saves it immediately when it created the config._
+> - [x] 2\. First successful fetch
+>   - _Store it once and do not refresh it unless the config is recreated._
+>   - > This makes sense to migrate existing data, to fetch it if it's not yet set in the account's config as needed. However the logical place is to fetch it when creating the service, and fetching that account login is a required condition to finalize setup.
+> - [ ] 3\. Manual only
+>   - _Expose an explicit CLI command to set identity; collectors never update it._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
