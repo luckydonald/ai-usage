@@ -2390,3 +2390,23 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Structure: subpackage dir providers/claude/ with api.py, status.py, relay.py — or flat files in providers/?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Structure** (1/1) <kbd>Single Select</kbd><br>
+>> Structure: subpackage dir providers/claude/ with api.py, status.py, relay.py — or flat files in providers/?
+> - [x] 1\. Subpackage providers/claude/{api,status,relay}.py
+>   - _New dir providers/claude/, __init__.py re-exports, short filenames_
+> - [ ] 2\. Flat providers/claudeapi.py etc
+>   - _No new dir, concatenated no-underscore filenames_
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
