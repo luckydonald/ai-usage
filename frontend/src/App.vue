@@ -6,6 +6,7 @@ import { activeNotesAt } from "./chart";
 import FilterSankey from "./components/FilterSankey.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
+import { defaultFilters, toggleAccount, toggleMetric, toggleProvider, toggleService } from "./filterCascade";
 import { renderNoteMarkdown } from "./markdown";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
 import type { Catalog, Filters, FunnelAccount, FunnelBranch, FunnelProvider, GraphSeries, NoteRange } from "./types";
@@ -19,11 +20,13 @@ const customEndText = ref(toDateInputValue(new Date()));
 const loading = ref(true);
 const error = ref("");
 const connected = ref(false);
-function loadStoredFilters(): Filters {
-  const empty: Filters = { services: [], providers: [], accounts: [], metrics: [] };
+// `null` means "no stored value at all" (never customized) — distinct from an explicit empty
+// list, which now means "nothing selected in this dimension" (see the `hasEmptyFilterDimension`
+// warning below), not "unrestricted" like it used to.
+function loadStoredFilters(): Filters | null {
   try {
     const raw = localStorage.getItem("ai-usage-filters");
-    if (!raw) return empty;
+    if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<Filters>;
     return {
       services: Array.isArray(parsed.services) ? parsed.services : [],
@@ -32,11 +35,12 @@ function loadStoredFilters(): Filters {
       metrics: Array.isArray(parsed.metrics) ? parsed.metrics : [],
     };
   } catch {
-    return empty;
+    return null;
   }
 }
 
-const filters = reactive<Filters>(loadStoredFilters());
+const storedFilters = loadStoredFilters();
+const filters = reactive<Filters>(storedFilters ?? { services: [], providers: [], accounts: [], metrics: [] });
 // Persisted as one blob (not per-toggle-site setItem calls like the other prefs below) since
 // `filters` is a single reactive object toggled from four separate template call sites.
 watch(filters, () => localStorage.setItem("ai-usage-filters", JSON.stringify(filters)), { deep: true });
@@ -52,8 +56,12 @@ let events: EventSource | undefined;
 
 const activeNotes = computed(() => activeNotesAt(notes.value, Date.now()));
 
+// These four are only used to decide whether there's more than one of something worth showing a
+// filter diagram for at all (`FilterSankey`'s `v-if` below) — the diagram itself always shows the
+// full unfiltered catalog (`serviceProviderTree`), so these don't need to shrink to the current
+// selection like they used to for the old flat-chip-list UI.
 const services = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.service))]);
-const providers = computed(() => [...new Set(catalog.value.metrics.filter((metric) => !filters.services.length || filters.services.includes(metric.service)).map((metric) => metric.provider))]);
+const providers = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.provider))]);
 // Unfiltered service -> provider -> account -> metric tree (unlike `providers`/`accounts`/
 // `metricOptions` above, which shrink to the current selection) so the funnel diagram always
 // shows the full structure, with the active selection just highlighted rather than the rest of
@@ -85,27 +93,14 @@ const serviceProviderTree = computed<FunnelBranch[]>(() => {
     ),
   }));
 });
-const accounts = computed(() => catalog.value.accounts.filter((account) => (!filters.services.length || filters.services.includes(account.service)) && (!filters.providers.length || filters.providers.includes(account.provider))));
-const metricOptions = computed(() => {
-  const matching = catalog.value.metrics.filter(
-    (metric) =>
-      (!filters.services.length || filters.services.includes(metric.service)) &&
-      (!filters.providers.length || filters.providers.includes(metric.provider)) &&
-      (!filters.accounts.length || filters.accounts.includes(metric.account_id)),
-  );
-  const seen = new Set<string>();
-  const options: { key: string; name: string }[] = [];
-  for (const metric of matching) {
-    if (seen.has(metric.metric_key)) continue;
-    seen.add(metric.metric_key);
-    options.push({ key: metric.metric_key, name: metric.metric_name });
-  }
-  return options;
-});
+const accounts = computed(() => catalog.value.accounts);
+const metricOptions = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.metric_key))]);
 
-function toggleFilter(list: string[], value: string): string[] {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
+// Empty now means "nothing selected in this dimension" (not "unrestricted" like it used to) —
+// with everything on by default (see `defaultFilters` below), the only way to get here is
+// deliberately deselecting every chip in a column, so it's worth a distinct explanation rather
+// than just silently showing no data.
+const hasEmptyFilterDimension = computed(() => !filters.services.length || !filters.providers.length || !filters.accounts.length || !filters.metrics.length);
 
 function accountLabel(account: Catalog["accounts"][number]): string {
   const identityLabel = account.identity?.name ?? account.identity?.email;
@@ -136,6 +131,14 @@ async function performLoad({ autoWiden = false, silent = false }: LoadOptions): 
   if (!silent) {
     loading.value = true;
     error.value = "";
+  }
+  // An empty dimension now means "nothing selected" (not "unrestricted") — sending the request
+  // anyway would omit that filter's query param entirely, which the backend reads as
+  // unrestricted, showing everything instead of the intended nothing.
+  if (hasEmptyFilterDimension.value) {
+    series.value = [];
+    if (!silent) loading.value = false;
+    return;
   }
   try {
     const [start, end] =
@@ -202,6 +205,30 @@ function toggleSeries(key: string, visible: boolean): void {
     : [...new Set([...hiddenSeriesKeys.value, key])];
 }
 
+function applyFilters(next: Filters): void {
+  filters.services = next.services;
+  filters.providers = next.providers;
+  filters.accounts = next.accounts;
+  filters.metrics = next.metrics;
+  void load();
+}
+
+function onToggleService(service: string): void {
+  applyFilters(toggleService(serviceProviderTree.value, filters, service));
+}
+
+function onToggleProvider(provider: string): void {
+  applyFilters(toggleProvider(serviceProviderTree.value, filters, provider));
+}
+
+function onToggleAccount(accountId: string): void {
+  applyFilters(toggleAccount(serviceProviderTree.value, filters, accountId));
+}
+
+function onToggleMetric(metricKey: string): void {
+  applyFilters(toggleMetric(serviceProviderTree.value, filters, metricKey));
+}
+
 function toggleTheme(): void {
   dark.value = !dark.value;
   localStorage.setItem("ai-usage-theme", dark.value ? "dark" : "light");
@@ -221,7 +248,15 @@ function toggleShowDataPoints(): void {
 onMounted(async () => {
   try {
     catalog.value = await fetchCatalog();
-    pruneStoredFilters();
+    if (!storedFilters) {
+      const initial = defaultFilters(serviceProviderTree.value);
+      filters.services = initial.services;
+      filters.providers = initial.providers;
+      filters.accounts = initial.accounts;
+      filters.metrics = initial.metrics;
+    } else {
+      pruneStoredFilters();
+    }
     await Promise.all([load(true), loadNotes()]);
     events = new EventSource("/api/v1/events");
     events.addEventListener("open", () => (connected.value = true));
@@ -300,16 +335,17 @@ onBeforeUnmount(() => events?.close());
         :dark="dark"
         :service-icons="catalog.service_icons"
         :provider-icons="catalog.provider_icons"
-        @toggle-service="(item) => { filters.services = toggleFilter(filters.services, item); load(); }"
-        @toggle-provider="(item) => { filters.providers = toggleFilter(filters.providers, item); load(); }"
-        @toggle-account="(item) => { filters.accounts = toggleFilter(filters.accounts, item); load(); }"
-        @toggle-metric="(item) => { filters.metrics = toggleFilter(filters.metrics, item); load(); }"
+        @toggle-service="onToggleService"
+        @toggle-provider="onToggleProvider"
+        @toggle-account="onToggleAccount"
+        @toggle-metric="onToggleMetric"
       />
     </section>
 
     <main class="graph-panel">
       <p v-if="loading" class="state">Loading usage history…</p>
       <p v-else-if="error" class="state banner-error">{{ error }}</p>
+      <p v-else-if="hasEmptyFilterDimension" class="state banner-warning">Nothing selected in at least one filter — deselect fewer things to see data.</p>
       <p v-else-if="!series.length" class="state">No usage samples in this range.</p>
       <UsageChart
         v-else

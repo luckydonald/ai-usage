@@ -75,7 +75,7 @@ describe("buildSankeyData", () => {
     const onlyOneActive = buildSankeyData(tree, { ...noActive, services: ["codex"] }, false).links[0];
 
     expect(bothActive?.lineStyle.opacity).toBe(0.5);
-    expect(onlyOneActive?.lineStyle.opacity).toBe(0.15);
+    expect(onlyOneActive?.lineStyle.opacity).toBe(0.35);
   });
 
   it("attaches the raw icon ref for a service/provider that has one in the catalog, for the overlay to resolve", () => {

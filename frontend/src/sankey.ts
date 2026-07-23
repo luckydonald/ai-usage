@@ -51,7 +51,9 @@ function nodeStyle(dark: boolean): { color: string; borderColor: string; borderW
 }
 
 function linkStyle(active: boolean, dark: boolean): SankeyLinkDatum["lineStyle"] {
-  return { color: active ? ACTIVE_COLOR : dark ? INACTIVE_COLOR.dark : INACTIVE_COLOR.light, opacity: active ? 0.5 : 0.15 };
+  // Inactive links use the (more visible) border color rather than the pale surface-muted fill,
+  // and a real opacity — otherwise the deselected "background" structure all but disappears.
+  return { color: active ? ACTIVE_COLOR : dark ? BORDER_COLOR.dark : BORDER_COLOR.light, opacity: active ? 0.5 : 0.35 };
 }
 
 // Builds echarts Sankey `nodes`/`links` from the service -> provider -> account -> metric tree.
