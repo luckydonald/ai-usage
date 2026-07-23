@@ -2048,3 +2048,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Should the automatically computed account group ID remain stored in every config YAML, or be derived whenever needed?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Group ID storage** (1/1) <kbd>Single Select</kbd><br>
+>> Should the automatically computed account group ID remain stored in every config YAML, or be derived whenever needed?
+> - [x] 1\. Store deterministic ID (Recommended)
+>   - _On first identity resolution, write the same UUIDv5 derived from service plus canonical user identity into each matching config; unknown identities keep `group_id: null`._
+>   - > but don't name it `group_id`. Name it `login`.
+> - [ ] 2\. Derive only
+>   - _Remove persisted `group_id`; compute grouping from service plus user identity at runtime/API time._
+> - [ ] 3\. Store random shared ID
+>   - _Keep today’s generated group UUID, but assign it automatically when matching identities are found._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
