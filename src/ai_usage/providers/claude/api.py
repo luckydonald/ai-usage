@@ -1,13 +1,7 @@
-"""Claude status-line ingestion and /usage provider."""
+"""Claude private web API provider (claude.ai/api/*)."""
 
-import json
 import logging
-import re
-import shlex
-import sys
-import time
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
 from curl_cffi.requests import AsyncSession
@@ -17,7 +11,6 @@ from ai_usage.icons import IconRef
 from ai_usage.models import (
     AccountConfig,
     AccountIdentity,
-    FetchStatus,
     Metric,
     ProviderFetchResult,
     SubscriptionStatus,
@@ -25,21 +18,10 @@ from ai_usage.models import (
 )
 from ai_usage.providers.base import (
     ConfigurationField,
-    DiscoveredAccount,
     Provider,
     ProviderError,
-    ProviderLoginError,
     canonical_login,
 )
-from ai_usage.providers.claude_cli import (
-    canonical_claude_profile_dir,
-    claude_cli_failure_message,
-    claude_default_profile,
-    claude_profile_path,
-    claude_setup_required_message,
-)
-from ai_usage.providers.claude_direct import run_claude_usage_direct
-from ai_usage.providers.claude_interactive import run_claude_usage
 from ai_usage.webview_login import capture_cookies_via_webview
 
 LOGGER = logging.getLogger(__name__)
@@ -83,25 +65,6 @@ async def get_json(
 # end def
 
 
-ANSI_PATTERN = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))")
-SECTION_PATTERN = re.compile(
-    r"(?P<name>Current session|Current week \(all models\)|Current week \([^)]+\))"
-    r".*?(?P<percentage>\d+(?:\.\d+)?)%\s+used.*?Resets\s+(?P<reset>[^\r\n]+)",
-    re.IGNORECASE | re.DOTALL,
-)
-PROMO_PATTERN = re.compile(r"^\s*\+\d+%.*promo.*$", re.IGNORECASE | re.MULTILINE)
-def extract_claude_notes(output: str) -> list[str]:
-    clean = normalize_claude_terminal_output(output)
-    return [match.group(0).strip() for match in PROMO_PATTERN.finditer(clean)]
-# end def
-
-
-def normalize_claude_terminal_output(output: str) -> str:
-    """Replace terminal controls with spacing so cursor-positioned words stay separate."""
-    return ANSI_PATTERN.sub(" ", output).replace("\r", "")
-# end def
-
-
 # The claude.ai web app's promo banner ("Your limits are temporarily boosted...") isn't part
 # of any documented API — it's a GrowthBook remote-config feature flag fetched via the web
 # app's own bootstrap endpoint. `19186470` is that flag's key (a djb2 hash of its real,
@@ -123,77 +86,6 @@ def extract_claude_web_notes(app_start_payload: dict[str, Any]) -> list[str]:
     # end if
     text = default_value.get("en-US") or next(iter(default_value.values()), None)
     return [text] if isinstance(text, str) and text else []
-# end def
-
-
-def claude_metric_key(name: str) -> str:
-    normalized = name.casefold()
-    if "session" in normalized:
-        return "five-hours"
-    elif "all models" in normalized:
-        return "seven-days"
-    # end if
-    model = normalized.split("(", 1)[-1].rstrip(")")
-    return "seven-days-" + re.sub(r"[^a-z0-9]+", "-", model).strip("-")
-# end def
-
-
-def claude_metric_model(name: str) -> str | None:
-    """Extract the model name from a per-model section title, e.g. `Current week (Fable)` -> `Fable`."""
-    normalized = name.casefold()
-    if "session" in normalized or "all models" in normalized:
-        return None
-    # end if
-    if "(" not in name or not name.endswith(")"):
-        return None
-    # end if
-    return name.split("(", 1)[-1].rstrip(")").strip() or None
-# end def
-
-
-def parse_status_payload(payload: dict[str, Any], observed_at: datetime) -> list[Metric]:
-    limits = payload.get("rate_limits") or {}
-    metrics: list[Metric] = []
-    for source_key, metric_key, name, seconds in (
-        ("five_hour", "five-hours", "Five hours", 5 * 3600),
-        ("seven_day", "seven-days", "Seven days", 7 * 86400),
-    ):
-        window = limits.get(source_key)
-        if not window:
-            continue
-        # end if
-        metrics.append(
-            Metric(
-                key=metric_key,
-                name=name,
-                usage=Usage(percentage=float(window["used_percentage"])),
-                observed_at=observed_at,
-                reset_at=datetime.fromtimestamp(int(window["resets_at"]), UTC),
-                window_seconds=seconds,
-            )
-        )
-    # end for
-    return metrics
-# end def
-
-
-def parse_usage_output(output: str, observed_at: datetime) -> list[Metric]:
-    clean = normalize_claude_terminal_output(output)
-    metrics: list[Metric] = []
-    for match in SECTION_PATTERN.finditer(clean):
-        name = " ".join(match.group("name").split())
-        metrics.append(
-            Metric(
-                key=claude_metric_key(name),
-                name=name,
-                usage=Usage(percentage=float(match.group("percentage"))),
-                observed_at=observed_at,
-                model=claude_metric_model(name),
-                metadata={"reset_text": match.group("reset").strip()},
-            )
-        )
-    # end for
-    return metrics
 # end def
 
 
@@ -467,204 +359,3 @@ class ClaudeWebUsageProvider(Provider):
         )
     # end def
 # end class
-
-
-class ClaudeStatusProvider(Provider):
-    service = "claude"
-    key = "statusline"
-    display_name = "Claude status line with /usage fallback"
-    icon = IconRef(set="solid", name="gauge")
-    configuration_fields = (
-        ConfigurationField(key="command", label="Claude executable", default="claude"),
-        ConfigurationField(key="profile_dir", label="Claude profile", kind="path"),
-        ConfigurationField(key="relay_file", label="Status relay file", kind="path"),
-        ConfigurationField(key="stale_seconds", label="Relay staleness", kind="integer", default=120),
-    )
-
-    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
-        del account, result
-        raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
-    # end def
-
-    async def discover(self) -> list[DiscoveredAccount]:
-        settings = Path.home() / ".claude" / "settings.json"
-        if settings.exists():
-            return [DiscoveredAccount(name="Claude", options={"profile_dir": str(settings.parent)})]
-        # end if
-        return []
-    # end def
-
-    async def fetch(
-        self,
-        account: AccountConfig,
-        credential: dict[str, Any] | None,
-    ) -> ProviderFetchResult:
-        del credential
-        observed = datetime.now(UTC)
-        relay_file_value = account.options.get("relay_file")
-        if relay_file_value:
-            relay_file = Path(str(relay_file_value)).expanduser()
-            stale_seconds = int(account.options.get("stale_seconds", 120))
-            if relay_file.exists():
-                age = time.time() - relay_file.stat().st_mtime
-                if age <= stale_seconds:
-                    payload = json.loads(relay_file.read_text(encoding="utf-8"))
-                    metrics = parse_status_payload(payload, observed)
-                    if metrics:
-                        return ProviderFetchResult(
-                            service=self.service,
-                            provider=self.key,
-                            account_id=account.id,
-                            fetched_at=observed,
-                            status=FetchStatus.SUCCESS,
-                            metrics=metrics,
-                        )
-                    # end if
-                # end if
-                # relay data missing or stale: fall through and ask the CLI directly instead
-                # of surfacing outdated numbers.
-            # end if
-        # end if
-        command = str(account.options.get("command", "claude"))
-        profile_dir = str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
-        direct_output = await run_claude_usage_direct(command, profile_dir)
-        output = direct_output or ""
-        metrics = parse_usage_output(output, observed)
-        if not metrics:
-            output = await run_claude_usage(command, profile_dir)
-            metrics = parse_usage_output(output, observed)
-        # end if
-        if not metrics:
-            raise ProviderError("Claude /usage output did not contain recognized usage sections")
-        # end if
-        return ProviderFetchResult(
-            service=self.service,
-            provider=self.key,
-            account_id=account.id,
-            fetched_at=observed,
-            metrics=metrics,
-            notes=extract_claude_notes(output),
-        )
-    # end def
-# end class
-
-
-class ClaudeUsageProvider(ClaudeStatusProvider):
-    key = "cli-usage"
-    display_name = "Claude /usage"
-    icon = IconRef(set="solid", name="terminal")
-
-    async def fetch(
-        self,
-        account: AccountConfig,
-        credential: dict[str, Any] | None,
-    ) -> ProviderFetchResult:
-        options = dict(account.options)
-        options.pop("relay_file", None)
-        direct = account.model_copy(update={"options": options})
-        return await super().fetch(direct, credential)
-    # end def
-# end class
-
-
-def write_relay_payload(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
-    temporary.chmod(0o600)
-    temporary.replace(path)
-# end def
-
-
-def install_status_relay(account: AccountConfig, local_root: Path) -> Path:
-    profile = claude_profile_path(
-        str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
-    )
-    settings_path = profile / "settings.json"
-    profile.mkdir(mode=0o700, parents=True, exist_ok=True)
-    settings: dict[str, Any] = {}
-    if settings_path.exists():
-        settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    # end if
-    existing = settings.get("statusLine")
-    marker = f"ai-usage-relay-{account.id}"
-    if isinstance(existing, dict) and marker in str(existing.get("command", "")):
-        return settings_path
-    # end if
-    relay_root = local_root / "claude-relay"
-    relay_root.mkdir(mode=0o700, parents=True, exist_ok=True)
-    original_path = relay_root / f"{account.id}.original.json"
-    original_path.write_text(json.dumps(existing), encoding="utf-8")
-    original_path.chmod(0o600)
-    script_path = relay_root / f"{marker}.py"
-    relay_file = local_root / "relay" / f"{account.id}.json"
-    original_command = existing.get("command") if isinstance(existing, dict) else None
-    script = f"""#!/usr/bin/env python3
-import json
-import subprocess
-import sys
-from pathlib import Path
-
-payload = sys.stdin.buffer.read()
-target = Path({str(relay_file)!r})
-target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-temporary = target.with_suffix('.tmp')
-temporary.write_bytes(payload)
-temporary.chmod(0o600)
-temporary.replace(target)
-command = {original_command!r}
-if command:
-    result = subprocess.run(command, input=payload, shell=True, capture_output=True)
-    sys.stdout.buffer.write(result.stdout)
-    sys.stderr.buffer.write(result.stderr)
-    raise SystemExit(result.returncode)
-"""
-    script_path.write_text(script, encoding="utf-8")
-    script_path.chmod(0o700)
-    settings["statusLine"] = {
-        "type": "command",
-        "command": f"{shlex.quote(sys.executable)} {shlex.quote(str(script_path))} # {marker}",
-    }
-    temporary_settings = settings_path.with_suffix(".tmp")
-    temporary_settings.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-    temporary_settings.chmod(0o600)
-    temporary_settings.replace(settings_path)
-    return settings_path
-# end def
-
-
-def remove_status_relay(account: AccountConfig, local_root: Path) -> None:
-    profile = claude_profile_path(
-        str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
-    )
-    settings_path = profile / "settings.json"
-    marker = f"ai-usage-relay-{account.id}"
-    relay_root = local_root / "claude-relay"
-    original_path = relay_root / f"{account.id}.original.json"
-    script_path = relay_root / f"{marker}.py"
-    relay_file = local_root / "relay" / f"{account.id}.json"
-    if settings_path.exists():
-        settings = json.loads(settings_path.read_text(encoding="utf-8"))
-        current = settings.get("statusLine")
-        if isinstance(current, dict) and marker in str(current.get("command", "")):
-            original = (
-                json.loads(original_path.read_text(encoding="utf-8"))
-                if original_path.exists()
-                else None
-            )
-            if original is None:
-                settings.pop("statusLine", None)
-            else:
-                settings["statusLine"] = original
-            # end if
-            temporary = settings_path.with_suffix(".tmp")
-            temporary.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-            temporary.replace(settings_path)
-        # end if
-    # end if
-    for path in (script_path, original_path, relay_file):
-        if path.exists():
-            path.unlink()
-        # end if
-    # end for
-# end def
