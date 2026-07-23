@@ -6,26 +6,24 @@ import { CanvasRenderer } from "echarts/renderers";
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
 import { buildSankeyData, type SankeyNodeDatum } from "../sankey";
-import type { FunnelBranch, IconRef } from "../types";
+import type { IconRef, SankeyService } from "../types";
 import Chip from "./Chip.vue";
 
 echarts.use([SankeyChart, TooltipComponent, CanvasRenderer]);
 
 const props = defineProps<{
-  tree: FunnelBranch[];
-  activeServices: string[];
-  activeProviders: string[];
+  tree: SankeyService[];
   activeAccounts: string[];
   activeMetrics: string[];
   dark: boolean;
   serviceIcons?: Record<string, IconRef>;
-  providerIcons?: Record<string, IconRef>;
 }>();
 
 const emit = defineEmits<{
-  "toggle-service": [service: string];
-  "toggle-provider": [provider: string];
+  "toggle-service": [serviceId: string];
   "toggle-account": [accountId: string];
+  "toggle-organization": [organizationId: string];
+  "toggle-parser": [configId: string];
   "toggle-metric": [metricKey: string];
 }>();
 
@@ -40,10 +38,7 @@ const nodes = ref<SankeyNodeDatum[]>([]);
 const positions = reactive<Record<string, { left: number; top: number }>>({});
 
 function isActive(node: SankeyNodeDatum): boolean {
-  if (node.kind === "service") return props.activeServices.includes(node.refId);
-  if (node.kind === "provider") return props.activeProviders.includes(node.refId);
-  if (node.kind === "account") return props.activeAccounts.includes(node.refId);
-  return props.activeMetrics.includes(node.refId);
+  return node.active;
 }
 
 function chipStyle(node: SankeyNodeDatum): { left: string; top: string } | { display: string } {
@@ -53,8 +48,9 @@ function chipStyle(node: SankeyNodeDatum): { left: string; top: string } | { dis
 
 function toggle(node: SankeyNodeDatum): void {
   if (node.kind === "service") emit("toggle-service", node.refId);
-  else if (node.kind === "provider") emit("toggle-provider", node.refId);
   else if (node.kind === "account") emit("toggle-account", node.refId);
+  else if (node.kind === "organization") emit("toggle-organization", node.refId);
+  else if (node.kind === "parser") emit("toggle-parser", node.refId);
   else emit("toggle-metric", node.refId);
 }
 
@@ -90,10 +86,10 @@ function render(): void {
   chart ??= echarts.init(container.value);
   const built = buildSankeyData(
     props.tree,
-    { services: props.activeServices, providers: props.activeProviders, accounts: props.activeAccounts, metrics: props.activeMetrics },
+    props.activeAccounts,
+    props.activeMetrics,
     props.dark,
     props.serviceIcons,
-    props.providerIcons,
   );
   nodes.value = built.nodes;
   chart.setOption({
@@ -125,13 +121,10 @@ onMounted(() => {
 watch(
   () => [
     props.tree,
-    props.activeServices,
-    props.activeProviders,
     props.activeAccounts,
     props.activeMetrics,
     props.dark,
     props.serviceIcons,
-    props.providerIcons,
   ],
   () => render(),
   { deep: true },
@@ -145,7 +138,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="filter-sankey">
-    <div ref="container" class="filter-sankey-canvas" role="img" aria-label="Service, provider, account, and metric filters" />
+    <div ref="container" class="filter-sankey-canvas" role="img" aria-label="Service, account, organization, parser, and metric filters" />
     <div class="filter-sankey-overlay">
       <Chip
         v-for="node in nodes"
@@ -154,6 +147,7 @@ onBeforeUnmount(() => {
         :style="chipStyle(node)"
         :label="node.displayName"
         :icon="node.icon"
+        :title="node.title"
         :active="isActive(node)"
         @click="toggle(node)"
       />

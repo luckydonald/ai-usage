@@ -19,7 +19,18 @@ export interface Account {
   colors: Record<string, string>;
   identity: AccountIdentity | null;
   subscription: SubscriptionStatus | null;
-  group_id: string | null;
+  account: AccountHierarchy;
+  parser_label: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string | null;
+}
+
+export interface AccountHierarchy {
+  login: string | null;
+  organization: Organization | null;
 }
 
 export interface CatalogMetric {
@@ -96,30 +107,36 @@ export interface NoteRange {
 }
 
 export interface Filters {
-  services: string[];
-  providers: string[];
   accounts: string[];
   metrics: string[];
 }
 
-export interface FunnelMetric {
+export interface SankeyMetric {
   key: string;
   name: string;
 }
 
-export interface FunnelAccount {
+export interface SankeyParser {
+  id: string;
+  provider: string;
+  label: string;
+  icon?: IconRef;
+  metrics: SankeyMetric[];
+}
+
+export interface SankeyOrganization {
+  id: string | null;
+  name: string | null;
+  parsers: SankeyParser[];
+}
+
+export interface SankeyAccount {
   id: string;
   label: string;
-  metrics: FunnelMetric[];
+  organizations: SankeyOrganization[];
 }
 
-export interface FunnelProvider {
-  provider: string;
-  accounts: FunnelAccount[];
-}
-
-export interface FunnelBranch {
+export interface SankeyService {
   service: string;
-  providers: FunnelProvider[];
+  accounts: SankeyAccount[];
 }
-

@@ -8,7 +8,7 @@ import pytest
 
 from ai_usage.api import DEFAULT_PORT, create_app, exposed_host, resolve_port
 from ai_usage.icons import FONTAWESOME_FREE_PACK_VERSION
-from ai_usage.models import Metric, ProviderFetchResult, Usage
+from ai_usage.models import AccountIdentity, Metric, ProviderFetchResult, Usage
 from ai_usage.notes import NotesStore
 from tests.test_storage import temporary_paths
 
@@ -58,6 +58,42 @@ async def test_api_catalog_latest_and_series(tmp_path, monkeypatch) -> None:
     assert catalog.json()["provider_icons"]["statusline"]["name"] == "gauge"
     assert latest.json()[0]["percentage"] == 42
     assert series.json()[0]["points"][0]["percentage"] == 42
+    await runtime.close()
+# end def
+
+
+@pytest.mark.asyncio
+async def test_api_returns_raw_series_by_default_and_combines_only_on_request(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AI_USAGE_CREDENTIAL_KEY", base64.urlsafe_b64encode(os.urandom(32)).decode())
+    paths = temporary_paths(tmp_path)
+    app = create_app(paths)
+    runtime = app.state.runtime
+    await runtime.initialize()
+    first = runtime.config.create_account("codex", "app-server", "Codex", None, {})
+    second = runtime.config.create_account("codex", "web", "Codex web", None, {})
+    runtime.config.save_account(first.model_copy(update={"login": "user@example.com"}))
+    runtime.config.save_account(second.model_copy(update={"login": "user@example.com"}))
+    now = datetime.now(UTC)
+    for account in (first, second):
+        await runtime.history.append_result(
+            ProviderFetchResult(
+                service="codex",
+                provider=account.provider,
+                account_id=account.id,
+                fetched_at=now,
+                identity=AccountIdentity(email="user@example.com"),
+                metrics=[Metric(key="five-hours", name="Five hours", usage=Usage(percentage=42), observed_at=now)],
+            )
+        )
+    # end for
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        params = {"start": "2026-01-01T00:00:00Z", "end": "2027-01-01T00:00:00Z"}
+        raw = await client.get("/api/v1/series", params=params)
+        legacy = await client.get("/api/v1/series", params=params | {"aggregation": "legacy"})
+    # end with
+    assert len(raw.json()) == 2
+    assert len(legacy.json()) == 1
     await runtime.close()
 # end def
 
@@ -185,4 +221,3 @@ async def test_sse_stream_stops_once_shutdown_is_signalled(tmp_path, monkeypatch
     assert chunks == []
     await runtime.close()
 # end def
-

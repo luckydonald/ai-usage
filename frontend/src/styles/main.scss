@@ -251,6 +251,30 @@ h1 {
   box-shadow: 0 12px 38px rgb(15 10 35 / 6%);
 }
 
+.chart-mode {
+  display: flex;
+  justify-content: flex-end;
+  gap: .35rem;
+  padding: .5rem .5rem 0;
+
+  button {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .3rem .7rem;
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: .78rem;
+    font-weight: 700;
+
+    &.active {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: var(--color-primary-text);
+    }
+  }
+}
+
 .state {
   padding: 2rem;
   color: var(--text-muted);

@@ -24,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from ai_usage.account_groups import account_group_ids
+from ai_usage.account_presentation import account_presentation, duplicate_configuration_ids
 from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
@@ -107,7 +108,13 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
     @app.get("/api/v1/catalog")
     async def catalog() -> dict[str, Any]:
         accounts = state.config.list_accounts(False)
-        groups = account_group_ids(accounts)
+        duplicate_ids = duplicate_configuration_ids(accounts)
+        if duplicate_ids:
+            LOGGER.warning(
+                "legacy duplicate provider configurations are present: %s",
+                ", ".join(sorted(duplicate_ids)),
+            )
+        # end if
         async with state.database.sessions() as session:
             rows = await session.execute(
                 select(
@@ -125,11 +132,26 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
             for provider in state.providers.providers.values()
             if provider.icon is not None
         }
+        account_payloads: list[dict[str, Any]] = []
+        for account in accounts:
+            presentation = account_presentation(account)
+            account_payloads.append(
+                account.model_dump(mode="json")
+                | {
+                    "account": {
+                        "login": presentation.login,
+                        "organization": (
+                            {"id": presentation.organization.id, "name": presentation.organization.name}
+                            if presentation.organization
+                            else None
+                        ),
+                    },
+                    "parser_label": state.providers.get(account.service, account.provider).display_name,
+                }
+            )
+        # end for
         return {
-            "accounts": [
-                account.model_dump(mode="json") | {"group_id": groups.get(account.id)}
-                for account in accounts
-            ],
+            "accounts": account_payloads,
             "metrics": metrics,
             "exhausted_color": "#6b7280",
             "service_icons": {service: icon._asdict() for service, icon in SERVICE_ICONS.items()},
@@ -166,12 +188,11 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
         provider: Annotated[list[str] | None, Query()] = None,
         account: Annotated[list[str] | None, Query()] = None,
         metric: Annotated[list[str] | None, Query()] = None,
+        aggregation: Annotated[str, Query(pattern="^(raw|legacy)$")] = "raw",
     ) -> list[dict[str, Any]]:
         samples = await state.history.samples(start, end, service, provider, account, metric)
         colors: dict[tuple[str, str], str] = {}
-        account_groups: dict[str, str] = {}
         configured_accounts = state.config.list_accounts(False)
-        account_groups = account_group_ids(configured_accounts)
         for configured in configured_accounts:
             for metric_key, color in configured.colors.items():
                 colors[(configured.id, metric_key)] = color
@@ -179,7 +200,11 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
         # end for
         return [
             item.model_dump(mode="json")
-            for item in build_series(samples, colors, account_groups=account_groups)
+            for item in build_series(
+                samples,
+                colors,
+                account_groups=account_group_ids(configured_accounts) if aggregation == "legacy" else None,
+            )
         ]
     # end def
 

@@ -15,6 +15,7 @@ import click
 import typer
 
 from ai_usage.collector import Collector
+from ai_usage.account_presentation import configuration_key
 from ai_usage.completion_staleness import check_completion_staleness
 from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
@@ -206,6 +207,29 @@ async def create_account(
         return existing, "existing"
     # end if
     account_name = name or (discovered.account.name if discovered else provider.display_name)
+    if login is not None:
+        candidate = AccountConfig(
+            id="pending",
+            service=service,
+            provider=provider_key,
+            name=account_name,
+            login=login,
+            options=options,
+        )
+        duplicates = [
+            account
+            for account in runtime.config.list_accounts(False)
+            if account.id != (existing.id if existing else None)
+            and account.login is not None
+            and configuration_key(account) == configuration_key(candidate)
+        ]
+        if duplicates:
+            raise click.ClickException(
+                "a configuration already exists for this service, account, organization, and parser: "
+                + ", ".join(account.id for account in duplicates)
+            )
+        # end if
+    # end if
     credential_id: str | None = None
     if credential:
         credential_id = await runtime.database.put_credential(provider_key, account_name, credential)
