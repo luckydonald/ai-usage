@@ -8,16 +8,15 @@ Replace manual `group_id` grouping with a persisted, non-empty per-config `login
 
 - Add `AccountConfig.login: str | None` solely to read legacy configs; newly written configs must contain a non-empty string.
 - Remove `group_id` behavior: ignore legacy YAML values, drop them on the next config save, remove graph/API synthetic-series grouping, and retire `provider group` / `provider ungroup`.
-- Require every `Provider` subclass to implement `user_identity(account, fetch_result) -> str | None`.
-  - Codex/Claude web: canonical email.
-  - GitHub Copilot billing: configured GitHub username.
-  - Claude web: `email|org-uuid` when organization differs from the email; otherwise email alone.
-  - A provider that cannot determine a login returns `None`.
-- Legacy missing/null login remains readable. A successful fetch migrates it only when a concrete login is available; serializing a still-unresolved legacy config omits `login` rather than writing `null`.
+- Add required `Provider.user_identity(account, fetch_result) -> str`.
+  - Its base implementation raises `NotImplementedError`; every built-in and plugin provider must override it.
+  - Providers unable to determine a login raise a dedicated provider-login error, rather than returning `None`.
+  - Codex/Claude web return canonical email; GitHub Copilot billing returns configured GitHub username; Claude web returns `email|org-uuid` when organization differs from the email, otherwise email alone.
+- Legacy missing/null login remains readable. A successful fetch migrates it only when `user_identity()` returns successfully; serializing a still-unresolved legacy config omits `login` rather than writing `null`.
 
 ## Setup, storage, and CLI
 
-- Make a successful initial fetch and concrete provider login mandatory before a new or restored config is finalized. A `None` result aborts setup with a clear unsupported-identity error.
+- Make a successful initial fetch and successful `user_identity()` call mandatory before a new or restored config is finalized. A provider-login error aborts setup with its actionable explanation.
 - Use a provisional config UUID; persist credential, config, and initial history only after the fetch and login resolution succeed. Failure leaves no config, credential, or history.
 - Change `provider ls` / `provider list` to show `STATE | SERVICE | PARSER | ACCOUNT | CONFIG`, with the UUID last.
 - Update management status, selection prompts, confirmations, and success messages to identify configs by service/parser, account login, and config UUID; never display config `name`.
@@ -33,6 +32,6 @@ Replace manual `group_id` grouping with a persisted, non-empty per-config `login
 ## Test plan
 
 - Model/YAML tests for rejecting newly persisted null/empty login, legacy missing/null compatibility, legacy `group_id` cleanup, and independent config UUID/history preservation.
-- Provider tests for every required identity resolver, including Claude email/org-UUID composition and unresolved identity.
+- Provider tests for every required identity resolver, missing resolver failure, unavailable-login errors, and Claude email/org-UUID composition.
 - CLI tests for setup rollback when fetch or login resolution fails, successful atomic creation with a concrete login, list column order, and removal of grouping/name commands.
 - Graph/API regression tests proving configs with equal logins remain separate series until the deferred frontend grouping work is implemented.
