@@ -2334,3 +2334,25 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. What should the legacy synthesized-series mode change?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Legacy mode** (1/1) <kbd>Single Select</kbd><br>
+>> What should the legacy synthesized-series mode change?
+> - [x] 1\. Chart aggregation only (Recommended)
+>   - _Keep the new account/organisation/provider filters and provenance panels; only the plotted series use legacy merged values._
+> - [ ] 2\. Entire dashboard view
+>   - _Restore the old flat account/group filter and panel presentation together with legacy chart series._
+> - [ ] 3\. Chart and panels
+>   - _Keep new filters but show aggregated legacy panels as well as the merged chart._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
