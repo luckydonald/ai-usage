@@ -2177,3 +2177,24 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Alright, plan the frontend changes now.
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Where should configurations sharing the same login appear when their parsers/providers differ?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Account nesting** (1/1) <kbd>Single Select</kbd><br>
+>> Where should configurations sharing the same login appear when their parsers/providers differ?
+> - [ ] 1\. Service → account (Recommended)
+>   - _One account container per same-service login, with parser/configuration children; this matches the current derived grouping rule._
+> - [ ] 2\. Service → provider → account
+>   - _Keep the current provider column first, so the same login can appear in separate provider branches._
+> - [x] 3\. _Type something:_
+>   - > Service (claude) → account (user@example.com) [→ organisation (it@company.example.net)] → provider → metric
+>
+> </details>
+>
+
