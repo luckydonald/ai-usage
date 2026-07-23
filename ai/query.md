@@ -2465,3 +2465,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ commit cli-config-dir-reference.md, as it is useful for the issue with the CLAUDE_CONFIG_DIR quite a while back
 
+❯ /caveman:caveman
+
