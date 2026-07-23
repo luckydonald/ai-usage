@@ -572,7 +572,7 @@ def test_provider_login_stores_captured_cookies_as_credential(tmp_path: Path, mo
         "claude", "web", "Claude", None, {"org_id": "org-1"}
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.capture_cookies_via_webview",
+        "ai_usage.providers.claude.api.capture_cookies_via_webview",
         lambda url, title: {"session": "abc123"},
     )
     monkeypatch.setattr(
@@ -766,7 +766,7 @@ def test_provider_login_does_not_store_credentials_when_the_verification_fetch_f
         "claude", "web", "Claude", None, {"org_id": "org-1"}
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.capture_cookies_via_webview",
+        "ai_usage.providers.claude.api.capture_cookies_via_webview",
         lambda url, title: {"session": "abc123"},
     )
 
