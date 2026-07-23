@@ -2071,3 +2071,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. What should `login` contain in each config YAML?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **`login` value** (1/1) <kbd>Single Select</kbd><br>
+>> What should `login` contain in each config YAML?
+> - [ ] 1\. Actual login label (Recommended)
+>   - _Store the canonical user identity string (email/username); calculate the deterministic account UUID from service plus this value when grouping is needed._
+> - [ ] 2\. Derived UUID
+>   - _Store the deterministic group UUID directly in `login`; retain provider identity separately only for display._
+> - [ ] 3\. Both fields
+>   - _Store `login` as the actual identity and a separate deterministic UUID field for internal grouping._
+> - [x] 4\. _Type something:_
+>   - > Only the email/username. Whenever it's claude with the same email, it's actually always\* the same account, no matter how it's fetched (\*: fun caviat: In claude you can be part of a organisation, and apparently multiple. So, while it is still the same account, you can configure one per organisation you have access to (and hence own limits on)... fun corner cases! So I guess for simplicity the generated `login` would be `email` + organisation (-email?), I imagine something like `"login": "user@example.com|it@organisation.example.net"` for now. Note, if the user and organisation are equal, don't repeat it.
+>
+> </details>
+>
+
