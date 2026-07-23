@@ -2094,3 +2094,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. For a Claude configuration scoped to an organization, which value should follow the user email in `login`?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Claude org key** (1/1) <kbd>Single Select</kbd><br>
+>> For a Claude configuration scoped to an organization, which value should follow the user email in `login`?
+> - [x] 1\. Organization UUID (Recommended)
+>   - _Store `user@example.com|<org UUID>`: stable and unambiguous, even if the organization display name changes._
+>   - > Yeah, we need to figure out that organisation usecase at a later time. Though apparently a personal user is automatically in a organisation called `user@example.com' Organization`, but yeah, uuid for now, that should be save.
+> - [ ] 2\. Organization name
+>   - _Store `user@example.com|<organization name>`: readable, but a rename changes the account key._
+> - [ ] 3\. Name plus UUID
+>   - _Store both: readable and stable, but longer in CLI output._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
