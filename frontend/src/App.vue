@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
-import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
+import { fetchCatalog, fetchLegacySeries, fetchNotes, fetchSeries } from "./api";
 import { activeNotesAt } from "./chart";
 import FilterSankey from "./components/FilterSankey.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
-import { defaultFilters, toggleAccount, toggleMetric, toggleProvider, toggleService } from "./filterCascade";
+import { defaultFilters, toggleAccount, toggleMetric, toggleOrganization, toggleParser, toggleService } from "./filterCascade";
 import { renderNoteMarkdown } from "./markdown";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
-import type { Catalog, Filters, FunnelAccount, FunnelBranch, FunnelProvider, GraphSeries, NoteRange } from "./types";
+import type { Catalog, Filters, GraphSeries, NoteRange, SankeyParser, SankeyService } from "./types";
 
 const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {} });
 const series = ref<GraphSeries[]>([]);
+const detailedSeries = ref<GraphSeries[]>([]);
 const notes = ref<NoteRange[]>([]);
 const preset = ref<TimePreset>("auto");
 const customStartText = ref(toDateInputValue(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
@@ -29,8 +30,6 @@ function loadStoredFilters(): Filters | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<Filters>;
     return {
-      services: Array.isArray(parsed.services) ? parsed.services : [],
-      providers: Array.isArray(parsed.providers) ? parsed.providers : [],
       accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [],
       metrics: Array.isArray(parsed.metrics) ? parsed.metrics : [],
     };
@@ -40,7 +39,7 @@ function loadStoredFilters(): Filters | null {
 }
 
 const storedFilters = loadStoredFilters();
-const filters = reactive<Filters>(storedFilters ?? { services: [], providers: [], accounts: [], metrics: [] });
+const filters = reactive<Filters>(storedFilters ?? { accounts: [], metrics: [] });
 // Persisted as one blob (not per-toggle-site setItem calls like the other prefs below) since
 // `filters` is a single reactive object toggled from four separate template call sites.
 watch(filters, () => localStorage.setItem("ai-usage-filters", JSON.stringify(filters)), { deep: true });
@@ -51,46 +50,54 @@ const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localStorage.getItem("ai-usage-theme") && systemDark.matches));
 const includeWindowEnds = ref(localStorage.getItem("ai-usage-pad-window-ends") === "true");
 const showDataPoints = ref(localStorage.getItem("ai-usage-show-data-points") === "true");
+const aggregation = ref<"raw" | "legacy">(localStorage.getItem("ai-usage-chart-aggregation") === "legacy" ? "legacy" : "raw");
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 let events: EventSource | undefined;
 
 const activeNotes = computed(() => activeNotesAt(notes.value, Date.now()));
 
-// These four are only used to decide whether there's more than one of something worth showing a
-// filter diagram for at all (`FilterSankey`'s `v-if` below) — the diagram itself always shows the
-// full unfiltered catalog (`serviceProviderTree`), so these don't need to shrink to the current
-// selection like they used to for the old flat-chip-list UI.
 const services = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.service))]);
-const providers = computed(() => [...new Set(catalog.value.metrics.map((metric) => metric.provider))]);
-// Unfiltered service -> provider -> account -> metric tree (unlike `providers`/`accounts`/
-// `metricOptions` above, which shrink to the current selection) so the funnel diagram always
-// shows the full structure, with the active selection just highlighted rather than the rest of
-// the tree disappearing.
-const serviceProviderTree = computed<FunnelBranch[]>(() => {
-  const byService = new Map<string, Map<string, Map<string, FunnelAccount["metrics"]>>>();
+const sankeyTree = computed<SankeyService[]>(() => {
+  const byService = new Map<string, Map<string, Map<string, Map<string, SankeyParser>>>>();
   for (const metric of catalog.value.metrics) {
-    const byProvider = byService.get(metric.service) ?? new Map();
-    byService.set(metric.service, byProvider);
-    const byAccount = byProvider.get(metric.provider) ?? new Map();
-    byProvider.set(metric.provider, byAccount);
-    const metrics: FunnelAccount["metrics"] = byAccount.get(metric.account_id) ?? [];
-    if (!metrics.some((entry) => entry.key === metric.metric_key)) {
-      metrics.push({ key: metric.metric_key, name: metric.metric_name });
+    const configured = catalog.value.accounts.find((account) => account.id === metric.account_id);
+    if (!configured) continue;
+    const accountId = configured.account.login ?? `unresolved:${configured.id}`;
+    const organizationId = configured.account.organization?.id ?? null;
+    const organizationKey = organizationId ?? `unorganized:${configured.id}`;
+    const byAccount = byService.get(metric.service) ?? new Map();
+    byService.set(metric.service, byAccount);
+    const byOrganization = byAccount.get(accountId) ?? new Map();
+    byAccount.set(accountId, byOrganization);
+    const parsers = byOrganization.get(organizationKey) ?? new Map();
+    byOrganization.set(organizationKey, parsers);
+    const parser: SankeyParser = parsers.get(configured.id) ?? {
+      id: configured.id,
+      provider: configured.provider,
+      label: configured.parser_label,
+      icon: catalog.value.provider_icons[configured.provider],
+      metrics: [],
+    };
+    if (!parser.metrics.some((entry) => entry.key === metric.metric_key)) {
+      parser.metrics.push({ key: metric.metric_key, name: metric.metric_name });
     }
-    byAccount.set(metric.account_id, metrics);
+    parsers.set(configured.id, parser);
   }
-  return [...byService.entries()].map(([service, byProvider]) => ({
+  return [...byService.entries()].map(([service, byAccount]) => ({
     service,
-    providers: [...byProvider.entries()].map(
-      ([provider, byAccount]): FunnelProvider => ({
-        provider,
-        accounts: [...byAccount.entries()].map(([accountId, metrics]) => ({
-          id: accountId,
-          label: accountLabels.value[accountId] ?? accountId.slice(0, 8),
-          metrics,
-        })),
+    accounts: [...byAccount.entries()].map(([accountId, byOrganization]) => ({
+      id: accountId,
+      label: accountId.startsWith("unresolved:") ? "Unresolved configuration" : accountId,
+      organizations: [...byOrganization.entries()].map(([organizationKey, parsers]) => {
+        const first = parsers.values().next().value as SankeyParser;
+        const configured = catalog.value.accounts.find((account) => account.id === first.id)!;
+        return {
+          id: configured.account.organization?.id ?? null,
+          name: configured.account.organization?.name ?? null,
+          parsers: [...parsers.values()],
+        };
       }),
-    ),
+    })),
   }));
 });
 const accounts = computed(() => catalog.value.accounts);
@@ -100,27 +107,32 @@ const metricOptions = computed(() => [...new Set(catalog.value.metrics.map((metr
 // with everything on by default (see `defaultFilters` below), the only way to get here is
 // deliberately deselecting every chip in a column, so it's worth a distinct explanation rather
 // than just silently showing no data.
-const hasEmptyFilterDimension = computed(() => !filters.services.length || !filters.providers.length || !filters.accounts.length || !filters.metrics.length);
+const hasEmptyFilterDimension = computed(() => !filters.accounts.length || !filters.metrics.length);
 
 function accountLabel(account: Catalog["accounts"][number]): string {
-  const identityLabel = account.identity?.name ?? account.identity?.email;
-  return identityLabel ? `${account.name} (${identityLabel})` : account.name;
+  return account.account.login ?? `Unresolved configuration (${account.id.slice(0, 8)})`;
 }
 
 const accountLabels = computed<Record<string, string>>(() => {
   const labels: Record<string, string> = {};
-  const groupLabelSource = new Map<string, Catalog["accounts"][number]>();
   for (const account of catalog.value.accounts) {
     labels[account.id] = accountLabel(account);
-    if (account.group_id && !groupLabelSource.has(account.group_id)) {
-      groupLabelSource.set(account.group_id, account);
-    }
-  }
-  for (const [groupId, account] of groupLabelSource) {
-    labels[groupId] = accountLabel(account);
   }
   return labels;
 });
+
+const parserLabels = computed<Record<string, string>>(
+  () => Object.fromEntries(catalog.value.accounts.map((account) => [account.id, account.parser_label])),
+);
+
+const chartLabels = computed<Record<string, string>>(() =>
+  Object.fromEntries(
+    catalog.value.accounts.map((account) => {
+      const organization = account.account.organization?.name;
+      return [account.id, [accountLabel(account), organization, account.parser_label].filter(Boolean).join(" · ")];
+    }),
+  ),
+);
 
 interface LoadOptions {
   autoWiden?: boolean;
@@ -146,7 +158,8 @@ async function performLoad({ autoWiden = false, silent = false }: LoadOptions): 
         ? customRange(customStartText.value, customEndText.value)
         : rangeForPreset(preset.value);
     rangeStart.value = start;
-    series.value = await fetchSeries(start, end, filters);
+    detailedSeries.value = await fetchSeries(start, end, filters);
+    series.value = aggregation.value === "legacy" ? await fetchLegacySeries(start, end, filters) : detailedSeries.value;
     rangeEnd.value = paddedChartEnd(preset.value, start, end, series.value, includeWindowEnds.value);
     pruneHiddenSeriesKeys();
     if (autoWiden && preset.value !== "custom" && series.value.every((item) => item.points.length === 0)) {
@@ -184,12 +197,8 @@ async function loadNotes(): Promise<void> {
 // from an older localStorage snapshot) — otherwise a stale selection would silently filter the
 // chart down to nothing with no matching chip left to click to undo it.
 function pruneStoredFilters(): void {
-  const validServices = new Set(catalog.value.metrics.map((metric) => metric.service));
-  const validProviders = new Set(catalog.value.metrics.map((metric) => metric.provider));
   const validAccounts = new Set(catalog.value.accounts.map((account) => account.id));
   const validMetrics = new Set(catalog.value.metrics.map((metric) => metric.metric_key));
-  filters.services = filters.services.filter((value) => validServices.has(value));
-  filters.providers = filters.providers.filter((value) => validProviders.has(value));
   filters.accounts = filters.accounts.filter((value) => validAccounts.has(value));
   filters.metrics = filters.metrics.filter((value) => validMetrics.has(value));
 }
@@ -206,27 +215,38 @@ function toggleSeries(key: string, visible: boolean): void {
 }
 
 function applyFilters(next: Filters): void {
-  filters.services = next.services;
-  filters.providers = next.providers;
   filters.accounts = next.accounts;
   filters.metrics = next.metrics;
   void load();
 }
 
-function onToggleService(service: string): void {
-  applyFilters(toggleService(serviceProviderTree.value, filters, service));
-}
-
-function onToggleProvider(provider: string): void {
-  applyFilters(toggleProvider(serviceProviderTree.value, filters, provider));
+function onToggleService(serviceId: string): void {
+  const service = sankeyTree.value.find((entry) => entry.service === serviceId);
+  if (service) applyFilters(toggleService(filters, service));
 }
 
 function onToggleAccount(accountId: string): void {
-  applyFilters(toggleAccount(serviceProviderTree.value, filters, accountId));
+  const account = sankeyTree.value.flatMap((service) => service.accounts).find((entry) => entry.id === accountId);
+  if (account) applyFilters(toggleAccount(filters, account));
+}
+
+function onToggleOrganization(organizationId: string): void {
+  const organization = sankeyTree.value.flatMap((service) => service.accounts).flatMap((account) => account.organizations).find((entry) => entry.id === organizationId);
+  if (organization) applyFilters(toggleOrganization(filters, organization));
+}
+
+function onToggleParser(configId: string): void {
+  const parser = sankeyTree.value.flatMap((service) => service.accounts).flatMap((account) => account.organizations).flatMap((organization) => organization.parsers).find((entry) => entry.id === configId);
+  if (parser) applyFilters(toggleParser(filters, parser));
 }
 
 function onToggleMetric(metricKey: string): void {
-  applyFilters(toggleMetric(serviceProviderTree.value, filters, metricKey));
+  applyFilters(toggleMetric(filters, metricKey));
+}
+
+function setAggregation(): void {
+  localStorage.setItem("ai-usage-chart-aggregation", aggregation.value);
+  void load();
 }
 
 function toggleTheme(): void {
@@ -249,9 +269,7 @@ onMounted(async () => {
   try {
     catalog.value = await fetchCatalog();
     if (!storedFilters) {
-      const initial = defaultFilters(serviceProviderTree.value);
-      filters.services = initial.services;
-      filters.providers = initial.providers;
+      const initial = defaultFilters(sankeyTree.value);
       filters.accounts = initial.accounts;
       filters.metrics = initial.metrics;
     } else {
@@ -326,23 +344,25 @@ onBeforeUnmount(() => events?.close());
       </template>
 
       <FilterSankey
-        v-if="services.length > 1 || providers.length > 1 || accounts.length > 1 || metricOptions.length > 1"
-        :tree="serviceProviderTree"
-        :active-services="filters.services"
-        :active-providers="filters.providers"
+        v-if="services.length > 1 || accounts.length > 1 || metricOptions.length > 1"
+        :tree="sankeyTree"
         :active-accounts="filters.accounts"
         :active-metrics="filters.metrics"
         :dark="dark"
         :service-icons="catalog.service_icons"
-        :provider-icons="catalog.provider_icons"
         @toggle-service="onToggleService"
-        @toggle-provider="onToggleProvider"
         @toggle-account="onToggleAccount"
+        @toggle-organization="onToggleOrganization"
+        @toggle-parser="onToggleParser"
         @toggle-metric="onToggleMetric"
       />
     </section>
 
     <main class="graph-panel">
+      <div class="chart-mode" role="group" aria-label="Chart aggregation">
+        <button type="button" :class="{ active: aggregation === 'raw' }" @click="aggregation = 'raw'; setAggregation()">Detailed</button>
+        <button type="button" :class="{ active: aggregation === 'legacy' }" @click="aggregation = 'legacy'; setAggregation()">Combined</button>
+      </div>
       <p v-if="loading" class="state">Loading usage history…</p>
       <p v-else-if="error" class="state banner-error">{{ error }}</p>
       <p v-else-if="hasEmptyFilterDimension" class="state banner-warning">Nothing selected in at least one filter — deselect fewer things to see data.</p>
@@ -355,12 +375,12 @@ onBeforeUnmount(() => events?.close());
         :hidden-series-keys="hiddenSeriesKeys"
         :range-start="rangeStart"
         :range-end="rangeEnd"
-        :account-labels="accountLabels"
+        :account-labels="chartLabels"
         :notes="notes"
         :show-data-points="showDataPoints"
         @toggle-series="toggleSeries"
       />
-      <ServicePanels v-if="series.length" :series="series" :account-labels="accountLabels" />
+      <ServicePanels v-if="detailedSeries.length" :series="detailedSeries" :account-labels="accountLabels" :parser-labels="parserLabels" />
     </main>
   </div>
 </template>

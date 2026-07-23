@@ -2358,3 +2358,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › We don't need API compat. Diagram is no Funnel but a Sankey. The config node should be the parser (though, reading from the left this allows you to go to one exact config), and be labeled like the parser (I.e. `Web`, `/status`, `/usage`, `app-server`, …)
 
+> › Implement the [Plan](./plans/016_account-aware-sankey-and-raw-series-dashboard.md).
+

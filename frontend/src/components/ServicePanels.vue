@@ -9,6 +9,7 @@ import RelativeTime from "./RelativeTime.vue";
 const props = defineProps<{
   series: GraphSeries[];
   accountLabels: Record<string, string>;
+  parserLabels: Record<string, string>;
 }>();
 
 interface EntryDetails {
@@ -25,13 +26,14 @@ interface ServicePanel {
   service: string;
   accountId: string;
   accountLabel: string;
+  parserLabel: string;
   entries: PanelEntry[];
 }
 
 const panels = computed<ServicePanel[]>(() => {
   const byAccount = new Map<string, GraphSeries[]>();
   for (const item of props.series) {
-    const key = `${item.service}::${item.account_id}`;
+    const key = `${item.service}::${item.account_id}::${item.provider}`;
     const items = byAccount.get(key) ?? [];
     items.push(item);
     byAccount.set(key, items);
@@ -43,6 +45,7 @@ const panels = computed<ServicePanel[]>(() => {
       service: first!.service,
       accountId: first!.account_id,
       accountLabel: props.accountLabels[first!.account_id] ?? first!.account_id.slice(0, 8),
+      parserLabel: props.parserLabels[first!.account_id] ?? first!.provider,
       entries: items.map((item) => {
         const window = item.windows.find((entry) => entry.current) ?? item.windows.at(-1);
         const details = window ? { window, stats: computeWindowStats(item.points, window, now) } : undefined;
@@ -59,8 +62,9 @@ function entryKey(entry: PanelEntry): string {
 
 <template>
   <section v-if="panels.length" class="info-panels" aria-label="Service info panels">
-    <div v-for="panel in panels" :key="`${panel.service}::${panel.accountId}`" class="info-panel">
+    <div v-for="panel in panels" :key="`${panel.service}::${panel.accountId}::${panel.parserLabel}`" class="info-panel">
       <h2>{{ panel.service }} <span class="account-chip">{{ panel.accountLabel }}</span></h2>
+      <p class="parser-label" :title="`Configuration ${panel.accountId}`">{{ panel.parserLabel }}</p>
       <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric">
         <h3>{{ entry.item.metric_name }}</h3>
         <template v-if="entry.details">
@@ -121,6 +125,13 @@ function entryKey(entry: PanelEntry): string {
   color: var(--text);
   font-size: .78rem;
   font-weight: 600;
+}
+
+.parser-label {
+  margin: -.35rem 0 .75rem;
+  color: var(--text-muted);
+  font-size: .82rem;
+  font-weight: 700;
 }
 
 .info-panel-metric {

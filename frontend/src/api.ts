@@ -16,8 +16,13 @@ export function fetchLatest(): Promise<LatestMetric[]> {
 
 export function fetchSeries(start: Date, end: Date, filters: Filters): Promise<GraphSeries[]> {
   const parameters = new URLSearchParams({ start: start.toISOString(), end: end.toISOString() });
-  for (const value of filters.services) parameters.append("service", value);
-  for (const value of filters.providers) parameters.append("provider", value);
+  for (const value of filters.accounts) parameters.append("account", value);
+  for (const value of filters.metrics) parameters.append("metric", value);
+  return request<GraphSeries[]>(`/api/v1/series?${parameters.toString()}`);
+}
+
+export function fetchLegacySeries(start: Date, end: Date, filters: Filters): Promise<GraphSeries[]> {
+  const parameters = new URLSearchParams({ start: start.toISOString(), end: end.toISOString(), aggregation: "legacy" });
   for (const value of filters.accounts) parameters.append("account", value);
   for (const value of filters.metrics) parameters.append("metric", value);
   return request<GraphSeries[]>(`/api/v1/series?${parameters.toString()}`);
@@ -26,4 +31,3 @@ export function fetchSeries(start: Date, end: Date, filters: Filters): Promise<G
 export function fetchNotes(): Promise<NoteRange[]> {
   return request<NoteRange[]>("/api/v1/notes");
 }
-

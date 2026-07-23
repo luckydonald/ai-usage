@@ -6,6 +6,7 @@ defineProps<{
   label: string
   active: boolean
   icon?: IconRef
+  title?: string
 }>();
 
 defineEmits<{
@@ -14,7 +15,7 @@ defineEmits<{
 </script>
 
 <template>
-  <button type="button" class="chip" :class="{ active }" @click="$emit('click')">
+  <button type="button" class="chip" :class="{ active }" :title="title" @click="$emit('click')">
     <Icon v-if="icon" v-bind="icon" /> {{ label }}
   </button>
 </template>

@@ -477,7 +477,7 @@ def test_merge_moves_history_and_deletes_source(tmp_path: Path, monkeypatch) -> 
     )
 
     assert result.exit_code == 0
-    assert "Merged Source into Target and deleted Source." in result.output
+    assert "and deleted the source configuration." in result.output
 
     try:
         ConfigStore(paths).get_account(source.id)
@@ -582,7 +582,7 @@ def test_provider_login_stores_captured_cookies_as_credential(tmp_path: Path, mo
     result = CliRunner().invoke(main, ["provider", "login", "--account", account.id])
 
     assert result.exit_code == 0
-    assert "Stored refreshed credentials for Claude." in result.output
+    assert "Stored refreshed credentials for claude/web" in result.output
     updated = ConfigStore(paths).get_account(account.id)
     assert updated.credential_id is not None
 
