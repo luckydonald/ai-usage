@@ -1913,3 +1913,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › I just realized, copilot seems to have a status bar now, displaying `Plan: 3,075/5,000 (61%` (then it's cut off due to space available). Now, copilot has the habit of reading claude or codex configs, so it could accidentially reuse that - or is that already implemented? Detect if it reuses a current config, which would be bad, as it would write problematic data into that bucket. For now I want an analysis of what the current state is, both in our code, and the current `~/.ai-usage` data.
 
+› when I look at the `ACCOUNT` column of `ai-usage provider ls`, I get the uuid we set for that config file, yes? Not the actual account username of the account subscription? I would rather see that, and possibly a `CONFIG` column with that uuid.
+
