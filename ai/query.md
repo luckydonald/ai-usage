@@ -2117,3 +2117,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. In CLI account-management output, should the legacy config `name` appear beside the UUID?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Config name** (1/1) <kbd>Single Select</kbd><br>
+>> In CLI account-management output, should the legacy config `name` appear beside the UUID?
+> - [x] 1\. UUID only (Recommended)
+>   - _Remove `name` from visual identification entirely; the row shows service, parser, config UUID, and account login._
+>   - > but uuid last
+> - [ ] 2\. UUID plus name
+>   - _Keep the old name as secondary config metadata, never as the account label._
+> - [ ] 3\. Name until migration
+>   - _Show it only while `login` is null, then hide it._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
