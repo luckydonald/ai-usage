@@ -38,7 +38,13 @@ from ai_usage.providers.codex import (
     parse_codex_web_usage,
     parse_rate_limits,
 )
-from ai_usage.providers.copilot import CopilotBillingProvider, next_billing_reset
+from ai_usage.providers.copilot import (
+    CopilotBillingProvider,
+    CopilotStatusProvider,
+    copilot_cli_credentials,
+    next_billing_reset,
+    parse_copilot_quota_payload,
+)
 
 
 class FakeCurlResponse:
@@ -591,6 +597,85 @@ async def test_copilot_billing_provider() -> None:
     result = await CopilotBillingProvider().fetch(account, {"token": "github_pat_test"})
     assert route.called
     assert result.metrics[0].usage.percentage == 20
+# end def
+
+
+def test_parse_copilot_quota_payload_skips_unlimited_snapshots() -> None:
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    metrics = parse_copilot_quota_payload(
+        {
+            "quota_snapshots": {
+                "premium_interactions": {"percent_remaining": 74.6, "entitlement": 300},
+                "chat": {"unlimited": True},
+            }
+        },
+        now,
+        now,
+    )
+    assert [metric.key for metric in metrics] == ["premium-interactions"]
+    assert metrics[0].usage.current == 76.2
+    assert metrics[0].usage.maximum == 300
+# end def
+
+
+def test_copilot_cli_credentials_prefers_matching_host_login(tmp_path) -> None:
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "last_logged_in_user": {"host": "github.com", "login": "lucy"},
+                "copilot_tokens": {"github.com:lucy": "abc123"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    token, login = copilot_cli_credentials(tmp_path)
+    assert (token, login) == ("abc123", "lucy")
+# end def
+
+
+def test_copilot_cli_credentials_prefers_env_var(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "env-token")
+    token, login = copilot_cli_credentials(tmp_path)
+    assert (token, login) == ("env-token", None)
+# end def
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_copilot_status_provider_fetch(tmp_path) -> None:
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "last_logged_in_user": {"host": "github.com", "login": "lucy"},
+                "copilot_tokens": {"github.com:lucy": "abc123"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    route = respx.get("https://api.github.com/copilot_internal/user").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "quota_snapshots": {
+                    "premium_interactions": {"percent_remaining": 90.0, "entitlement": 300}
+                }
+            },
+        )
+    )
+    account = AccountConfig(
+        id="account",
+        service="copilot",
+        provider="statusline",
+        name="Copilot",
+        options={"config_dir": str(tmp_path)},
+    )
+    result = await CopilotStatusProvider().fetch(account, None)
+    assert route.called
+    assert route.calls.last.request.headers["Authorization"] == "Bearer abc123"
+    assert result.identity.name == "lucy"
+    assert result.metrics[0].usage.current == 30
 # end def
 
 

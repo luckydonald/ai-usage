@@ -2360,3 +2360,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 > › Implement the [Plan](./plans/016_account-aware-sankey-and-raw-series-dashboard.md).
 
+❯ Implement the copilot statusline.
+
