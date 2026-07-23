@@ -2471,3 +2471,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /cavecrew
 
+❯ Task Notification:
+> - Task `a709763c4993426b1` <kbd>completed</kbd>
+> - Tool `toolu_01516kzRVjDuKL4nhzAKvMV9`
+> - > Agent "Explore parsers in llm-subscription-usage-intellij" finished
+> - [Query (`1291` chars, `1.26 KB`)](output/agents/035.a709763c4993426b1/prompt.md)
+> - [Answer (`12342` chars, `12.1 KB`)](output/agents/035.a709763c4993426b1/result.md)
+> - [Raw log (`226989` chars, `222 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/a709763c4993426b1.output)
+> - `14` tools, `52031` tokens, `1.60778 s`
+
