@@ -32,14 +32,17 @@ instead of by CSS/dedup hacks.
 ## Implementation
 
 1. **`frontend/src/sankey.ts`** (new, pure logic, parallel to `chart.ts`'s option-builder pattern):
-   - `buildSankeyData(tree: FunnelBranch[], active: {services, providers, accounts, metrics}, dark: boolean): { nodes: SankeyNodeDatum[]; links: SankeyLinkDatum[] }`
+   - `buildSankeyData(tree: FunnelBranch[], active: {services, providers, accounts, metrics}, dark: boolean, serviceIcons: Record<string, IconRef>, providerIcons: Record<string, IconRef>): { nodes: SankeyNodeDatum[]; links: SankeyLinkDatum[] }`
    - Walks `tree` once, deduping nodes via `Map`s keyed by the id scheme above (metric map keyed
      by `metric_key` only, regardless of which account/provider it's reached from), emitting one
      link per parent→child edge (so a shared metric gets multiple incoming links).
    - Each node carries display `name` (service/provider raw string, account `label`, metric
      `name`) plus non-rendered `kind: "service"|"provider"|"account"|"metric"` and `refId` (the
      raw id to emit, e.g. the bare `accountId` or `metric_key`) — needed because Sankey `name` is
-     just display text and can collide across kinds.
+     just display text and can collide across kinds. Service/provider nodes additionally carry a
+     resolved icon URL (built the same way `Icon.vue` does:
+     `` `/img/icons/${pack}/${version}/${set}/${name}.svg` ``) when a matching entry exists in
+     `serviceIcons`/`providerIcons`, consumed by the per-node `label.rich.icon.backgroundColor.image`.
    - Active/inactive color via `itemStyle.color` (reuse existing `--color-primary` active color
      and light/dark inactive surface colors, mirroring `chart.ts`'s explicit dark-branch
      constants — no `echarts/theme/dark`, per this repo's established reasoning about Vitest/
@@ -58,11 +61,16 @@ instead of by CSS/dedup hacks.
    - New click pattern (first in this codebase): `chart.on('click', (params) => { if
      (params.dataType !== 'node') return; const { kind, refId } = params.data; emit(`toggle-
      ${kind}`, refId); })`.
-   - **Known trade-off**: `serviceIcons`/`providerIcons` (real `Icon.vue`-rendered icons, used
-     today) are dropped from node labels in this first version — echarts canvas labels can't host
-     a Vue `Icon` component, and faking it via image-URL rich-text is not worth the complexity
-     here. Nodes render as plain text labels. Flagging this explicitly since it's a visible (if
-     minor) regression from today's chip icons.
+   - **Icons are kept**, via echarts rich-text label images (not a dropped feature): `Icon.vue`
+     already resolves an `IconRef` to a plain static URL —
+     `` `/img/icons/${pack}/${version}/${set}/${name}.svg` `` — and echarts label `rich` tokens
+     support `backgroundColor: { image: url }` to draw an arbitrary image inside a label. Each
+     service/provider node with a matching `service_icons`/`provider_icons` entry gets its own
+     per-node `label: { formatter: '{icon|} {name|...}', rich: { icon: { height: 16, width: 16,
+     backgroundColor: { image: iconUrl } }, name: {...} } }` (per-node `rich` config, since each
+     node's icon image differs — this is supported, `label` can be overridden per data item, not
+     just at series level). Account/metric nodes have no icon today, so they stay plain-text
+     labels, same as now.
 4. **`frontend/src/components/FilterSankey.test.ts`** (new): copy `UsageChart.test.ts`'s
    `vi.mock("echarts/core", ...)` shape; assert `setOption` receives expected nodes/links for a
    fixture tree; simulate a node click via the mocked `chart.on.mock.calls` entry and assert the
