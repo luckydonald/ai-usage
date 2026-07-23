@@ -2221,3 +2221,25 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. How should the dashboard switch from the legacy synthesized group series to per-configuration series?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Series transition** (1/1) <kbd>Single Select</kbd><br>
+>> How should the dashboard switch from the legacy synthesized group series to per-configuration series?
+> - [ ] 1\. Replace /series in lockstep (Recommended)
+>   - _Return raw config UUID series from the existing endpoint and update this bundled frontend together; cleanest contract._
+> - [ ] 2\. Add a new raw endpoint
+>   - _Keep /series synthesized for other consumers and have the frontend call a new endpoint until a later cleanup._
+> - [x] 3\. Frontend mode toggle
+>   - _Let users switch between legacy synthesized and provenance-preserving views, retaining both contracts indefinitely._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
