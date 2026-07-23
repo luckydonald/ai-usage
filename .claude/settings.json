@@ -311,6 +311,11 @@
       "Bash(echo ---)",
       "Bash(echo '---')",
       "Bash(UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage:*)",
+      "Bash(UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage provider list)",
+      "Bash(UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage provider status:*)",
+      "Bash(UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage provider status claude statusline --no-input)",
+      "Bash(UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run --with ruff ruff check:*)",
+      "Bash(UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run --with ruff ruff check --ignore E501,ASYNC240 src/ai_usage/providers/claude.py tests/test_providers.py)",
       "Bash(curl -fsS http://localhost:4458/)"
     ],
     "deny": [

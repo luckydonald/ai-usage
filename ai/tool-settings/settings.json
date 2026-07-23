@@ -318,6 +318,11 @@
       {"type": "bash", "command": "echo ---"},
       {"type": "bash", "command": "echo '---'"},
       {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage:*"},
+      {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage provider list"},
+      {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage provider status:*"},
+      {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run ai-usage provider status claude statusline --no-input"},
+      {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run --with ruff ruff check:*"},
+      {"type": "bash", "command": "UV_CACHE_DIR=/tmp/ai-usage-uv-cache uv run --with ruff ruff check --ignore E501,ASYNC240 src/ai_usage/providers/claude.py tests/test_providers.py"},
       {"type": "bash", "command": "curl -fsS http://localhost:4458/"}
     ],
     "deny": [
