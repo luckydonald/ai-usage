@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 
 import { fetchCatalog, fetchNotes, fetchSeries } from "./api";
 import { activeNotesAt } from "./chart";
-import FilterFunnel from "./components/FilterFunnel.vue";
+import FilterSankey from "./components/FilterSankey.vue";
 import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { renderNoteMarkdown } from "./markdown";
@@ -290,13 +290,14 @@ onBeforeUnmount(() => events?.close());
         </div>
       </template>
 
-      <FilterFunnel
+      <FilterSankey
         v-if="services.length > 1 || providers.length > 1 || accounts.length > 1 || metricOptions.length > 1"
         :tree="serviceProviderTree"
         :active-services="filters.services"
         :active-providers="filters.providers"
         :active-accounts="filters.accounts"
         :active-metrics="filters.metrics"
+        :dark="dark"
         :service-icons="catalog.service_icons"
         :provider-icons="catalog.provider_icons"
         @toggle-service="(item) => { filters.services = toggleFilter(filters.services, item); load(); }"
