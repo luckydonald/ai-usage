@@ -2480,3 +2480,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`226989` chars, `222 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/a709763c4993426b1.output)
 > - `14` tools, `52031` tokens, `1.60778 s`
 
+❯ /plan Inspect `~/git/DimazzzZ/tokenpulse-intellij-plugin` for parsers of AI agent usage, collect parser as plan items
+
