@@ -1,17 +1,27 @@
 """Claude status-line ingestion and `/usage` fallback provider."""
 
+import asyncio
 import json
 import logging
 import re
+import shlex
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from ai_usage.icons import IconRef
-from ai_usage.models import FetchStatus, Metric, ProviderFetchResult, Usage
+from ai_usage.models import AccountIdentity, FetchStatus, Metric, ProviderFetchResult, Usage
 from ai_usage.models import AccountConfig
-from ai_usage.providers.base import ConfigurationField, DiscoveredAccount, Provider, ProviderError, ProviderLoginError
+from ai_usage.providers.base import (
+    ConfigurationField,
+    DiscoveredAccount,
+    Provider,
+    ProviderError,
+    ProviderLoginError,
+    canonical_login,
+)
+from ai_usage.providers.claude_cli import claude_environment
 from ai_usage.providers.claude_direct import run_claude_usage_direct
 from ai_usage.providers.claude_interactive import run_claude_usage
 
@@ -109,6 +119,51 @@ def parse_usage_output(output: str, observed_at: datetime) -> list[Metric]:
 # end def
 
 
+async def run_claude_auth_status(command: str, profile_dir: str | None) -> AccountIdentity | None:
+    """Run `claude auth status` (direct, non-interactive) and extract the account email."""
+    command_parts = shlex.split(command)
+    if not command_parts:
+        return None
+    # end if
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *command_parts,
+            "auth",
+            "status",
+            env=claude_environment(profile_dir),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except OSError as exception:
+        LOGGER.info("Claude auth status command could not start: %s", exception)
+        return None
+    # end try
+    try:
+        stdout, _stderr = await asyncio.wait_for(process.communicate(), timeout=15)
+    except TimeoutError:
+        process.kill()
+        await process.wait()
+        LOGGER.info("Claude auth status command timed out")
+        return None
+    # end try
+    if process.returncode != 0:
+        LOGGER.info("Claude auth status command exited with status %s", process.returncode)
+        return None
+    # end if
+    try:
+        payload = json.loads(stdout.decode("utf-8", errors="replace"))
+    except json.JSONDecodeError:
+        LOGGER.info("Claude auth status command returned unparseable output")
+        return None
+    # end try
+    email = payload.get("email")
+    if not isinstance(email, str) or not email.strip():
+        return None
+    # end if
+    return AccountIdentity(name=payload.get("orgName"), email=email)
+# end def
+
+
 class ClaudeStatusProvider(Provider):
     service = "claude"
     key = "statusline"
@@ -122,8 +177,11 @@ class ClaudeStatusProvider(Provider):
     )
 
     def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
-        del account, result
-        raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
+        del account
+        if result.identity is None:
+            raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
+        # end if
+        return canonical_login(result.identity.email, self.display_name)
     # end def
 
     async def discover(self) -> list[DiscoveredAccount]:
@@ -141,6 +199,9 @@ class ClaudeStatusProvider(Provider):
     ) -> ProviderFetchResult:
         del credential
         observed = datetime.now(UTC)
+        command = str(account.options.get("command", "claude"))
+        profile_dir = str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
+        identity = await run_claude_auth_status(command, profile_dir)
         relay_file_value = account.options.get("relay_file")
         if relay_file_value:
             relay_file = Path(str(relay_file_value)).expanduser()
@@ -158,6 +219,7 @@ class ClaudeStatusProvider(Provider):
                             fetched_at=observed,
                             status=FetchStatus.SUCCESS,
                             metrics=metrics,
+                            identity=identity,
                         )
                     # end if
                 # end if
@@ -165,8 +227,6 @@ class ClaudeStatusProvider(Provider):
                 # of surfacing outdated numbers.
             # end if
         # end if
-        command = str(account.options.get("command", "claude"))
-        profile_dir = str(account.options["profile_dir"]) if account.options.get("profile_dir") else None
         direct_output = await run_claude_usage_direct(command, profile_dir)
         output = direct_output or ""
         metrics = parse_usage_output(output, observed)
@@ -184,6 +244,7 @@ class ClaudeStatusProvider(Provider):
             fetched_at=observed,
             metrics=metrics,
             notes=extract_claude_notes(output),
+            identity=identity,
         )
     # end def
 # end class

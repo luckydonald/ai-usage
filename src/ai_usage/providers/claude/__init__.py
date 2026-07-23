@@ -36,6 +36,7 @@ from .status import (
     normalize_claude_terminal_output,
     parse_status_payload,
     parse_usage_output,
+    run_claude_auth_status,
 )
 
 __all__ = [
@@ -70,5 +71,6 @@ __all__ = [
     "parse_usage_output",
     "reauth_hint",
     "remove_status_relay",
+    "run_claude_auth_status",
     "write_relay_payload",
 ]
