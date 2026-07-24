@@ -2607,3 +2607,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`377059` chars, `369 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a43a0c84ebf6b6f6c.output)
 > - `42` tools, `71110` tokens, `4.34725 s`
 
+❯ /cavecrew
+
