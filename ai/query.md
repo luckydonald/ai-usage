@@ -2506,3 +2506,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`113485` chars, `111 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c6fca863-d547-4a84-b663-3f359db10838/tasks/a1e0c6cd63b7032d5.output)
 > - `6` tools, `30654` tokens, `0.970633 s`
 
+❯ I want you to be specific about where the api credentials/token/etc. are coming from (direkt user input, file read, etc.), and verbosely what is needed from that. Also specific about API routes used, and the data models there. It's fine to split each service into it's own subheadline, just let the file's main headline intact as is.
+
