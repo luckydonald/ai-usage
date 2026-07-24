@@ -136,3 +136,4 @@ This wizard rewrite is *why* the `credential_kind`/`required_credential_kind` me
 ## Todos
 
 - [x] base.py: LoginMethod/UsageMethod/FallbackUsageMethod
+- [ ] Split claude subpackage into login/usage
