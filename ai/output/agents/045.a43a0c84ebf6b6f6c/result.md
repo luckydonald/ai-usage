@@ -1,0 +1,18 @@
+Migration is complete and verified. Final report:
+
+**New files created** (under `/home/user/git/luckydonald/ai-usage/src/ai_usage/providers/codex/`):
+- `__init__.py`, `login/__init__.py`, `login/local/__init__.py`, `login/web/__init__.py`, `usage/__init__.py`, `usage/web/__init__.py`, `usage/cli/__init__.py`
+- `login/local/auth_json.py` — `AuthJsonLogin(LoginMethod)`, `credential_kind="app_token"`
+- `login/web/cookie_capture.py` — `CookieCaptureLogin(LoginMethod)`, `credential_kind="cookie_jar"`
+- `usage/web/private_api.py` — `PrivateApiUsage(UsageMethod)` (`required_credential_kind="cookie_jar"`) plus `window_key`, `window_name`, `codex_model`, `extract_codex_notes`, `parse_rate_limits`, `codex_app_server_email`, `CodexRateWindowPayload`, `CodexRateLimitPayload`, `CodexWhamUsagePayload`, `parse_codex_web_usage`
+- `usage/cli/app_server.py` — `AppServerClient` (unchanged) + `AppServerUsage(UsageMethod)` (`required_credential_kind="app_token"`)
+- `usage/cli/status_ptv.py` — `run_codex_status`, `parse_codex_status`, `StatusPtyUsage(UsageMethod)` (`required_credential_kind="none"`)
+- `provider.py` — exports `CodexWebUsageProvider`, `CodexAppServerProvider`, `CodexStatusProvider`, each preserving original `service`/`key`/`display_name`/`icon`/`login_url`/`login_hint`/`configuration_fields`/`user_identity` behavior.
+
+Deleted: `src/ai_usage/providers/codex.py`.
+
+Updated import lines: `src/ai_usage/providers/registry.py` (codex import now `ai_usage.providers.codex.provider`; this file was concurrently touched by another agent for the copilot import too — left as-is), `tests/test_providers.py` (import block plus three stale `monkeypatch.setattr("ai_usage.providers.codex....")` string targets that pointed at now-moved symbols — updated to `ai_usage.providers.codex.usage.cli.status_ptv.run_codex_status`, `ai_usage.providers.codex.usage.web.private_api.AsyncSession`, `ai_usage.providers.codex.login.web.cookie_capture.capture_cookies_via_webview` — and fixed one assertion that expected the old provider-level `display_name` ("Codex private web API") where the captured call now carries the login method's own display name ("Sign in via browser").
+
+Verification: `uv run python -c "from ai_usage.providers.codex.provider import *"` succeeds cleanly. `uv run pytest tests/test_providers.py -k codex -q` → 9 passed. Remaining grep hits for `providers.codex.CodexWebUsageProvider.*` are only in `tests/test_provider_commands.py` (out of scope per instructions — another agent owns the cli.py wizard rewrite and that test file concurrently).
+
+Deviation and rationale: the plan's default suggestion was to move the inline temp-`auth.json` write entirely into the login layer. I kept it in `AppServerUsage.fetch` (in `usage/cli/app_server.py`) instead, because the temp directory's lifetime must exactly bracket the `AppServerClient` subprocess's lifetime for a single fetch call (it's created before spawning the subprocess and `.cleanup()`'d in a `finally` right after the subprocess exits). Materializing it earlier in a `LoginMethod` would either leak the temp dir across an unrelated time window or require passing subprocess-lifecycle awareness back into the login method, which doesn't fit `LoginMethod`'s contract (`discover`/`authenticate` return once, before any usage-fetch happens). `AuthJsonLogin.discover()` therefore keeps its original job unchanged — probing `~/.codex/auth.json` and returning `options.profile_dir` pointing straight at the real `~/.codex` dir (no credential materialization needed for that path at all); only the manually-supplied-credential case (`credential["auth_json"]`) still triggers the scoped temp-file write, now inside `AppServerUsage.fetch`.
