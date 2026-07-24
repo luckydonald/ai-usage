@@ -2589,3 +2589,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`148983` chars, `146 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a453f991517860156.output)
 > - `11` tools, `32727` tokens, `1.1589 s`
 
+❯ Task Notification:
+> - Task `a059b757a0cb7808a` <kbd>completed</kbd>
+> - Tool `toolu_01VaQTmVSyyjiDMLwVbzcD9x`
+> - > Agent "Restructure copilot provider subpackage" finished
+> - [Query (`7109` chars, `6.98 KB`)](output/agents/044.a059b757a0cb7808a/prompt.md)
+> - [Answer (`4465` chars, `4.37 KB`)](output/agents/044.a059b757a0cb7808a/result.md)
+> - [Raw log (`283520` chars, `277 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a059b757a0cb7808a.output)
+> - `25` tools, `58183` tokens, `3.663 s`
+
