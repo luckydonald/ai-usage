@@ -2638,3 +2638,18 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ document your learnings
 
+❯ how to reload session before compact
+
+❯ You can access transcript of before compact, yes?
+
+❯ document your learnings from `/home/user/.claude/projects/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6.jsonl`
+
+❯ Task Notification:
+> - Task `a5704004b3c79eb64` <kbd>completed</kbd>
+> - Tool `toolu_01FgVK9VQH9iTUGJkAPWqecq`
+> - > Agent "Extract learnings from transcript" finished
+> - [Query (`1120` chars, `1.1 KB`)](output/agents/048.a5704004b3c79eb64/prompt.md)
+> - [Answer (`1868` chars, `1.83 KB`)](output/agents/048.a5704004b3c79eb64/result.md)
+> - [Raw log (`81707` chars, `80 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/4c8846d9-394d-4f75-9329-2410ae54eadc/tasks/a5704004b3c79eb64.output)
+> - `2` tools, `51764` tokens, `0.557533 s`
+

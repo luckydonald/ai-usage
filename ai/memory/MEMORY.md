@@ -7,3 +7,6 @@
 - [History-master replay guards](2026-07-20-history-master-replay-guards.md) — TODO: summarize this file.
 - [Login/usage split test targets](feedback_login_usage_split_test_targets.md) — after Provider composition refactor, mock the LoginMethod not the old Provider delegator
 - [provider add wizard](project_ai_usage_provider_add_wizard.md) — cli.py add flow chains service→usage-method→login-method prompts (commit d59697e)
+- [Verify baseline before blaming refactor](feedback_verify_baseline_before_blaming_refactor.md) — diff test failures against pre-refactor branch, don't chase pre-existing failures
+- [No tty environment](user_no_tty_environment.md) — can't manually exercise interactive CLI/wizard code here
+- [Compact summary has transcript path](reference_compact_summary_transcript_path.md) — post-/compact summary names pre-compact jsonl path, Read it for lost detail
