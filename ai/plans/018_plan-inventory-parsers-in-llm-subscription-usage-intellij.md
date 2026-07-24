@@ -237,11 +237,61 @@ Output `ZaiQuota{plan, sessionUsage: ZaiUsageWindow?, weeklyUsage: ZaiUsageWindo
 
 **Quirks:** `limits[]` filtered by `type=="TOKENS_LIMIT"`, sorted by duration — shortest → "session", 2nd-shortest (if ≥2) → "weekly"; `type=="TIME_LIMIT"` entry → web-search window. `unit` encodes granularity: `1`=days, `3`=hours, `5`=minutes, `6`=weeks (`number * unit-ms`). "No coding plan" detected via empty subscription list + `success=false` + message containing "coding plan" or Chinese "不存在". `percentage` field preferred over computing from `currentValue/usage` when present.
 
-10. **OpenCode (Go/Zen)** — `src/main/kotlin/de/moritzf/quota/opencode/{OpenCodeQuotaClient,OpenCodeQuota,SolidStartValueParser}.kt` (396 lines, largest parser overall). Custom hand-rolled recursive-descent parser for SolidStart RPC wire format (non-JSON: `!0`/`!1` booleans, `new Date(...)`, `$R[n]` back-references). Only non-JSON wire format in repo.
+### 10. OpenCode (Go/Zen)
 
-11. **OpenCode Zen proxy variant** — `src/main/kotlin/de/moritzf/quota/opencode/proxy/OpenCodeZenSubscriptionProxyProvider.kt`. Wraps OpenCode credentials for local proxy, reuses `OpenCodeQuotaClient`.
+**Files:** `quota/opencode/{OpenCodeQuotaClient,OpenCodeQuota,OpenCodeWorkspace,OpenCodeQuotaException,SolidStartValueParser}.kt` (396 lines, largest parser overall), `quota/opencode/proxy/OpenCodeZenSubscriptionProxyProvider.kt`, `quota/idea/opencode/{OpenCodeApiKeyStore,OpenCodeSessionCookieStore}.kt`
 
-12. **Shared infra** (not providers, but load-bearing): `quota/shared/{JsonSupport,ProviderQuota}.kt`, `quota/idea/common/{QuotaProviderRegistry,QuotaProviderType,QuotaUsageService,QuotaSnapshotCache}.kt`, `proxy/util/JwtParser.kt` (generic JWT claim decode, no sig verify), `proxy/auth/AuthManager.kt`.
+**Credential source:** Two independent secrets, both manual paste in `OpenCodeSettingsPanel`, stored via PasswordSafe:
+- Session cookie (used for quota fetching) — `OpenCodeSessionCookieStore`, `CredentialAttributes(SERVICE_NAME="OpenCode Session Cookie", USER_NAME="opencode-session")`. Panel label: "Extract from opencode.ai → DevTools → Storage → Cookies → `auth` cookie value. Valid for 1 year." User pastes only the raw `auth` cookie **value** (not a full `Cookie:` header) into a `JBPasswordField`.
+- API key (optional, used only for OpenCode Zen local-proxy pass-through, NOT quota fetching) — `OpenCodeApiKeyStore`, `CredentialAttributes(SERVICE_NAME="OpenCode API Key", USER_NAME="opencode-api-key")`. Forwarded to `https://opencode.ai/zen/v1` as OpenAI-compatible Bearer key via generic `OpenAiCompatibleApiKeySubscriptionProxyProvider`.
+No OAuth, no file read — cached in-memory `AtomicReference` after async PasswordSafe load.
+
+**API calls:** all via `java.net.http.HttpClient`, cookie header always `Cookie: auth=<sessionCookie>`.
+1. **Discover server-function id** (one-time, cached process-wide in a static `AtomicReference<String?>`): `GET https://opencode.ai/workspace/{workspaceId}/go` (`Cookie`, `Accept: text/html`) → HTML scanned via regex `_build/assets/([^.]+)\.js` for JS bundle paths → `GET https://opencode.ai/{bundlePath}` for each → JS scanned via regex `queryLiteSubscription_query\s*=\s*createServerReference\("([a-f0-9]{64})"\)` for the 64-hex function id.
+2. **List workspaces** — `GET https://opencode.ai/_server?id=def39973159c7f0483d8793a822b8dbb10d067e12c65455fcb4608459ba0234f&args=%5B%5D` (hardcoded `WORKSPACES_FUNCTION_ID`, args = URL-encoded `[]`). Headers: `Cookie`, `Accept: application/json`, `X-Server-Id: <same function id>`, `X-Server-Instance: server-fn:2`. Response scanned via regex `id:"(wrk_[A-Za-z0-9]+)",name:"([^"]*)"` — NOT via SolidStartValueParser. 401/403 → "session cookie invalid or expired".
+3. **Fetch Go quota** — `GET https://opencode.ai/_server?id={discoveredFunctionId}&args={urlencoded ["{workspaceId}"]}`. Headers: `Cookie`, `Accept: application/json`, `X-Server-Id: {functionId}`, `X-Server-Instance: server-fn:1`, `Referer: https://opencode.ai/workspace/{workspaceId}/go`, `Origin: https://opencode.ai`. Body parsed via `SolidStartValueParser`, decoded into `OpenCodeQuota` via kotlinx.serialization.
+4. **Fetch billing info** — `GET https://opencode.ai/_server?id=c83b78a614689c38ebee981f9b39a8b377716db85c1fd7dbab604adc02d3313d&args={urlencoded ["{workspaceId}"]}` (hardcoded `BILLING_INFO_FUNCTION_ID`, fixed constant, no discovery needed). `Referer: https://opencode.ai/workspace/{workspaceId}/billing`. 404 = non-fatal (endpoint hash rotated) → balance omitted, logged warning. 401/403 → invalid/expired cookie.
+5. **Zen proxy pass-through** (not quota, local reverse-proxy for OpenAI-compatible chat) — upstream `https://opencode.ai/zen/v1`, Bearer-auth using the separate API key.
+
+**Data models:**
+```
+OpenCodeQuota { rollingUsage/weeklyUsage/monthlyUsage: OpenCodeUsageWindow?, mine: Boolean=false,
+  useBalance: Boolean=false, availableBalance: Long? (filled from billing call, not Go payload),
+  fetchedAt: Instant?, rawJson/rawGoJson/rawBillingJson: String? (@Transient, raw-display only) }
+OpenCodeUsageWindow { status: String="ok" ("rate-limited" = other value, via isRateLimited getter),
+  resetInSec: Long=0, usagePercent: Int=0 }
+OpenCodeWorkspace (not serializable) { id, name: String, mine: Boolean, hasGoSubscription: Boolean }
+OpenCodeBillingInfo (internal @Serializable) { balance: Long? }
+```
+`usageFraction()` = max of the three windows' `usagePercent/100`. `activityFraction()` = sum of all three /100.
+
+**Workspace/eligibility selection logic:** `fetchWorkspaces()` calls `fetchQuota()` per workspace, sets `mine = quota.mine`, `hasGoSubscription = quota.hasUsageState()` (true if any usage window non-null). `discoverWorkspaceId()` iterates workspaces in list order, returns first whose quota `hasUsageState()` OR `hasAvailableBalance()` is true; 401/403/404/0-status per-workspace = skip-continue, other errors rethrow. Settings-panel dropdown preselection order: stored `openCodeWorkspaceId` → first workspace with `mine && hasGoSubscription` → first with `hasGoSubscription` → first workspace at all. `OpenCodeQuotaProvider` caches resolved workspace id 30 min (`WORKSPACE_CACHE_TTL_MS`), resets both workspace-id and function-id caches when stored cookie changes, retries once on retryable failure (status 0/401/403 or parse failure) before surfacing error.
+
+**SolidStartValueParser (custom wire format):** response body for `/_server` calls is **not JSON** — raw JS of shape `$R[0]=$R[1]=$R[2]=[{key:"rollingUsage",...},...],$R[3]=...`. `OpenCodeQuotaClient.parseRootObject()` locates literal marker `"$R[0]="` (`ROOT_ASSIGNMENT_MARKER`), then `SolidStartValueParser(body, indexAfterMarker).parseValue()`.
+
+Grammar handled by the hand-rolled recursive-descent parser (dispatch on current char):
+- `{` object: unquoted-or-quoted keys (`[A-Za-z0-9_]+` or `"quoted"`), `:` separator, comma-separated pairs, `}` terminated.
+- `[` array: comma-separated values, `]` terminated.
+- `"` string, standard JSON escapes (`\"`,`\\`,`\/`,`\b`,`\f`,`\n`,`\r`,`\t`,`\uXXXX`).
+- `-`/digit: number (optional `-`, digits, optional `.frac`, optional `e/E exp`) — kept as `JsonPrimitive` string (no float coercion).
+- `!`: SolidStart compact booleans — `!0`→`true`, `!1`→`false`.
+- `t`/`f`: bare `true`/`false` fallback.
+- `n`: `null` OR `new Date("...")` (special-cased: skips `new Date("` (9 chars), parses quoted string, expects `)`, represents as plain `JsonPrimitive` string — ISO string as-given, not converted to real date type).
+- `$`: reference `$R[n]` or `$R[n]=value` — parses `$R[`, numeric index, `]`. If followed by `=`: parses assigned value, stores in `references: MutableMap<Int, JsonElement>` keyed by index, returns that value (this is how chained `$R[0]=$R[1]=$R[2]=[...]` resolves — each assignment stores+returns so the whole chain points at the same object). If NOT followed by `=`: looks up stored value by index (back-reference/de-dup mechanism for repeated object instances), throws `"Reference $R[n] used before assignment"` if index unassigned. String-keyed refs (`$R["..."]`) explicitly rejected as unsupported.
+
+Concrete example (inferred from parser/marker constants, no fixture files found): raw body `$R[0]=$R[1]={rollingUsage:$R[2]={status:"ok",resetInSec:1800,usagePercent:42},weeklyUsage:null,monthlyUsage:null,mine:!0,useBalance:!1}` parses to `JsonObject{"rollingUsage":{"status":"ok","resetInSec":1800,"usagePercent":42},"weeklyUsage":null,"monthlyUsage":null,"mine":true,"useBalance":false}`, then kotlinx.serialization decodes into `OpenCodeQuota`. The chained `$R[0]=$R[1]={...}` means "assign object to slot 1, slot 0 aliases slot 1" — both forms return their value up the recursive call chain so `parseRootObject()` always gets the fully-resolved object.
+
+`isNullQuotaResponse()` special-case: body `$R[0]= null` / `$R[0]=null` / ending `,null)` → "no Go subscription for this workspace" (returns empty `OpenCodeQuota()`) rather than parse error.
+
+**Quirks:** function-id discovery (scraping the Go page + JS bundle for `queryLiteSubscription` hash) is the only provider in the whole codebase reverse-engineering a frontend bundle to find its own API contract — everything else uses a fixed documented endpoint. Billing-info function id, by contrast, is a hardcoded constant with resilient 404-as-non-fatal fallback for rotation. `clearCachedFunctionId()` is process-wide static, reset on cookie change or retryable failure. Workspace list parsed by regex directly on raw SolidStart body text (not via `SolidStartValueParser`) — simpler/flatter shape made regex cheaper than full traversal.
+
+### 11. OpenCode Zen proxy variant
+
+`quota/opencode/proxy/OpenCodeZenSubscriptionProxyProvider.kt`. Wraps OpenCode credentials (the API key, not the session cookie) for the local OpenAI-compatible proxy server rather than doing its own usage parsing — reuses `OpenCodeQuotaClient`.
+
+### 12. Shared infrastructure
+
+Not providers, but load-bearing for all parsers: `quota/shared/{JsonSupport,ProviderQuota}.kt`, `quota/idea/common/{QuotaProviderRegistry,QuotaProviderType,QuotaUsageService,QuotaSnapshotCache}.kt`, `proxy/util/JwtParser.kt` (generic JWT claim decode, no signature verification — used by Codex/Claude/SuperGrok OAuth flows to read `exp`/account-id claims), `proxy/auth/AuthManager.kt` (default file-based OAuth credential provider for standalone/CLI proxy mode).
 
 ## Not present in that repo
 No local transcript/session-log parsing (`~/.claude/projects/**/*.jsonl`, Cursor SQLite, Codex rollout files), no token-cost calculation, no pricing tables. Everything is vendor-reported usage percentages via live API — contrasts with `ai-usage`'s likely local-log-parsing approach.
