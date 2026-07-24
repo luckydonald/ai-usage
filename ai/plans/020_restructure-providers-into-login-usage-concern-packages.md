@@ -132,3 +132,7 @@ This wizard rewrite is *why* the `credential_kind`/`required_credential_kind` me
 - `grep -rn "from ai_usage.providers" src/ tests/` afterward to confirm no dangling references to deleted top-level modules (`codex.py`, `copilot.py`, `claude_cli.py`, `claude_direct.py`, `claude_interactive.py`).
 - Manually skim `registry.py`'s `built_in_registry()` output (or a quick `python -c` import) to confirm all 9 providers still register under the same `(service, key)` pairs.
 - Manually run `ai-usage provider add` (or the underlying `run_provider_add_wizard`) for at least one no-credential provider (Codex `/status`) and one credential-needing provider with two login options (Codex web API: local `auth.json` vs browser) to confirm the new chained service→usage-method→login-method prompts behave as designed, then run `uv run pytest tests/test_provider_commands.py -q`.
+
+## Todos
+
+- [ ] base.py: LoginMethod/UsageMethod/FallbackUsageMethod
