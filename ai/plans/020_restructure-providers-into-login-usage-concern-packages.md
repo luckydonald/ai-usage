@@ -21,11 +21,15 @@ Keep `Provider(ABC)`, `ProviderError`, `ProviderLoginError`, `ConfigurationField
 Add two new small ABCs alongside:
 
 - `LoginMethod(ABC)` — one way to obtain/discover a credential.
+  - `credential_kind: str` class attr (e.g. `"none"`, `"bearer_token"`, `"cookie_jar"`) — declares what shape of credential this method produces, for matching against a usage method's need.
   - `discover() -> DiscoveredAccount | None` (optional, default returns `None`)
   - `authenticate(options) -> dict` (optional, default raises `ProviderLoginError`)
   - `discover_options(credential) -> dict` (optional, default returns `{}`)
-- `UsageMethod(ABC)` — one way to fetch usage given a credential.
+- `UsageMethod(ABC)` — one way to fetch usage given a credential; this is the registry identity (service+key).
+  - `required_credential_kind: str` class attr — what `LoginMethod.credential_kind` it needs (or `"none"` if self-contained, e.g. reading a local CLI's own session).
   - `fetch(account, credential) -> FetchResult` (abstract)
+
+`Provider` becomes a small composition object: `Provider(usage_method: UsageMethod, login_methods: list[LoginMethod])`, `service`/`key`/`display_name` etc. sourced from `usage_method`. Its `discover/authenticate/discover_options` try the configured `login_methods` (filtered to matching `credential_kind`); `fetch` delegates straight to `usage_method.fetch`. This is what backs the `provider add` wizard: list `usage_method`s per service for step 2, then list `login_methods` whose `credential_kind == usage_method.required_credential_kind` for step 3.
 
 `Provider.discover/authenticate/discover_options` become thin delegators to `self.login_method` (or first of `self.login_methods` that supports the call). `Provider.fetch` delegates to `self.usage_method`, or tries a list `self.usage_methods` in order (covers the Claude statusline relay→CLI→PTY fallback chain) — model this as a small `FallbackUsageMethod(UsageMethod)` helper in `base.py` that wraps an ordered list and tries each, so per-provider `fetch()` logic doesn't need custom looping code.
 
