@@ -2546,3 +2546,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`226929` chars, `222 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a8cb8f4e2bc9b528b.output)
 > - `14` tools, `47624` tokens, `1.2854 s`
 
+❯ Task Notification:
+> - Task `a97393977bb9f28e2` <kbd>completed</kbd>
+> - Tool `toolu_017UHnw8sKj6qFuVRSiKNjxJ`
+> - > Agent "Explore callers of provider methods" finished
+> - [Query (`929` chars, `931 B`)](output/agents/042.a97393977bb9f28e2/prompt.md)
+> - [Answer (`3671` chars, `3.63 KB`)](output/agents/042.a97393977bb9f28e2/result.md)
+> - [Raw log (`50004` chars, `48.9 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a97393977bb9f28e2.output)
+> - `5` tools, `18137` tokens, `0.444883 s`
+
