@@ -2508,3 +2508,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ I want you to be specific about where the api credentials/token/etc. are coming from (direkt user input, file read, etc.), and verbosely what is needed from that. Also specific about API routes used, and the data models there. It's fine to split each service into it's own subheadline, just let the file's main headline intact as is.
 
+❯ Task Notification:
+> - Task `ae9dee2cb82cc2ffd` <kbd>completed</kbd>
+> - Tool `toolu_01PAWqwhw1XhkDrEp7cRBYJY`
+> - > Agent "Deep-dive OpenCode credential/API/SolidStart parser details" finished
+> - [Query (`2356` chars, `2.31 KB`)](output/agents/038.ae9dee2cb82cc2ffd/prompt.md)
+> - [Answer (`10701` chars, `10.5 KB`)](output/agents/038.ae9dee2cb82cc2ffd/result.md)
+> - [Raw log (`171024` chars, `167 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/ae9dee2cb82cc2ffd.output)
+> - `10` tools, `106626` tokens, `0.957733 s`
+
