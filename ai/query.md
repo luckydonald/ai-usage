@@ -2535,3 +2535,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`212793` chars, `208 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/a96f5200b9702c733.output)
 > - `24` tools, `112030` tokens, `1.46328 s`
 
+❯ /plan I want to restructure the parser files, namely everything under @src/ai_usage/providers/ like the following, splitting it in well separated packages with their own concerns: `providers/<provider>/login/<type>/<method>.py` (e.g. `providers/codex/login/local/auth_json.py`), `providers/<provider>/usage/<type>/<method>.py` (e.g. `providers/copilot/usage/cli/statusline.py`). Type would be probably like `local`, `cli`, `api`, `user_input`, `web` (webbrowser login + cookie inspection, or similar) and so on. Adapt if needed. Split all the current providers into those, and feel free to create base classes which support those, if we can find a common interface for that.
+
