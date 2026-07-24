@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ai_usage.models import AccountConfig
-from ai_usage.providers.claude_cli import claude_profile_path
+from ai_usage.providers.claude._shared import claude_profile_path
 
 
 def write_relay_payload(path: Path, payload: dict[str, Any]) -> None:

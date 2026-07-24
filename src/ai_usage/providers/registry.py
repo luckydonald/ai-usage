@@ -8,13 +8,16 @@ from ai_usage.providers.claude import (
     ClaudeUsageProvider,
     ClaudeWebUsageProvider,
 )
-from ai_usage.providers.codex import (
+from ai_usage.providers.codex.provider import (
     CodexAppServerProvider,
     CodexStatusProvider,
     CodexWebUsageProvider,
 )
-from ai_usage.providers.copilot import CopilotBillingProvider, CopilotStatusProvider
-from ai_usage.providers.web import CopilotEntitlementsProvider
+from ai_usage.providers.copilot.provider import (
+    CopilotBillingProvider,
+    CopilotEntitlementsProvider,
+    CopilotStatusProvider,
+)
 
 
 class ProviderRegistry:

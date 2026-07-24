@@ -1,4 +1,4 @@
-"""Claude private web API provider (claude.ai/api/*)."""
+"""Claude private web API usage method (claude.ai/api/*)."""
 
 import logging
 from datetime import UTC, datetime
@@ -7,7 +7,6 @@ from typing import Any
 from curl_cffi.requests import AsyncSession
 from pydantic import BaseModel, ValidationError
 
-from ai_usage.icons import IconRef
 from ai_usage.models import (
     AccountConfig,
     AccountIdentity,
@@ -16,13 +15,7 @@ from ai_usage.models import (
     SubscriptionStatus,
     Usage,
 )
-from ai_usage.providers.base import (
-    ConfigurationField,
-    Provider,
-    ProviderError,
-    canonical_login,
-)
-from ai_usage.webview_login import capture_cookies_via_webview
+from ai_usage.providers.base import ProviderError, UsageMethod
 
 LOGGER = logging.getLogger(__name__)
 
@@ -171,76 +164,10 @@ def parse_claude_web_usage(payload: dict[str, Any], observed_at: datetime) -> li
 # end def
 
 
-class ClaudeWebUsageProvider(Provider):
-    service = "claude"
-    key = "web"
-    display_name = "Claude private web API"
-    icon = IconRef(set="solid", name="globe")
-    configuration_fields = (
-        ConfigurationField(
-            key="org_id",
-            label="Claude organization UUID",
-            help="Auto-detected after login when the account belongs to a single organization.",
-        ),
-    )
-    login_url = "https://claude.ai/login"
+class PrivateApiUsage(UsageMethod):
+    """Fetch usage from the Claude private web API (claude.ai/api/*)."""
 
-    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
-        email = canonical_login(
-            result.identity.email if result.identity else None, self.display_name
-        )
-        organization = canonical_login(account.options.get("org_id"), self.display_name)
-        return email if email == organization else f"{email}|{organization}"
-    # end def
-
-    async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
-        del options
-        # pywebview must run on the main thread (it raises WebViewException otherwise), so this
-        # is a deliberate synchronous, blocking call rather than `asyncio.to_thread(...)`.
-        cookies = capture_cookies_via_webview(self.login_url, self.display_name)
-        return {"cookies": cookies} if cookies else None
-    # end def
-
-    async def discover_options(self, credential: dict[str, Any] | None) -> dict[str, Any]:
-        cookies = (credential or {}).get("cookies") or {}
-        if not cookies:
-            LOGGER.warning("could not auto-detect Claude organization: no cookies were captured")
-            return {}
-        # end if
-        try:
-            # claude.ai sits behind Cloudflare (see CodexWebUsageProvider for the full story) —
-            # impersonate a real Chrome TLS fingerprint so cf_clearance is honored.
-            async with AsyncSession(
-                timeout=20, cookies=cookies, base_url="https://claude.ai", impersonate="chrome",
-            ) as client:
-                response = await client.get("/api/organizations")
-                response.raise_for_status()
-                organizations = response.json()
-            # end async with
-        except Exception as exception:  # noqa: BLE001
-            LOGGER.warning("could not auto-detect Claude organization: %s", exception)
-            return {}
-        # end try
-        if not organizations:
-            LOGGER.warning(
-                "could not auto-detect Claude organization: /api/organizations returned no "
-                "organizations for the captured cookies (%d cookie(s): %s)",
-                len(cookies),
-                ", ".join(sorted(cookies)),
-            )
-            return {}
-        # end if
-        if len(organizations) > 1:
-            LOGGER.warning(
-                "found %d Claude organizations, defaulting to the first (%s); pass --org-id "
-                "explicitly to pick a different one (%s)",
-                len(organizations),
-                organizations[0].get("name"),
-                ", ".join(f"{org.get('name')}={org.get('uuid')}" for org in organizations),
-            )
-        # end if
-        return {"org_id": organizations[0]["uuid"]}
-    # end def
+    required_credential_kind = "cookie_jar"
 
     async def fetch(
         self,
@@ -347,8 +274,8 @@ class ClaudeWebUsageProvider(Provider):
             )
         # end if
         return ProviderFetchResult(
-            service=self.service,
-            provider=self.key,
+            service=account.service,
+            provider=account.provider,
             account_id=account.id,
             fetched_at=observed,
             metrics=metrics,
