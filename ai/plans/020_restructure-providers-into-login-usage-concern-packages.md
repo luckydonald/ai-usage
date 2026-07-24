@@ -6,6 +6,12 @@
 
 Goal: split login and usage into standalone, composable objects, organized as `providers/<provider>/login/<type>/<method>.py` and `providers/<provider>/usage/<type>/<method>.py`, with a thin per-provider `Provider` that just wires: which login method(s) can discover/produce a credential, and which usage method(s) actually call the API/CLI with that credential. Pure refactor — no behavior change, all existing tests must pass (with import paths updated).
 
+## Key design point: usage is the identity, login is pluggable
+
+The unique/registry identity of a "provider" in the old sense is the **usage** side (the crawler/parser calling a specific API or CLI/file) — that's what the one-account-per-login-identity dedup logic keys off (`user_identity`, merge-by-email/username). **Login is an auxiliary, swappable input**: several login mechanisms can produce a usable credential for the same usage method (e.g. a Bearer token for Codex's web API could come from a local CLI config file, an interactive browser cookie-capture, or being pasted in manually). So `usage/<type>/<method>.py` holds the "real" provider logic and is what `ProviderRegistry` keys on; `login/<type>/<method>.py` holds independent, in-principle-swappable ways to obtain a credential, selected by the user (or auto-discovered) at setup time, not hardcoded 1:1 to a usage method.
+
+This also drives the intended `ai-usage provider add` wizard flow: pick provider (service) → pick usage category/method (`cli`/`api`/`web` → which parser, e.g. Codex `/usage` CLI vs Codex web API vs Codex app-server) → the tool now knows what credential shape that usage method needs (none, if it's a local CLI already logged in; a Bearer token; a cookie jar) → offer the compatible login methods for that need (local file reuse, interactive browser login, manual paste) → run the chosen login flow → assemble the account. No back-compat shims needed — this project owns every import site, so the old flat module names (`codex.py`, `copilot.py`, etc.) and old class names are freely renamed/dropped; there is no external consumer to preserve compatibility for.
+
 ## Design
 
 ### New base abstractions (`providers/base.py`)
