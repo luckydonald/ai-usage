@@ -54,6 +54,15 @@ Source tree: `src/main/kotlin/org/zhavoronkov/tokenpulse/provider/<vendor>/`
    - `provider/oauth/{AbstractOAuthUsageClient,AbstractOAuthRefreshClient,TokenExpiry,OAuthHttp}.kt` — shared bearer-token HTTP client base classes
    - `provider/{ProviderRegistry,ProviderClient}.kt` — registry/interface tying providers into UI
 
+## Secret-source clarification (Cline, Nebius, OpenRouter, OpenAI Platform, Xiaomi)
+Unlike Claude Code / Codex, these 5 providers do NOT read any external vendor CLI file on disk. Secret flow: `BalanceRefreshService.kt:37` reads secret from `settings/CredentialsStore.kt` (IntelliJ `PasswordSafe` / OS keychain, keyed per account), passes into `fetchBalance(account, secret)`.
+- **Cline** — raw API key, user-entered via `ui/TokenPulseConfigurable.kt` Settings UI
+- **Nebius** — session JSON (`appSession`/`csrfCookie`/`csrfToken`/`parentId`) captured via embedded-browser login flow triggered by plugin, not typed
+- **OpenRouter** — user-entered Provisioning Key via Settings UI
+- **OpenAI Platform** — either user-entered Admin API key, or OAuth token from plugin's own PKCE flow (separate from Codex's `~/.codex/auth.json` provider)
+- **Xiaomi** — raw API key user-entered, or session JSON (serviceToken/passToken/cookies) captured via embedded-browser flow
+- Non-secret metadata (account list, refresh interval) persisted plaintext in `tokenpulse.xml` via `settings/TokenPulseSettingsService.kt` (`PersistentStateComponent`)
+
 ## Not present
 No Cursor, GitHub Copilot, Gemini CLI, or Aider integration (no matches for names, no jsonl/sqlite parsing anywhere in `src/main`).
 
