@@ -2497,3 +2497,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ Regarding _stored API secret_ and similar, where do they come from? Note local disk files read, vs direct user input clearly.
 
+❯ Task Notification:
+> - Task `a1e0c6cd63b7032d5` <kbd>completed</kbd>
+> - Tool `toolu_01R582zHLqPLYqeUDjvPDXzJ`
+> - > Agent "Trace API secret storage source" finished
+> - [Query (`1558` chars, `1.52 KB`)](output/agents/037.a1e0c6cd63b7032d5/prompt.md)
+> - [Answer (`4717` chars, `4.64 KB`)](output/agents/037.a1e0c6cd63b7032d5/result.md)
+> - [Raw log (`113485` chars, `111 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c6fca863-d547-4a84-b663-3f359db10838/tasks/a1e0c6cd63b7032d5.output)
+> - `6` tools, `30654` tokens, `0.970633 s`
+
