@@ -2636,3 +2636,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 ❯ Conversation compacted <kbd>manual</kbd>:
 > - [Result (`54817` chars, `53.7 KB`)](output/compact/009.7df685db-e712-4fa3-8935-7315f0599cec/result.md)
 
+❯ document your learnings
+
