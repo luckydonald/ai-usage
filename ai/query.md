@@ -2555,3 +2555,24 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`50004` chars, `48.9 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a97393977bb9f28e2.output)
 > - `5` tools, `18137` tokens, `0.444883 s`
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Provider ABC currently owns both login (discover/authenticate/discover_options/user_identity) and usage (fetch) directly. To split cleanly into login/<type>/<method>.py and usage/<type>/<method>.py files, how should the pieces recombine into a concrete provider?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Split approach** (1/1) <kbd>Single Select</kbd><br>
+>> Provider ABC currently owns both login (discover/authenticate/discover_options/user_identity) and usage (fetch) directly. To split cleanly into login/<type>/<method>.py and usage/<type>/<method>.py files, how should the pieces recombine into a concrete provider?
+> - [ ] 1\. Composition (Recommended)
+>   - _Provider becomes thin: holds a LoginMethod object + list of UsageMethod objects (fallback chain). discover/authenticate/fetch etc just delegate. Each method type/file is a small standalone class, reusable across providers (e.g. same WebCookieLogin class for claude+codex)._
+> - [ ] 2\. Mixin inheritance
+>   - _Concrete Provider class multi-inherits from a login mixin class and a usage mixin class, each imported from the respective login/usage file. Less reusable across providers than composition, but closer to current class-per-provider shape._
+> - [x] 3\. _Type something:_
+>   - > The idea is that there's often multiple ways to 'log in' - to aquire a token needed for an api endpoint. Read a local file might be an alternative to do an login with the browser and capture some specific cookies. This is not technically part of the provider, which would be the same, calling the API in both cases.
+>
+> </details>
+>
+
