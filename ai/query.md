@@ -2526,3 +2526,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`218252` chars, `213 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/a6eef466cd27470e1.output)
 > - `25` tools, `109891` tokens, `1.51207 s`
 
+❯ Task Notification:
+> - Task `a96f5200b9702c733` <kbd>completed</kbd>
+> - Tool `toolu_01FtrSbSNYzFuZDbsBiGrVxi`
+> - > Agent "Deep-dive Ollama+SuperGrok+Zai credential/API details" finished
+> - [Query (`2177` chars, `2.13 KB`)](output/agents/040.a96f5200b9702c733/prompt.md)
+> - [Answer (`7487` chars, `7.37 KB`)](output/agents/040.a96f5200b9702c733/result.md)
+> - [Raw log (`212793` chars, `208 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/a96f5200b9702c733.output)
+> - `24` tools, `112030` tokens, `1.46328 s`
+
