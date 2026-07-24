@@ -2598,3 +2598,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`283520` chars, `277 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a059b757a0cb7808a.output)
 > - `25` tools, `58183` tokens, `3.663 s`
 
+❯ Task Notification:
+> - Task `a43a0c84ebf6b6f6c` <kbd>completed</kbd>
+> - Tool `toolu_01JpFLp4wVzChXJTyaCTZFUV`
+> - > Agent "Restructure codex provider subpackage" finished
+> - [Query (`6350` chars, `6.23 KB`)](output/agents/045.a43a0c84ebf6b6f6c/prompt.md)
+> - [Answer (`3701` chars, `3.64 KB`)](output/agents/045.a43a0c84ebf6b6f6c/result.md)
+> - [Raw log (`377059` chars, `369 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a43a0c84ebf6b6f6c.output)
+> - `42` tools, `71110` tokens, `4.34725 s`
+
