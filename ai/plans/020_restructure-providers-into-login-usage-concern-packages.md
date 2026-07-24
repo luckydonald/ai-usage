@@ -139,3 +139,4 @@ This wizard rewrite is *why* the `credential_kind`/`required_credential_kind` me
 - [ ] Split claude subpackage into login/usage
 - [ ] Split codex.py into login/usage subpackage
 - [ ] Split copilot.py + web.py into login/usage subpackage
+- [ ] Update registry.py wiring
