@@ -1,0 +1,6 @@
+In /home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py, find the current "add account"/"login" command(s) (likely named `add`, `login`, or similar Typer/Click commands). Report, with file:line references:
+1. The full flow of the command: how it picks a provider/service/key, how it calls discover/authenticate/discover_options/fetch/user_identity, what prompts (questionary/click prompts/etc) are shown to the user, in what order.
+2. How accounts are stored afterward (config file model, account model — find the Account/config model class and its fields, e.g. is there a `credential` field, `options` field, `service`/`key` field).
+3. Any existing multi-step wizard/prompt library usage (questionary, InquirerPy, rich prompts) so I know what's available for a new "provider add" wizard with multiple selection steps.
+4. How provider metadata (service/key/display_name/configuration_fields/login_url/login_hint) is currently surfaced to the user during selection (e.g. is there a `provider list`/`provider add` menu that lists all registered providers by display_name?).
+Report concisely with file:line citations.
