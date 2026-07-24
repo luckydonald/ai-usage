@@ -2611,3 +2611,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /caveman:caveman
 
+❯ Task Notification:
+> - Task `a359af3bc8027d3cf` <kbd>completed</kbd>
+> - Tool `toolu_01RmpkzLX9pTpGRgUZZuiQwn`
+> - > Agent "Restructure claude provider subpackage" finished
+> - [Query (`7513` chars, `7.38 KB`)](output/agents/046.a359af3bc8027d3cf/prompt.md)
+> - [Answer (`4129` chars, `4.06 KB`)](output/agents/046.a359af3bc8027d3cf/result.md)
+> - [Raw log (`551669` chars, `539 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/f1e51145-6bf4-4ee9-9528-eebb474fade6/tasks/a359af3bc8027d3cf.output)
+> - `60` tools, `96420` tokens, `7.04012 s`
+
