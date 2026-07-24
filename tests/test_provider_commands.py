@@ -101,7 +101,8 @@ def test_no_input_add_lists_choices_without_creating_runtime(tmp_path: Path, mon
     assert result.exit_code == 0
     assert "No local accounts discovered" in result.output
     assert "Manual provider adapters:" in result.output
-    assert "codex/app-server" in result.output
+    assert "codex:" in result.output
+    assert "app-server:" in result.output
     assert not paths.root.exists()
 # end def
 
@@ -306,19 +307,19 @@ def test_manual_configuration_is_a_separate_selection(tmp_path: Path, monkeypatc
     async def choose(title: str, choices: list[SelectionChoice]) -> str:
         titles.append(title)
         assert choices
-        if len(titles) == 1:
-            return "manual"
+        if title == "Choose a provider":
+            return "copilot"
         # end if
-        return next(choice.key for choice in choices if choice.label == "copilot/github-api")
+        return next(choice.key for choice in choices if choice.key == "github-api")
     # end def
 
     monkeypatch.setattr(ai_usage.cli, "select_choice", choose)
-    selected, manual = asyncio.run(select_discovered_account(runtime, "copilot", None))
+    selected, manual = asyncio.run(select_discovered_account(runtime, None, None))
     asyncio.run(runtime.close())
 
     assert selected is None
     assert manual == ("copilot", "github-api")
-    assert titles == ["Choose an account to add", "Choose a provider adapter"]
+    assert titles == ["Choose a provider", "Choose how to fetch usage"]
 # end def
 
 
@@ -622,7 +623,7 @@ def test_add_triggers_browser_login_for_web_providers(tmp_path: Path, monkeypatc
         return {"cookies": {"session": "abc123"}}
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.login.web.cookie_capture.CookieCaptureLogin.authenticate", authenticate)
     monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
@@ -653,11 +654,11 @@ def test_add_via_tui_manual_selection_triggers_login_for_codex_web(
     monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
 
     async def choose(title, choices):
-        if title == "Choose an account to add":
-            return "manual"
+        if title == "Choose a provider":
+            return "codex"
         # end if
-        assert title == "Choose a provider adapter"
-        match = next(choice for choice in choices if choice.label == "codex/web")
+        assert title == "Choose how to fetch usage"
+        match = next(choice for choice in choices if choice.key == "web")
         return match.key
     # end def
 
@@ -668,7 +669,7 @@ def test_add_via_tui_manual_selection_triggers_login_for_codex_web(
         return {"cookies": {"session": "abc123"}}
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.login.web.cookie_capture.CookieCaptureLogin.authenticate", authenticate)
     monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add"])
@@ -689,11 +690,11 @@ def test_add_via_tui_manual_selection_triggers_login_for_claude_web(
     monkeypatch.setattr(ai_usage.cli, "interactive_terminal", lambda no_input: True)
 
     async def choose(title, choices):
-        if title == "Choose an account to add":
-            return "manual"
+        if title == "Choose a provider":
+            return "claude"
         # end if
-        assert title == "Choose a provider adapter"
-        match = next(choice for choice in choices if choice.label == "claude/web")
+        assert title == "Choose how to fetch usage"
+        match = next(choice for choice in choices if choice.key == "web")
         return match.key
     # end def
 
@@ -710,10 +711,10 @@ def test_add_via_tui_manual_selection_triggers_login_for_claude_web(
     # end def
 
     monkeypatch.setattr(
-        "ai_usage.providers.claude.ClaudeWebUsageProvider.authenticate", authenticate
+        "ai_usage.providers.claude.login.web.cookie_capture.CookieCaptureLogin.authenticate", authenticate
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.ClaudeWebUsageProvider.discover_options", discover_options
+        "ai_usage.providers.claude.login.web.cookie_capture.CookieCaptureLogin.discover_options", discover_options
     )
     monkeypatch.setattr(
         "ai_usage.providers.claude.ClaudeWebUsageProvider.fetch", fake_verified_fetch
@@ -746,7 +747,7 @@ def test_add_does_not_create_the_account_when_the_verification_fetch_fails(
         raise ProviderError(f"Codex usage endpoint returned HTTP 403 for {account.id}")
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.login.web.cookie_capture.CookieCaptureLogin.authenticate", authenticate)
     monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.fetch", failing_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
@@ -796,7 +797,7 @@ def test_add_fails_clearly_when_browser_login_does_not_complete(
         return None
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.login.web.cookie_capture.CookieCaptureLogin.authenticate", authenticate)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
@@ -816,7 +817,7 @@ def test_add_reports_missing_browser_extra_as_a_clean_error(
         raise ProviderError("Interactive browser login requires the 'browser' extra.")
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.login.web.cookie_capture.CookieCaptureLogin.authenticate", authenticate)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
@@ -841,10 +842,10 @@ def test_add_auto_fills_claude_org_id_without_prompting(tmp_path: Path, monkeypa
     # end def
 
     monkeypatch.setattr(
-        "ai_usage.providers.claude.ClaudeWebUsageProvider.authenticate", authenticate
+        "ai_usage.providers.claude.login.web.cookie_capture.CookieCaptureLogin.authenticate", authenticate
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.ClaudeWebUsageProvider.discover_options", discover_options
+        "ai_usage.providers.claude.login.web.cookie_capture.CookieCaptureLogin.discover_options", discover_options
     )
     monkeypatch.setattr(
         "ai_usage.providers.claude.ClaudeWebUsageProvider.fetch", fake_verified_fetch
