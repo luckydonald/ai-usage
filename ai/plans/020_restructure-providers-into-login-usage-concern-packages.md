@@ -139,6 +139,6 @@ This wizard rewrite is *why* the `credential_kind`/`required_credential_kind` me
 - [x] Split claude subpackage into login/usage
 - [x] Split codex.py into login/usage subpackage
 - [x] Split copilot.py + web.py into login/usage subpackage
-- [ ] Update registry.py wiring
+- [x] Update registry.py wiring
 - [ ] Rewrite cli.py provider add/login wizard
 - [ ] Update tests + run full suite
