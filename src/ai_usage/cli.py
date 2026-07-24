@@ -1,6 +1,7 @@
 """Command-line interface."""
 
 import asyncio
+import itertools
 import json
 import logging
 import socket
@@ -53,7 +54,7 @@ from ai_usage.provider_discovery import (
 )
 from ai_usage.provider_tui import SelectionChoice, select_choice
 from ai_usage.providers import Provider, ProviderRegistry, built_in_registry
-from ai_usage.providers.base import ProviderError
+from ai_usage.providers.base import LoginMethod, ProviderError
 from ai_usage.providers.claude import (
     canonical_claude_profile_dir,
     install_status_relay,
@@ -403,13 +404,54 @@ def print_discovery_choices(
     # end if
     if manual_providers:
         click.echo("Manual provider adapters:")
-        for provider in manual_providers:
-            marker = " [experimental]" if provider.experimental else ""
-            click.echo(
-                f"  {provider.service}/{provider.key}: {provider.display_name}{marker}"
-            )
+        for service, providers in itertools.groupby(manual_providers, key=lambda p: p.service):
+            click.echo(f"  {service}:")
+            for provider in providers:
+                marker = " [experimental]" if provider.experimental else ""
+                click.echo(f"    {provider.key}: {provider.display_name}{marker}")
+            # end for
         # end for
     # end if
+# end def
+
+
+async def select_provider(registry: ProviderRegistry) -> Provider | None:
+    services = sorted({impl.service for impl in registry.providers.values()})
+    service_choices = [SelectionChoice(service, service) for service in services]
+    chosen_service = await select_choice("Choose a provider", service_choices)
+    if chosen_service is None:
+        return None
+    # end if
+    candidates = matching_providers(registry, service=chosen_service)
+    if len(candidates) == 1:
+        return candidates[0]
+    # end if
+    usage_choices = [
+        SelectionChoice(
+            candidate.key,
+            f"{candidate.display_name}{' [experimental]' if candidate.experimental else ''}",
+        )
+        for candidate in candidates
+    ]
+    chosen_key = await select_choice("Choose how to fetch usage", usage_choices)
+    if chosen_key is None:
+        return None
+    # end if
+    return registry.get(chosen_service, chosen_key)
+# end def
+
+
+async def resolve_login_method(provider: Provider) -> LoginMethod | None:
+    matching = provider.matching_login_methods()
+    if len(matching) <= 1:
+        return matching[0] if matching else None
+    # end if
+    choices = [SelectionChoice(method.key, method.display_name) for method in matching]
+    chosen = await select_choice("Choose how to sign in", choices)
+    if chosen is None:
+        return None
+    # end if
+    return next((method for method in matching if method.key == chosen), None)
 # end def
 
 
@@ -432,6 +474,13 @@ async def select_discovered_account(
     provider_key: str | None,
     discovered_choices: list[DiscoveryChoice] | None = None,
 ) -> tuple[DiscoveryChoice | None, tuple[str, str] | None]:
+    if service is None or provider_key is None:
+        provider = await select_provider(runtime.providers)
+        if provider is None:
+            return None, None
+        # end if
+        service, provider_key = provider.service, provider.key
+    # end if
     choices = discovered_choices
     if choices is None:
         choices, failures = await discover_or_error(runtime.providers, service, provider_key)
@@ -439,11 +488,14 @@ async def select_discovered_account(
             click.echo(f"WARNING {failure.service}/{failure.provider}: {failure.error}", err=True)
         # end for
     # end if
+    if not choices:
+        return None, (service, provider_key)
+    # end if
     options = [
         SelectionChoice(f"discovered-{index}", choice.label, choice.provider_name)
         for index, choice in enumerate(choices)
     ]
-    options.append(SelectionChoice("manual", "Manually configure other…"))
+    options.append(SelectionChoice("manual", "Configure manually"))
     selected = await select_choice("Choose an account to add", options)
     if selected is None:
         return None, None
@@ -451,21 +503,7 @@ async def select_discovered_account(
     if selected != "manual":
         return choices[int(selected.removeprefix("discovered-"))], None
     # end if
-    providers = exclude_discovered(matching_providers(runtime.providers, service, provider_key), choices)
-    manual_options = [
-        SelectionChoice(
-            f"provider-{index}",
-            f"{provider.service}/{provider.key}",
-            provider.display_name + (" [experimental]" if provider.experimental else ""),
-        )
-        for index, provider in enumerate(providers)
-    ]
-    manual = await select_choice("Choose a provider adapter", manual_options)
-    if manual is None:
-        return None, None
-    # end if
-    selected_provider = providers[int(manual.removeprefix("provider-"))]
-    return None, (selected_provider.service, selected_provider.key)
+    return None, (service, provider_key)
 # end def
 
 
@@ -564,24 +602,29 @@ def provider_add(
                 credential = selected.account.credential
             # end if
             provider = runtime.providers.get(resolved_service, resolved_provider)
-            if credential is None and provider.login_url and interactive_terminal(no_input):
-                click.echo(f"Opening a login window for {provider.display_name}...")
-                if provider.login_hint:
-                    click.echo(provider.login_hint)
-                # end if
-                try:
-                    credential = await provider.authenticate(dynamic_options)
-                except ProviderError as exception:
-                    raise click.ClickException(str(exception)) from exception
-                # end try
-                if credential is None:
-                    raise click.ClickException(
-                        f"login for {provider.display_name} did not complete"
-                    )
+            login_method: LoginMethod | None = None
+            if credential is None and provider.matching_login_methods() and interactive_terminal(no_input):
+                login_method = await resolve_login_method(provider)
+                if login_method is not None:
+                    click.echo(f"Opening a login window for {provider.display_name}...")
+                    if provider.login_hint:
+                        click.echo(provider.login_hint)
+                    # end if
+                    try:
+                        credential = await login_method.authenticate(dynamic_options)
+                    except ProviderError as exception:
+                        raise click.ClickException(str(exception)) from exception
+                    # end try
+                    if credential is None:
+                        raise click.ClickException(
+                            f"login for {provider.display_name} did not complete"
+                        )
+                    # end if
                 # end if
             # end if
             if credential is not None:
-                for key, value in (await provider.discover_options(credential)).items():
+                options_source = login_method if login_method is not None else provider
+                for key, value in (await options_source.discover_options(credential)).items():
                     dynamic_options.setdefault(key, value)
                 # end for
             # end if
@@ -651,12 +694,18 @@ def provider_login(
             await runtime.initialize()
             account = runtime.config.get_account(account_id)
             provider = runtime.providers.get(account.service, account.provider)
+            login_method = await resolve_login_method(provider)
+            if login_method is None:
+                raise click.ClickException(
+                    f"{provider.display_name} does not support interactive login"
+                )
+            # end if
             click.echo(f"Opening a login window for {provider.display_name}...")
             if provider.login_hint:
                 click.echo(provider.login_hint)
             # end if
             try:
-                credential = await provider.authenticate(account.options)
+                credential = await login_method.authenticate(account.options)
             except ProviderError as exception:
                 raise click.ClickException(str(exception)) from exception
             # end try
@@ -758,6 +807,20 @@ async def run_provider_add_wizard(runtime: "Runtime") -> None:
     # end if
     credential = selected.account.credential if selected else None
     provider = runtime.providers.get(resolved_service, resolved_provider)
+    if credential is None and provider.matching_login_methods():
+        login_method = await resolve_login_method(provider)
+        if login_method is not None:
+            click.echo(f"Opening a login window for {provider.display_name}...")
+            if provider.login_hint:
+                click.echo(provider.login_hint)
+            # end if
+            try:
+                credential = await login_method.authenticate({})
+            except ProviderError as exception:
+                raise click.ClickException(str(exception)) from exception
+            # end try
+        # end if
+    # end if
     probe = AccountConfig(
         id=str(uuid.uuid7()),
         service=resolved_service,
