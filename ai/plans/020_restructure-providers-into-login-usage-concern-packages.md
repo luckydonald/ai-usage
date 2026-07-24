@@ -137,8 +137,8 @@ This wizard rewrite is *why* the `credential_kind`/`required_credential_kind` me
 
 - [x] base.py: LoginMethod/UsageMethod/FallbackUsageMethod
 - [ ] Split claude subpackage into login/usage *(in progress)*
-- [ ] Split codex.py into login/usage subpackage
-- [ ] Split copilot.py + web.py into login/usage subpackage
+- [ ] Split codex.py into login/usage subpackage *(in progress)*
+- [ ] Split copilot.py + web.py into login/usage subpackage *(in progress)*
 - [ ] Update registry.py wiring
 - [ ] Rewrite cli.py provider add/login wizard
 - [ ] Update tests + run full suite
