@@ -1,27 +1,38 @@
-"""Experimental generic private-web usage adapter."""
+"""Generic private-web usage method (experimental), used by Copilot entitlements.
+
+Placement note: `PrivateWebProvider` was written to be a generic, reusable base (its
+`fetch()` has no Copilot-specific logic — cookie/header credential in, dotted-path JSON
+percentage extraction out). The plan flagged an open question of whether this belongs in
+`providers/base.py` instead of here. Kept in `copilot/usage/web/` for now: it currently
+has exactly one consumer (`CopilotEntitlementsProvider`), and `providers/base.py` is
+meant to hold the shared ABCs/errors/registry-facing contracts, not concrete
+(even if generic) fetch implementations. If/when a second, non-Copilot provider wants
+this same generic HTTP+dotted-path fetch, it should move to `base.py` (or a new
+`providers/_shared/` module) at that point — no need to speculatively relocate it now.
+"""
 
 from datetime import UTC, datetime
 from typing import Any
 
 import httpx
 
-from ai_usage.icons import IconRef
 from ai_usage.models import AccountConfig, Metric, ProviderFetchResult, Usage
-from ai_usage.providers.base import ConfigurationField, Provider, ProviderError, ProviderLoginError
+from ai_usage.providers.base import ProviderError, UsageMethod
 
 
-class PrivateWebProvider(Provider):
-    experimental = True
-    configuration_fields = (
-        ConfigurationField(key="endpoint", label="Private usage endpoint", required=True),
-        ConfigurationField(key="percentage_field", label="Percentage JSON field", required=True),
-        ConfigurationField(key="metric_key", label="Metric key", default="usage"),
-        ConfigurationField(key="metric_name", label="Metric name", default="Usage"),
-    )
+class GenericPrivateWebUsage(UsageMethod):
+    """Experimental generic HTTP fetch with dotted-path JSON field extraction.
 
-    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
-        del account, result
-        raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
+    `required_credential_kind` is `"cookie_jar"`: the credential this method consumes is
+    a `{"cookies": {...}, "headers": {...}}` bundle (not a bare bearer token), matching
+    what `fetch()` actually reads below.
+    """
+
+    required_credential_kind = "cookie_jar"
+
+    def __init__(self, service: str, key: str) -> None:
+        self.service = service
+        self.key = key
     # end def
 
     async def fetch(
@@ -61,12 +72,4 @@ class PrivateWebProvider(Provider):
             ],
         )
     # end def
-# end class
-
-
-class CopilotEntitlementsProvider(PrivateWebProvider):
-    service = "copilot"
-    key = "entitlements"
-    display_name = "Copilot private entitlement API"
-    icon = IconRef(set="solid", name="key")
 # end class

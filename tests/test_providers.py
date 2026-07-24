@@ -30,22 +30,21 @@ from ai_usage.providers.claude import (
     remove_status_relay,
     run_claude_auth_status,
 )
-from ai_usage.providers.codex import (
+from ai_usage.providers.codex.provider import (
     CodexStatusProvider,
     CodexWebUsageProvider,
+)
+from ai_usage.providers.codex.usage.cli.status_ptv import parse_codex_status
+from ai_usage.providers.codex.usage.web.private_api import (
     codex_model,
     extract_codex_notes,
-    parse_codex_status,
     parse_codex_web_usage,
     parse_rate_limits,
 )
-from ai_usage.providers.copilot import (
-    CopilotBillingProvider,
-    CopilotStatusProvider,
-    copilot_cli_credentials,
-    next_billing_reset,
-    parse_copilot_quota_payload,
-)
+from ai_usage.providers.copilot.login.cli.token_reuse import copilot_cli_credentials
+from ai_usage.providers.copilot.provider import CopilotBillingProvider, CopilotStatusProvider
+from ai_usage.providers.copilot.usage.web.billing_api import next_billing_reset
+from ai_usage.providers.copilot.usage.web.quota_api import parse_copilot_quota_payload
 
 
 class FakeCurlResponse:
@@ -137,7 +136,7 @@ async def test_codex_status_provider_flags_stale_warning(monkeypatch) -> None:
     # end def
 
     monkeypatch.setattr(
-        "ai_usage.providers.codex.run_codex_status", fake_run_codex_status
+        "ai_usage.providers.codex.usage.cli.status_ptv.run_codex_status", fake_run_codex_status
     )
     account = AccountConfig(id="a", service="codex", provider="cli-status", name="Codex")
     result = await CodexStatusProvider().fetch(account, None)
@@ -204,7 +203,7 @@ def test_claude_cli_failure_reports_text_style_setup_from_recorded_transcript(
 ) -> None:
     transcript_path = Path(__file__).parents[1] / "ai/errors/9.txt"
     transcript = transcript_path.read_text(encoding="utf-8")
-    monkeypatch.setattr("ai_usage.providers.claude_cli.CLAUDE_ERROR_LOG_DIR", tmp_path)
+    monkeypatch.setattr("ai_usage.providers.claude._shared.CLAUDE_ERROR_LOG_DIR", tmp_path)
 
     with caplog.at_level(logging.ERROR, logger="ai_usage.providers.claude"):
         message = claude_cli_failure_message(transcript, "claude", "/profiles/claude")
@@ -224,7 +223,7 @@ def test_claude_cli_failure_reports_text_style_setup_from_recorded_transcript(
 
 
 def test_claude_cli_failure_keeps_generic_error_for_other_timeouts(monkeypatch, tmp_path) -> None:
-    monkeypatch.setattr("ai_usage.providers.claude_cli.CLAUDE_ERROR_LOG_DIR", tmp_path)
+    monkeypatch.setattr("ai_usage.providers.claude._shared.CLAUDE_ERROR_LOG_DIR", tmp_path)
 
     message = claude_cli_failure_message("Claude is still starting\n", "claude", "/profiles/claude")
     assert message == (
@@ -388,7 +387,7 @@ async def test_claude_web_usage_provider_collects_identity_and_subscription(monk
         ),
     }
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.AsyncSession",
+        "ai_usage.providers.claude.usage.web.private_api.AsyncSession",
         lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     account = AccountConfig(
@@ -429,7 +428,7 @@ async def test_claude_web_usage_provider_notes_empty_when_app_start_fetch_fails(
         # undocumented promo-banner probe did.
     }
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.AsyncSession",
+        "ai_usage.providers.claude.usage.web.private_api.AsyncSession",
         lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     account = AccountConfig(
@@ -444,7 +443,7 @@ async def test_claude_web_usage_provider_notes_empty_when_app_start_fetch_fails(
 async def test_claude_web_discover_options_auto_fills_single_organization(monkeypatch) -> None:
     responses = {"/api/organizations": FakeCurlResponse(200, [{"uuid": "org-1", "name": "Solo"}])}
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.AsyncSession",
+        "ai_usage.providers.claude.login.web.cookie_capture.AsyncSession",
         lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     discovered = await ClaudeWebUsageProvider().discover_options({"cookies": {"session": "x"}})
@@ -462,7 +461,7 @@ async def test_claude_web_discover_options_defaults_to_first_org_when_ambiguous(
         ),
     }
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.AsyncSession",
+        "ai_usage.providers.claude.login.web.cookie_capture.AsyncSession",
         lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     discovered = await ClaudeWebUsageProvider().discover_options({"cookies": {"session": "x"}})
@@ -522,7 +521,7 @@ async def test_codex_web_usage_provider_collects_identity_and_subscription(monke
         ),
     }
     monkeypatch.setattr(
-        "ai_usage.providers.codex.AsyncSession",
+        "ai_usage.providers.codex.usage.web.private_api.AsyncSession",
         lambda **kwargs: FakeCurlSession(responses, **kwargs),
     )
     account = AccountConfig(id="account", service="codex", provider="web", name="Codex")
@@ -536,7 +535,7 @@ async def test_codex_web_usage_provider_collects_identity_and_subscription(monke
 @pytest.mark.asyncio
 async def test_claude_web_usage_provider_authenticate_captures_cookies(monkeypatch) -> None:
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.capture_cookies_via_webview",
+        "ai_usage.providers.claude.login.web.cookie_capture.capture_cookies_via_webview",
         lambda url, title: {"session": "abc"},
     )
     credential = await ClaudeWebUsageProvider().authenticate({})
@@ -547,7 +546,7 @@ async def test_claude_web_usage_provider_authenticate_captures_cookies(monkeypat
 @pytest.mark.asyncio
 async def test_claude_web_usage_provider_authenticate_returns_none_without_cookies(monkeypatch) -> None:
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.capture_cookies_via_webview", lambda url, title: {}
+        "ai_usage.providers.claude.login.web.cookie_capture.capture_cookies_via_webview", lambda url, title: {}
     )
     assert await ClaudeWebUsageProvider().authenticate({}) is None
 # end def
@@ -562,11 +561,13 @@ async def test_codex_web_usage_provider_authenticate_captures_cookies(monkeypatc
         return {"session": "xyz"}
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.capture_cookies_via_webview", fake_capture)
+    monkeypatch.setattr(
+        "ai_usage.providers.codex.login.web.cookie_capture.capture_cookies_via_webview", fake_capture
+    )
     credential = await CodexWebUsageProvider().authenticate({})
     assert credential == {"cookies": {"session": "xyz"}}
     assert calls == [
-        ("https://chatgpt.com/", "Codex private web API", '[data-testid="login-button"]')
+        ("https://chatgpt.com/", "Sign in via browser", '[data-testid="login-button"]')
     ]
 # end def
 
@@ -672,7 +673,8 @@ async def test_copilot_status_provider_fetch(tmp_path) -> None:
         name="Copilot",
         options={"config_dir": str(tmp_path)},
     )
-    result = await CopilotStatusProvider().fetch(account, None)
+    token, login = copilot_cli_credentials(tmp_path)
+    result = await CopilotStatusProvider().fetch(account, {"token": token, "login": login})
     assert route.called
     assert route.calls.last.request.headers["Authorization"] == "Bearer abc123"
     assert result.identity.name == "lucy"
@@ -716,7 +718,9 @@ async def test_claude_status_fresh_relay_is_success(tmp_path, monkeypatch) -> No
         return None
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_identity)
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.local.relay_file.run_claude_auth_status", no_identity
+    )
     result = await ClaudeStatusProvider().fetch(account, None)
     assert result.status == FetchStatus.SUCCESS
     assert result.metrics[0].usage.percentage == 23.5
@@ -740,12 +744,20 @@ async def test_claude_status_stale_relay_falls_back_to_cli_usage(tmp_path, monke
     # end def
 
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage_direct", no_direct_output
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_usage_direct", no_direct_output
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage", fake_run_claude_usage
+        "ai_usage.providers.claude.usage.cli.interactive.run_claude_usage", fake_run_claude_usage
     )
-    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_direct_output)
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.local.relay_file.run_claude_auth_status", no_direct_output
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_auth_status", no_direct_output
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.cli.interactive.run_claude_auth_status", no_direct_output
+    )
     result = await ClaudeStatusProvider().fetch(account, None)
     assert result.status == FetchStatus.SUCCESS
     assert result.metrics[0].usage.percentage == 44
@@ -767,12 +779,20 @@ async def test_claude_status_missing_relay_falls_back_and_raises(tmp_path, monke
     # end def
 
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage_direct", no_direct_output
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_usage_direct", no_direct_output
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage", raise_provider_error
+        "ai_usage.providers.claude.usage.cli.interactive.run_claude_usage", raise_provider_error
     )
-    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_direct_output)
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.local.relay_file.run_claude_auth_status", no_direct_output
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_auth_status", no_direct_output
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.cli.interactive.run_claude_auth_status", no_direct_output
+    )
     with pytest.raises(ProviderError, match="did not become ready"):
         await ClaudeStatusProvider().fetch(account, None)
 # end def
@@ -795,12 +815,17 @@ async def test_claude_status_uses_direct_screen_reader_output(tmp_path, monkeypa
     # end def
 
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage_direct", direct_output
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_usage_direct", direct_output
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage", interactive_should_not_run
+        "ai_usage.providers.claude.usage.cli.interactive.run_claude_usage", interactive_should_not_run
     )
-    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_identity)
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.local.relay_file.run_claude_auth_status", no_identity
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_auth_status", no_identity
+    )
 
     result = await ClaudeStatusProvider().fetch(account, None)
 
@@ -825,12 +850,20 @@ async def test_claude_status_falls_back_when_direct_output_is_unparseable(tmp_pa
     # end def
 
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage_direct", unparseable_direct_output
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_usage_direct", unparseable_direct_output
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.status.run_claude_usage", interactive_output
+        "ai_usage.providers.claude.usage.cli.interactive.run_claude_usage", interactive_output
     )
-    monkeypatch.setattr("ai_usage.providers.claude.status.run_claude_auth_status", no_identity)
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.local.relay_file.run_claude_auth_status", no_identity
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.cli.direct.run_claude_auth_status", no_identity
+    )
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.usage.cli.interactive.run_claude_auth_status", no_identity
+    )
 
     result = await ClaudeStatusProvider().fetch(account, None)
 
@@ -939,7 +972,7 @@ def test_claude_relay_preserves_existing_command(tmp_path) -> None:
 def test_claude_relay_uses_default_profile_for_null_option(tmp_path, monkeypatch) -> None:
     profile = tmp_path / "claude"
     profile.mkdir()
-    monkeypatch.setattr("ai_usage.providers.claude_cli.claude_default_profile", lambda: profile)
+    monkeypatch.setattr("ai_usage.providers.claude._shared.claude_default_profile", lambda: profile)
     account = AccountConfig(
         id="relay-account",
         service="claude",

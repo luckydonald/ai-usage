@@ -141,7 +141,7 @@ def test_new_alias_manually_configures_provider(tmp_path: Path, monkeypatch) -> 
     paths = configured_paths(tmp_path, monkeypatch)
     secret_file = tmp_path / "github.json"
     secret_file.write_text('{"token":"github-secret"}', encoding="utf-8")
-    monkeypatch.setattr("ai_usage.providers.copilot.CopilotBillingProvider.fetch", fake_verified_fetch)
+    monkeypatch.setattr("ai_usage.providers.copilot.provider.CopilotBillingProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(
         main,
@@ -572,7 +572,7 @@ def test_provider_login_stores_captured_cookies_as_credential(tmp_path: Path, mo
         "claude", "web", "Claude", None, {"org_id": "org-1"}
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.capture_cookies_via_webview",
+        "ai_usage.providers.claude.login.web.cookie_capture.capture_cookies_via_webview",
         lambda url, title: {"session": "abc123"},
     )
     monkeypatch.setattr(
@@ -622,8 +622,8 @@ def test_add_triggers_browser_login_for_web_providers(tmp_path: Path, monkeypatc
         return {"cookies": {"session": "abc123"}}
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.fetch", fake_verified_fetch)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
@@ -668,8 +668,8 @@ def test_add_via_tui_manual_selection_triggers_login_for_codex_web(
         return {"cookies": {"session": "abc123"}}
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.fetch", fake_verified_fetch)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.fetch", fake_verified_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add"])
 
@@ -746,8 +746,8 @@ def test_add_does_not_create_the_account_when_the_verification_fetch_fails(
         raise ProviderError(f"Codex usage endpoint returned HTTP 403 for {account.id}")
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.fetch", failing_fetch)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.fetch", failing_fetch)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
@@ -766,7 +766,7 @@ def test_provider_login_does_not_store_credentials_when_the_verification_fetch_f
         "claude", "web", "Claude", None, {"org_id": "org-1"}
     )
     monkeypatch.setattr(
-        "ai_usage.providers.claude.api.capture_cookies_via_webview",
+        "ai_usage.providers.claude.login.web.cookie_capture.capture_cookies_via_webview",
         lambda url, title: {"session": "abc123"},
     )
 
@@ -796,7 +796,7 @@ def test_add_fails_clearly_when_browser_login_does_not_complete(
         return None
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
@@ -816,7 +816,7 @@ def test_add_reports_missing_browser_extra_as_a_clean_error(
         raise ProviderError("Interactive browser login requires the 'browser' extra.")
     # end def
 
-    monkeypatch.setattr("ai_usage.providers.codex.CodexWebUsageProvider.authenticate", authenticate)
+    monkeypatch.setattr("ai_usage.providers.codex.provider.CodexWebUsageProvider.authenticate", authenticate)
 
     result = CliRunner().invoke(main, ["provider", "add", "codex", "web"])
 
