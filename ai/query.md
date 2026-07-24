@@ -2495,3 +2495,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`130454` chars, `128 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/c6fca863-d547-4a84-b663-3f359db10838/tasks/aa5cb39a3d02058c0.output)
 > - `10` tools, `31418` tokens, `1.3492 s`
 
+❯ Regarding _stored API secret_ and similar, where do they come from? Note local disk files read, vs direct user input clearly.
+
