@@ -2517,3 +2517,12 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`171024` chars, `167 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/ae9dee2cb82cc2ffd.output)
 > - `10` tools, `106626` tokens, `0.957733 s`
 
+❯ Task Notification:
+> - Task `a6eef466cd27470e1` <kbd>completed</kbd>
+> - Tool `toolu_01UsLuoLUZeZNQSbTEF4k8vV`
+> - > Agent "Deep-dive Codex+Kimi+MiniMax credential/API details" finished
+> - [Query (`2739` chars, `2.68 KB`)](output/agents/039.a6eef466cd27470e1/prompt.md)
+> - [Answer (`10106` chars, `9.9 KB`)](output/agents/039.a6eef466cd27470e1/result.md)
+> - [Raw log (`218252` chars, `213 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/8301ddb1-ca3f-437a-9fbc-e0352221496f/tasks/a6eef466cd27470e1.output)
+> - `25` tools, `109891` tokens, `1.51207 s`
+
