@@ -135,4 +135,4 @@ This wizard rewrite is *why* the `credential_kind`/`required_credential_kind` me
 
 ## Todos
 
-- [ ] base.py: LoginMethod/UsageMethod/FallbackUsageMethod
+- [x] base.py: LoginMethod/UsageMethod/FallbackUsageMethod
