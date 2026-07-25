@@ -2653,3 +2653,13 @@ This shall be the first check, and if that doesn't work use the way we just have
 > - [Raw log (`81707` chars, `80 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/4c8846d9-394d-4f75-9329-2410ae54eadc/tasks/a5704004b3c79eb64.output)
 > - `2` tools, `51764` tokens, `0.557533 s`
 
+❯ /cavecrew
+
+❯ /caveman-compress
+
+❯ memories
+
+❯ yes, 11. ALWAYS Keep first headline intact and unchanged.
+
+❯ all memory files must end with newline.
+
