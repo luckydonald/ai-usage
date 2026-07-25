@@ -2663,3 +2663,129 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ all memory files must end with newline.
 
+❯ /cavecrew
+
+❯ /plan Implement missing providers, crawlers, logins, etc. from @ai/plans/018_plan-inventory-parsers-in-llm-subscription-usage-intellij.md and @ai/plans/019_plan-inventory-of-usage-parsers-in-tokenpulse-intellij-plugi.md
+
+❯ Task Notification:
+> - Task `a3facde272556790b` <kbd>completed</kbd>
+> - Tool `toolu_01VGfM9w637XRz9BKFkmadqX`
+> - > Agent "Explore ai-usage current provider coverage" finished
+> - [Query (`1404` chars, `1.38 KB`)](output/agents/049.a3facde272556790b/prompt.md)
+> - [Answer (`3770` chars, `3.74 KB`)](output/agents/049.a3facde272556790b/result.md)
+> - [Raw log (`179888` chars, `176 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/ae3f5d59-bf5b-4a03-9fa5-5f15e5d1e6b3/tasks/a3facde272556790b.output)
+> - `13` tools, `50813` tokens, `0.694467 s`
+
+❯ Task Notification:
+> - Task `aafd5652366fe97de` <kbd>completed</kbd>
+> - Tool `toolu_01MPdAKbfZEzc4yd5hiHZo5N`
+> - > Agent "Explore ai-usage provider architecture" finished
+> - [Query (`1425` chars, `1.4 KB`)](output/agents/050.aafd5652366fe97de/prompt.md)
+> - [Answer (`9641` chars, `9.46 KB`)](output/agents/050.aafd5652366fe97de/result.md)
+> - [Raw log (`275894` chars, `270 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/ae3f5d59-bf5b-4a03-9fa5-5f15e5d1e6b3/tasks/aafd5652366fe97de.output)
+> - `23` tools, `60094` tokens, `1.74228 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Which providers to prioritize for THIS batch (pick easy API-key style first, or go broad)?
+>> 2. Which harder/cookie-or-OAuth providers to include too (or none - just do Batch A)?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Batch A** (1/2) <kbd>Multi Select</kbd><br>
+>> Which providers to prioritize for THIS batch (pick easy API-key style first, or go broad)?
+> - [x] 1\. Z.ai <sup><sub><kbd>#2</kbd></sub></sup>
+>   - _Single API key, 2 JSON endpoints — simplest_
+> - [x] 2\. MiniMax <sup><sub><kbd>#3</kbd></sub></sup>
+>   - _API key, region-fallback endpoints_
+> - [x] 3\. Cline <sup><sub><kbd>#4</kbd></sub></sup>
+>   - _API key, api.cline.bot balance/usage_
+> - [x] 4\. OpenRouter <sup><sub><kbd>#1</kbd></sub></sup>
+>   - _Provisioning key, credits/usage JSON_
+> - [ ] 5\. _Type something._
+>
+>> **Batch B** (2/2) <kbd>Multi Select</kbd><br>
+>> Which harder/cookie-or-OAuth providers to include too (or none - just do Batch A)?
+> - [x] 1\. Cursor <sup><sub><kbd>#1</kbd></sub></sup>
+>   - _Cookie-paste, JSON API + gRPC fallback — matches existing cookie-capture pattern_
+> - [x] 2\. Ollama cloud <sup><sub><kbd>#2</kbd></sub></sup>
+>   - _Cookie, but HTML-scrape not JSON — new parsing style needed_
+> - [x] 3\. SuperGrok / Kimi (OAuth PKCE/device-flow) <sup><sub><kbd>#3</kbd></sub></sup>
+>   - _Needs new auth machinery not in ai-usage today — bigger lift_
+> - [ ] 4\. None / just Batch A for now
+>   - _Keep this plan scoped small, tackle rest later_
+> - [ ] 5\. _Type something._
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. SuperGrok/Kimi need OAuth PKCE (loopback) + device-flow auth — neither exists in ai-usage yet (today: cookie-capture-webview or local-CLI-token-reuse only). Build these as new shared LoginMethod helpers, or skip those two for now and do only Batch A + Cursor + Ollama?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **OAuth scope** (1/1) <kbd>Single Select</kbd><br>
+>> SuperGrok/Kimi need OAuth PKCE (loopback) + device-flow auth — neither exists in ai-usage yet (today: cookie-capture-webview or local-CLI-token-reuse only). Build these as new shared LoginMethod helpers, or skip those two for now and do only Batch A + Cursor + Ollama?
+> - [x] 1\. Build shared PKCE + device-flow helpers (Recommended)
+>   - _New login/web/oauth_pkce.py + login/web/device_flow.py shared helpers, reused by SuperGrok (PKCE-loopback) and Kimi (device-flow)_
+> - [ ] 2\. Skip SuperGrok/Kimi this round
+>   - _Do Z.ai, MiniMax, Cline, OpenRouter, Cursor, Ollama only — defer OAuth machinery to a later plan_
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
+❯ Task Notification:
+> - Task `a6f91f4dcec6825e0` <kbd>completed</kbd>
+> - Tool `toolu_01HWR5myFzZ4JmNxktiEBwn7`
+> - > Agent "Plan simple API-key providers" finished
+> - [Query (`6245` chars, `6.13 KB`)](output/agents/051.a6f91f4dcec6825e0/prompt.md)
+> - [Answer (`17686` chars, `17.4 KB`)](output/agents/051.a6f91f4dcec6825e0/result.md)
+> - [Raw log (`250349` chars, `245 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/ae3f5d59-bf5b-4a03-9fa5-5f15e5d1e6b3/tasks/a6f91f4dcec6825e0.output)
+> - `21` tools, `46412` tokens, `2.22237 s`
+
+❯ Task Notification:
+> - Task `a97d5dc4a56345112` <kbd>completed</kbd>
+> - Tool `toolu_01N4kBmY8QPkbHJtsJZLNJhK`
+> - > Agent "Plan cookie/OAuth providers plus shared helpers" finished
+> - [Query (`7911` chars, `7.76 KB`)](output/agents/052.a97d5dc4a56345112/prompt.md)
+> - [Answer (`31802` chars, `31.2 KB`)](output/agents/052.a97d5dc4a56345112/result.md)
+> - [Raw log (`333451` chars, `326 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/ae3f5d59-bf5b-4a03-9fa5-5f15e5d1e6b3/tasks/a97d5dc4a56345112.output)
+> - `24` tools, `56664` tokens, `2.96785 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Z.ai/SuperGrok/Kimi APIs give no confirmed email/login field for user_identity() (required by Provider, raises NotImplementedError otherwise). How should these providers derive an identity string?
+>> 2. Ollama HTML scraping needs a parser lib not currently in pyproject.toml. Add selectolax (lightweight, no libxml2 dependency) as recommended by the plan agent?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Identity fallback** (1/2) <kbd>Single Select</kbd><br>
+>> Z.ai/SuperGrok/Kimi APIs give no confirmed email/login field for user_identity() (required by Provider, raises NotImplementedError otherwise). How should these providers derive an identity string?
+> - [ ] 1\. Best-effort probe + fallback placeholder (Recommended)
+>   - _Try any available account/profile field first; if truly absent, fall back to a stable non-email identity (e.g. plan name, token-derived id) instead of failing setup_
+> - [x] 2\. Raise ProviderLoginError if no identity found
+>   - _Matches existing CopilotEntitlementsProvider/CodexStatusProvider precedent — stricter, but blocks account setup entirely if vendor never exposes identity_
+> - [ ] 3\. _Type something._
+>
+>> **HTML parser dep** (2/2) <kbd>Single Select</kbd><br>
+>> Ollama HTML scraping needs a parser lib not currently in pyproject.toml. Add selectolax (lightweight, no libxml2 dependency) as recommended by the plan agent?
+> - [ ] 1\. selectolax (Recommended)
+>   - _Fast, small, pure-wheel, good CSS selector API — matches project's otherwise light dependency footprint_
+> - [x] 2\. beautifulsoup4
+>   - _Heavier but more familiar/common; more lenient HTML parsing_
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
