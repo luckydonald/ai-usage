@@ -29,12 +29,12 @@ const series: GraphSeries[] = [
 
 describe("ServicePanels", () => {
   it("renders no panels when there is no series data", () => {
-    const wrapper = mount(ServicePanels, { props: { series: [], accountLabels: {}, parserLabels: {} } });
+    const wrapper = mount(ServicePanels, { props: { series: [], accountLabels: {}, parserLabels: {}, accountIdentities: {}, serviceIcons: {}, providerIcons: {}, metricIcons: {} } });
     expect(wrapper.find(".info-panels").exists()).toBe(false);
   });
 
   it("renders the window's start/end as relative-time components with the absolute time as a tooltip", () => {
-    const wrapper = mount(ServicePanels, { props: { series, accountLabels: { account: "person@example.com" }, parserLabels: { account: "Web" } } });
+    const wrapper = mount(ServicePanels, { props: { series, accountLabels: { account: "person@example.com" }, parserLabels: { account: "Web" }, accountIdentities: {}, serviceIcons: {}, providerIcons: {}, metricIcons: {} } });
 
     const relativeTimes = wrapper.findAllComponents(RelativeTime);
     expect(relativeTimes.length).toBe(2);
@@ -50,7 +50,7 @@ describe("ServicePanels", () => {
 
   it("shows a placeholder when a metric has no window data", () => {
     const noWindowSeries: GraphSeries[] = [{ ...series[0]!, windows: [] }];
-    const wrapper = mount(ServicePanels, { props: { series: noWindowSeries, accountLabels: {}, parserLabels: {} } });
+    const wrapper = mount(ServicePanels, { props: { series: noWindowSeries, accountLabels: {}, parserLabels: {}, accountIdentities: {}, serviceIcons: {}, providerIcons: {}, metricIcons: {} } });
     expect(wrapper.text()).toContain("No window data yet.");
   });
 });

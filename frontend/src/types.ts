@@ -54,6 +54,7 @@ export interface Catalog {
   exhausted_color: string;
   service_icons: Record<string, IconRef>;
   provider_icons: Record<string, IconRef>;
+  metric_icons: Record<string, IconRef>;
 }
 
 export interface LatestMetric {
@@ -114,6 +115,7 @@ export interface Filters {
 export interface SankeyMetric {
   key: string;
   name: string;
+  icon?: IconRef;
 }
 
 export interface SankeyParser {

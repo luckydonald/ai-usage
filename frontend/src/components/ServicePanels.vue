@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 
 import { computeWindowStats, type WindowStats } from "../chart";
 import { formatDuration } from "../time";
-import type { GraphSeries, GraphWindow } from "../types";
+import type { AccountIdentity, GraphSeries, GraphWindow, IconRef } from "../types";
+import Icon from "./Icon.vue";
 import RelativeTime from "./RelativeTime.vue";
 
 const props = defineProps<{
   series: GraphSeries[];
   accountLabels: Record<string, string>;
   parserLabels: Record<string, string>;
+  accountIdentities: Record<string, AccountIdentity | null>;
+  serviceIcons: Record<string, IconRef>;
+  providerIcons: Record<string, IconRef>;
+  metricIcons: Record<string, IconRef>;
 }>();
 
 interface EntryDetails {
@@ -24,10 +29,19 @@ interface PanelEntry {
 
 interface ServicePanel {
   service: string;
+  provider: string;
   accountId: string;
   accountLabel: string;
   parserLabel: string;
+  favicon: string | undefined;
   entries: PanelEntry[];
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@([^\s@]+\.[^\s@]+)$/;
+
+function domainFor(accountId: string, identity: AccountIdentity | null | undefined): string | undefined {
+  const email = identity?.email ?? accountId;
+  return EMAIL_PATTERN.exec(email)?.[1];
 }
 
 const panels = computed<ServicePanel[]>(() => {
@@ -41,11 +55,15 @@ const panels = computed<ServicePanel[]>(() => {
   const now = new Date();
   return [...byAccount.values()].map((items) => {
     const [first] = items;
+    const accountId = first!.account_id;
+    const domain = domainFor(accountId, props.accountIdentities[accountId]);
     return {
       service: first!.service,
-      accountId: first!.account_id,
-      accountLabel: props.accountLabels[first!.account_id] ?? first!.account_id.slice(0, 8),
-      parserLabel: props.parserLabels[first!.account_id] ?? first!.provider,
+      provider: first!.provider,
+      accountId,
+      accountLabel: props.accountLabels[accountId] ?? accountId.slice(0, 8),
+      parserLabel: props.parserLabels[accountId] ?? first!.provider,
+      favicon: domain ? `/img/favicon/${domain}` : undefined,
       entries: items.map((item) => {
         const window = item.windows.find((entry) => entry.current) ?? item.windows.at(-1);
         const details = window ? { window, stats: computeWindowStats(item.points, window, now) } : undefined;
@@ -55,33 +73,70 @@ const panels = computed<ServicePanel[]>(() => {
   });
 });
 
+// Tracks accounts whose favicon 404'd/errored, so the template swaps to the generic user icon
+// instead of leaving a broken <img>.
+const brokenFavicons = reactive(new Set<string>());
+function faviconFailed(accountId: string): void {
+  brokenFavicons.add(accountId);
+}
+
 function entryKey(entry: PanelEntry): string {
   return `${entry.item.account_id}::${entry.item.metric_key}`;
 }
+
+const USER_ICON: IconRef = { set: "solid", name: "user", pack: "fontawesome-free-pack", version: "latest" };
+const PEAK_ICON: IconRef = { set: "solid", name: "gauge-high", pack: "fontawesome-free-pack", version: "latest" };
+const BURN_ICON: IconRef = { set: "solid", name: "fire", pack: "fontawesome-free-pack", version: "latest" };
+const PERFECT_ICON: IconRef = { set: "solid", name: "bullseye", pack: "fontawesome-free-pack", version: "latest" };
+const EXHAUSTED_ICON: IconRef = { set: "solid", name: "triangle-exclamation", pack: "fontawesome-free-pack", version: "latest" };
+const BLOCKED_ICON: IconRef = { set: "solid", name: "ban", pack: "fontawesome-free-pack", version: "latest" };
+const REMAINING_ICON: IconRef = { set: "solid", name: "battery-half", pack: "fontawesome-free-pack", version: "latest" };
+const PROJECTED_ICON: IconRef = { set: "solid", name: "chart-line", pack: "fontawesome-free-pack", version: "latest" };
 </script>
 
 <template>
   <section v-if="panels.length" class="info-panels" aria-label="Service info panels">
     <div v-for="panel in panels" :key="`${panel.service}::${panel.accountId}::${panel.parserLabel}`" class="info-panel">
-      <h2>{{ panel.service }} <span class="account-chip">{{ panel.accountLabel }}</span></h2>
-      <p class="parser-label" :title="`Configuration ${panel.accountId}`">{{ panel.parserLabel }}</p>
+      <h2>
+        <Icon v-if="serviceIcons[panel.service]" v-bind="serviceIcons[panel.service]!" :title="panel.service" class="service-mark" />
+      </h2>
+      <div class="badge-row">
+        <span class="chip-badge" :title="`Configuration ${panel.accountId}`">
+          <Icon v-if="providerIcons[panel.provider]" v-bind="providerIcons[panel.provider]!" />
+          {{ panel.parserLabel }}
+        </span>
+        <span class="chip-badge" :title="panel.accountId">
+          <img
+            v-if="panel.favicon && !brokenFavicons.has(panel.accountId)"
+            :src="panel.favicon"
+            alt=""
+            class="account-favicon"
+            @error="faviconFailed(panel.accountId)"
+          />
+          <Icon v-else v-bind="USER_ICON" color="var(--color-primary)" />
+          {{ panel.accountLabel }}
+        </span>
+      </div>
       <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric">
-        <h3>{{ entry.item.metric_name }}</h3>
+        <h3>
+          <Icon v-if="metricIcons[entry.item.metric_key]" v-bind="metricIcons[entry.item.metric_key]!" />
+          {{ entry.item.metric_name }}
+        </h3>
         <template v-if="entry.details">
           <p><RelativeTime :at="new Date(entry.details.window.start)" /> → <RelativeTime :at="new Date(entry.details.window.end)" /></p>
-          <p>Peak usage: {{ entry.details.stats.maximumPercentage.toFixed(1) }}%</p>
-          <p v-if="entry.details.stats.burnRatePerHour !== null">Burn rate: {{ entry.details.stats.burnRatePerHour.toFixed(1) }}%/h</p>
-          <p v-if="entry.details.stats.perfectLanding">Right on spot!</p>
+          <p><Icon v-bind="PEAK_ICON" /> Peak usage: {{ entry.details.stats.maximumPercentage.toFixed(1) }}%</p>
+          <p v-if="entry.details.stats.burnRatePerHour !== null"><Icon v-bind="BURN_ICON" /> Burn rate: {{ entry.details.stats.burnRatePerHour.toFixed(1) }}%/h</p>
+          <p v-if="entry.details.stats.perfectLanding"><Icon v-bind="PERFECT_ICON" /> Right on spot!</p>
           <template v-else-if="entry.details.window.exhausted_from && entry.details.stats.exhaustedAfterMs !== null && entry.details.stats.blockedForMs !== null">
-            <p>Hit 100% after {{ formatDuration(entry.details.stats.exhaustedAfterMs) }}</p>
-            <p>Blocked for {{ formatDuration(entry.details.stats.blockedForMs) }}</p>
+            <p><Icon v-bind="EXHAUSTED_ICON" /> Hit 100% after {{ formatDuration(entry.details.stats.exhaustedAfterMs) }}</p>
+            <p><Icon v-bind="BLOCKED_ICON" /> Blocked for {{ formatDuration(entry.details.stats.blockedForMs) }}</p>
           </template>
-          <p v-else-if="entry.details.stats.remainingPercentageAtEnd !== null">{{ entry.details.stats.remainingPercentageAtEnd.toFixed(1) }}% remaining at window end</p>
+          <p v-else-if="entry.details.stats.remainingPercentageAtEnd !== null"><Icon v-bind="REMAINING_ICON" /> {{ entry.details.stats.remainingPercentageAtEnd.toFixed(1) }}% remaining at window end</p>
           <template v-else-if="entry.details.stats.projectedRemainingPercentageAtEnd !== null">
-            <p>Projected to land at {{ (100 - entry.details.stats.projectedRemainingPercentageAtEnd).toFixed(1) }}%</p>
+            <p><Icon v-bind="PROJECTED_ICON" /> Projected to land at {{ (100 - entry.details.stats.projectedRemainingPercentageAtEnd).toFixed(1) }}%</p>
             <p>{{ entry.details.stats.projectedRemainingPercentageAtEnd.toFixed(1) }}% of your limit would be left to use</p>
           </template>
-          <p v-else-if="entry.details.stats.projectedExhaustedAt !== null">At this rate, you'll hit 100% around <RelativeTime :at="new Date(entry.details.stats.projectedExhaustedAt)" /></p>
+          <p v-else-if="entry.details.stats.projectedExhaustedAt !== null"><Icon v-bind="PROJECTED_ICON" /> At this rate, you'll hit 100% around <RelativeTime :at="new Date(entry.details.stats.projectedExhaustedAt)" /></p>
         </template>
         <p v-else>No window data yet.</p>
       </div>
@@ -110,14 +165,31 @@ function entryKey(entry: PanelEntry): string {
     display: flex;
     align-items: center;
     gap: .5rem;
-    margin: 0 0 .75rem;
-    font-size: .95rem;
-    font-weight: 700;
-    color: var(--text-muted);
+    margin: 0 0 .5rem;
   }
 }
 
-.account-chip {
+.service-mark {
+  width: 1.4rem;
+  height: 1.4rem;
+
+  :deep(.icon) {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: 0 0 .75rem;
+}
+
+.chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: .15rem .65rem;
@@ -127,11 +199,10 @@ function entryKey(entry: PanelEntry): string {
   font-weight: 600;
 }
 
-.parser-label {
-  margin: -.35rem 0 .75rem;
-  color: var(--text-muted);
-  font-size: .82rem;
-  font-weight: 700;
+.account-favicon {
+  width: .9rem;
+  height: .9rem;
+  border-radius: 2px;
 }
 
 .info-panel-metric {
@@ -146,6 +217,9 @@ function entryKey(entry: PanelEntry): string {
   }
 
   h3 {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
     margin: 0 0 .25rem;
     font-size: .85rem;
     font-weight: 700;
@@ -154,6 +228,9 @@ function entryKey(entry: PanelEntry): string {
 
   p {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
   }
 }
 </style>

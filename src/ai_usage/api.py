@@ -5,12 +5,14 @@ import json
 import logging
 import os
 import random
+import re
 import socket
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Annotated, Any
 
+import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import (
@@ -29,7 +31,7 @@ from ai_usage.collector import Collector
 from ai_usage.config import ConfigStore
 from ai_usage.crawler import Crawler
 from ai_usage.database import Database
-from ai_usage.graph import SERVICE_ICONS, build_series
+from ai_usage.graph import SERVICE_ICONS, build_series, metric_icon_for
 from ai_usage.history import HistoryStore
 from ai_usage.icons import FONTAWESOME_FREE_PACK_VERSION, resolve_icon_svg
 from ai_usage.notes import collect_note_ranges
@@ -41,6 +43,8 @@ from ai_usage.settings import Paths
 
 init_sentry()
 LOGGER = logging.getLogger("ai_usage.api")
+
+DOMAIN_PATTERN = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$")
 
 
 class ApplicationState:
@@ -150,12 +154,20 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
                 }
             )
         # end for
+        metric_icons: dict[str, Any] = {}
+        for metric in metrics:
+            metric_icons.setdefault(
+                metric["metric_key"],
+                metric_icon_for(metric["metric_key"], metric["metric_name"])._asdict(),
+            )
+        # end for
         return {
             "accounts": account_payloads,
             "metrics": metrics,
             "exhausted_color": "#6b7280",
             "service_icons": {service: icon._asdict() for service, icon in SERVICE_ICONS.items()},
             "provider_icons": provider_icons,
+            "metric_icons": metric_icons,
         }
     # end def
 
@@ -273,6 +285,28 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
         return RedirectResponse(
             url=url,
             status_code=307,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    # end def
+
+    @app.get("/img/favicon/{domain}")
+    async def account_favicon(domain: str) -> Response:
+        if not DOMAIN_PATTERN.fullmatch(domain):
+            raise HTTPException(status_code=404, detail="invalid domain")
+        # end if
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                response = await client.get(f"https://icons.duckduckgo.com/ip3/{domain}.ico")
+            # end with
+        except httpx.HTTPError:
+            raise HTTPException(status_code=404, detail="favicon unavailable") from None
+        # end try
+        if response.status_code != 200 or not response.content:
+            raise HTTPException(status_code=404, detail="favicon unavailable")
+        # end if
+        return Response(
+            content=response.content,
+            media_type=response.headers.get("content-type", "image/x-icon"),
             headers={"Cache-Control": "public, max-age=86400"},
         )
     # end def

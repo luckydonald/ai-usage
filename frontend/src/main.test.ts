@@ -13,7 +13,7 @@ test("mounts the dashboard with the runtime-only Vue build", async () => {
       const url = String(input);
       if (url.includes("/catalog")) {
         return new Response(
-          JSON.stringify({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {} }),
+          JSON.stringify({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {}, metric_icons: {} }),
         );
       }
       return new Response(JSON.stringify([]));

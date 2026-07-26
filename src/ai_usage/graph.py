@@ -42,6 +42,48 @@ SERVICE_ICONS: dict[str, IconRef] = {
     "copilot": IconRef(set="brands", name="github"),
 }
 
+# Symbols for metric/time-window chips. `metric_key` is a free-form string minted by each
+# provider (see e.g. `claude_metric_key()`, `window_key()`), so this only covers the keys actually
+# in use today; anything else falls back to a keyword match on the human-readable metric name.
+METRIC_ICONS: dict[str, IconRef] = {
+    "five-hours": IconRef(set="solid", name="clock"),
+    "seven-days": IconRef(set="solid", name="calendar-week"),
+    "monthly-ai-credits": IconRef(set="solid", name="calendar"),
+    "session": IconRef(set="solid", name="hourglass-half"),
+    "plan-usage": IconRef(set="solid", name="gauge"),
+    "overall-usage": IconRef(set="solid", name="gauge"),
+    "credit-usage": IconRef(set="solid", name="coins"),
+    "credits": IconRef(set="solid", name="coins"),
+    "tokens-used": IconRef(set="solid", name="coins"),
+    "balance": IconRef(set="solid", name="wallet"),
+}
+METRIC_ICON_FALLBACK = IconRef(set="solid", name="gauge")
+METRIC_ICON_KEYWORDS: tuple[tuple[str, IconRef], ...] = (
+    ("session", IconRef(set="solid", name="hourglass-half")),
+    ("hour", IconRef(set="solid", name="clock")),
+    ("day", IconRef(set="solid", name="calendar-day")),
+    ("week", IconRef(set="solid", name="calendar-week")),
+    ("month", IconRef(set="solid", name="calendar")),
+    ("credit", IconRef(set="solid", name="coins")),
+    ("token", IconRef(set="solid", name="coins")),
+    ("balance", IconRef(set="solid", name="wallet")),
+)
+
+
+def metric_icon_for(metric_key: str, metric_name: str) -> IconRef:
+    explicit = METRIC_ICONS.get(metric_key)
+    if explicit is not None:
+        return explicit
+    # end if
+    normalized = metric_name.casefold()
+    for keyword, icon in METRIC_ICON_KEYWORDS:
+        if keyword in normalized:
+            return icon
+        # end if
+    # end for
+    return METRIC_ICON_FALLBACK
+# end def
+
 
 def aware(value: datetime | None) -> datetime | None:
     if value is None:
