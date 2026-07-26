@@ -254,8 +254,10 @@ export function activeNotesAt(notes: NoteRange[], atMs: number): NoteRange[] {
 function compactWindowDetail(item: GraphSeries, window: GraphWindow, now: Date): string {
   const stats = computeWindowStats(item.points, window, now);
   const endMs = new Date(window.end).getTime();
+  const untilEndMs = endMs - now.getTime();
+  const resetLabel = untilEndMs >= 0 ? `(${formatDuration(untilEndMs)})` : `(${formatDuration(-untilEndMs)} ago)`;
   const parts = [
-    `resets ${new Date(window.end).toLocaleString()} (${formatDuration(Math.max(0, endMs - now.getTime()))})`,
+    `resets ${new Date(window.end).toLocaleString()} ${resetLabel}`,
     `peak ${stats.maximumPercentage.toFixed(0)}%`,
   ];
   if (stats.burnRatePerHour !== null) parts.push(`${stats.burnRatePerHour.toFixed(1)}%/h`);
