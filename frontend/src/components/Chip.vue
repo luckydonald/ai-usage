@@ -7,6 +7,7 @@ defineProps<{
   active: boolean
   icon?: IconRef
   title?: string
+  iconOnly?: boolean
 }>();
 
 defineEmits<{
@@ -15,7 +16,14 @@ defineEmits<{
 </script>
 
 <template>
-  <button type="button" class="chip" :class="{ active }" :title="title" @click="$emit('click')">
-    <Icon v-if="icon" v-bind="icon" /> {{ label }}
+  <button
+    type="button"
+    class="chip"
+    :class="{ active }"
+    :title="title"
+    :aria-label="iconOnly ? label : undefined"
+    @click="$emit('click')"
+  >
+    <Icon v-if="icon" v-bind="icon" /><template v-if="!iconOnly"> {{ label }}</template>
   </button>
 </template>

@@ -2850,3 +2850,110 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /commit-with-lplp-style try to combine it with the relevant todo entries (and their dates). The already squashed ai commits (those who are a list of the squashed commits without any further description) please fill in the git headline and summary as usual, but keep the list of squashed commits as last section of the commit message. Do not touch commit `da9817344c0b0f5910ddc260ad158826562678f6` or older.
 
+❯ Document your learnings.
+
+❯ /plan In the overlay, replace the service name (claude, codex, ...) with the icon of that service. It shall have a tooltip showing the full string. Give the time windows (metrics) symbols, too. The info panels should no longer show the deprecated name, but instead split that badge/chip into two, one for crawler type and one for account user. Put in the icons there, too. For the details about the metrics, add the icons as well. All those icons help with shortening information, and if they contain everything important as tooltip, no information is lost.
+
+❯ Task Notification:
+> - Task `abe9d8754ffb6e4ce` <kbd>completed</kbd>
+> - Tool `toolu_01UMt2vMD48tLKkpqmynUYkV`
+> - > Agent "Find overlay/info panel UI code" finished
+> - [Query (`895` chars, `905 B`)](output/agents/056.abe9d8754ffb6e4ce/prompt.md)
+> - [Answer (`5638` chars, `5.54 KB`)](output/agents/056.abe9d8754ffb6e4ce/result.md)
+> - [Raw log (`194945` chars, `191 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/be1546e8-6dd4-4903-b457-9e84f8d230b3/tasks/abe9d8754ffb6e4ce.output)
+> - `19` tools, `46176` tokens, `1.68427 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Time-window/metric icons: metric_key is a free-form string from each provider ("session", "5h", "week", ...) — no fixed enum backend-side. How should symbols be picked?
+>> 2. In the Sankey overlay, should metric (time-window) chips become icon-only with tooltip like the service chips, or keep icon+text label?
+>> 3. Info panel "account user" chip icon — what should it show?
+>> 4. In the per-metric detail block (Peak usage / Burn rate / Blocked / Projected lines), where should icons go?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Metric icons** (1/4) <kbd>Single Select</kbd><br>
+>> Time-window/metric icons: metric_key is a free-form string from each provider ("session", "5h", "week", ...) — no fixed enum backend-side. How should symbols be picked?
+> - [ ] 1\. Keyword heuristic (Recommended)
+>   - _Pick FontAwesome icon by matching metric_name/key keywords (hour→clock, day/week/month→calendar, session→bolt/hourglass), generic fallback icon otherwise_
+> - [ ] 2\. One generic icon everywhere
+>   - _Single hourglass/clock icon for all metric/time-window nodes, no per-type distinction — simplest, no backend mapping needed_
+> - [ ] 3\. Explicit backend mapping
+>   - _Add a metric_key -> icon config similar to SERVICE_ICONS that provider authors must fill in per metric; unmapped metrics fall back to generic icon_
+> - [x] 4\. _Type something:_
+>   - > explicit backend mapping, and on missmatch keyword heuristics.
+>
+>> **Metric chip style** (2/4) <kbd>Single Select</kbd><br>
+>> In the Sankey overlay, should metric (time-window) chips become icon-only with tooltip like the service chips, or keep icon+text label?
+> - [ ] 1\. Icon + text kept (Recommended)
+>   - _Metric names vary a lot and aren't as recognizable as service logos; keep label text, just add a small icon before it_
+> - [ ] 2\. Icon-only with tooltip
+>   - _Same treatment as service chips: replace label text with icon, full metric name shown on hover_
+> - [x] 3\. _Type something:_
+>   - > Icon + text kept (but the service chips are not icon-only, which is actually fine.
+>
+>> **Account icon** (3/4) <kbd>Single Select</kbd><br>
+>> Info panel "account user" chip icon — what should it show?
+> - [ ] 1\. Generic user/person icon (Recommended)
+>   - _Fixed FontAwesome 'user' icon for every account chip — no new data needed_
+> - [ ] 2\. No icon, text only
+>   - _Only the crawler-type chip gets an icon; account-user chip stays icon-less badge_
+> - [x] 3\. _Type something:_
+>   - > Attempt to get the email's domain's favicon, otherwise fall back to generic account user icon.
+>
+>> **Detail icons** (4/4) <kbd>Single Select</kbd><br>
+>> In the per-metric detail block (Peak usage / Burn rate / Blocked / Projected lines), where should icons go?
+> - [ ] 1\. Just next to the metric name heading (Recommended)
+>   - _One icon next to the h3 metric_name (same icon as used in overlay), stat lines below stay plain text_
+> - [x] 2\. One icon per stat line too
+>   - _Additionally add a distinct icon per stat type (peak/burn-rate/blocked/projected/perfect-landing) - more visual work, more icons to pick_
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Your metric-chip answer noted service chips aren't icon-only "which is actually fine" — but your original request said to replace service name text with icon-only + tooltip. Which is it for the overlay service chips?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Service chip** (1/1) <kbd>Single Select</kbd><br>
+>> Your metric-chip answer noted service chips aren't icon-only "which is actually fine" — but your original request said to replace service name text with icon-only + tooltip. Which is it for the overlay service chips?
+> - [ ] 1\. Icon-only + tooltip (per original request)
+>   - _Service chip drops the text label entirely, shows only the FontAwesome icon, full service name ("claude", "codex") shown via title tooltip on hover_
+> - [ ] 2\. Keep icon + text as-is
+>   - _Leave service chips unchanged (icon already shown next to text) — no overlay change for service nodes, only metric/time-window chips get new icons added_
+> - [x] 3\. _Type something:_
+>   - > I was looking at a stale version of the website. The overlay already has separation with that dot character, should however still be icon-only + tooltip after the account name badge.
+>
+> </details>
+>
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Backend process `ai-usage up` (pid 3817078) is running with old code, so the new /api/v1/catalog response is missing metric_icons and the page crashes. OK to restart it so I can verify the changes in the browser?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Restart backend** (1/1) <kbd>Single Select</kbd><br>
+>> Backend process `ai-usage up` (pid 3817078) is running with old code, so the new /api/v1/catalog response is missing metric_icons and the page crashes. OK to restart it so I can verify the changes in the browser?
+> - [ ] 1\. Yes, restart it (Recommended)
+>   - _Kill pid 3817078 and run `ai-usage up` again in background to pick up the backend code changes_
+> - [ ] 2\. No, I'll restart it myself
+>   - _Leave the process alone; you restart it manually when ready and I'll verify afterward_
+> - [x] 3\. _Type something:_
+>   - > I've restarted it.
+>
+> </details>
+>
+

@@ -10,3 +10,6 @@
 - [Verify baseline before blaming refactor](feedback_verify_baseline_before_blaming_refactor.md) — diff test failures against pre-refactor branch, don't chase pre-existing failures
 - [No tty environment](user_no_tty_environment.md) — can't manually exercise interactive CLI/wizard code here
 - [Compact summary has transcript path](reference_compact_summary_transcript_path.md) — post-/compact summary names pre-compact jsonl path, Read it for lost detail
+- [New providers batch](project_ai_usage_new_providers_batch.md) — 8 providers added (Z.ai/MiniMax/Cline/OpenRouter/Cursor/Ollama/SuperGrok/Kimi); Kimi/OpenRouter identity always raises by design
+- [respx no loopback passthrough](feedback_respx_loopback_no_passthrough.md) — respx pass_through()/assert_all_mocked=False doesn't reach a real local http.server, fakes it instead
+- [http.server keep-alive hang](feedback_http_server_keepalive_hang.md) — local callback handler needs explicit Content-Length or HTTP/1.1 clients hang forever

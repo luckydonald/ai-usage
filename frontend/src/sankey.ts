@@ -44,6 +44,7 @@ export function buildSankeyData(
   activeMetrics: string[],
   dark: boolean,
   serviceIcons: Record<string, IconRef> = {},
+  metricIcons: Record<string, IconRef> = {},
 ): SankeyData {
   const nodes = new Map<string, SankeyNodeDatum>();
   const links: SankeyLinkDatum[] = [];
@@ -57,7 +58,7 @@ export function buildSankeyData(
   for (const service of tree) {
     const serviceId = `service:${service.service}`;
     const serviceActive = service.accounts.some((account) => account.organizations.some((organization) => organization.parsers.some((parser) => activeAccounts.includes(parser.id))));
-    addNode(serviceId, service.service, "service", service.service, serviceActive, serviceIcons[service.service]);
+    addNode(serviceId, service.service, "service", service.service, serviceActive, serviceIcons[service.service], service.service);
     for (const account of service.accounts) {
       const accountId = `account:${service.service}:${account.id}`;
       const accountActive = account.organizations.some((organization) => organization.parsers.some((parser) => activeAccounts.includes(parser.id)));
@@ -78,7 +79,7 @@ export function buildSankeyData(
           for (const metric of parser.metrics) {
             const metricId = `metric:${metric.key}`;
             const metricActive = activeMetrics.includes(metric.key);
-            addNode(metricId, metric.name, "metric", metric.key, metricActive);
+            addNode(metricId, metric.name, "metric", metric.key, metricActive, metric.icon ?? metricIcons[metric.key]);
             addLink(parserId, metricId, parserActive && metricActive);
           }
         }

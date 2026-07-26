@@ -9,9 +9,9 @@ import UsageChart from "./components/UsageChart.vue";
 import { defaultFilters, toggleAccount, toggleMetric, toggleOrganization, toggleParser, toggleService } from "./filterCascade";
 import { renderNoteMarkdown } from "./markdown";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
-import type { Catalog, Filters, GraphSeries, NoteRange, SankeyParser, SankeyService } from "./types";
+import type { AccountIdentity, Catalog, Filters, GraphSeries, NoteRange, SankeyParser, SankeyService } from "./types";
 
-const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {} });
+const catalog = ref<Catalog>({ accounts: [], metrics: [], exhausted_color: "#6b7280", service_icons: {}, provider_icons: {}, metric_icons: {} });
 const series = ref<GraphSeries[]>([]);
 const detailedSeries = ref<GraphSeries[]>([]);
 const notes = ref<NoteRange[]>([]);
@@ -79,7 +79,11 @@ const sankeyTree = computed<SankeyService[]>(() => {
       metrics: [],
     };
     if (!parser.metrics.some((entry) => entry.key === metric.metric_key)) {
-      parser.metrics.push({ key: metric.metric_key, name: metric.metric_name });
+      parser.metrics.push({
+        key: metric.metric_key,
+        name: metric.metric_name,
+        icon: catalog.value.metric_icons[metric.metric_key],
+      });
     }
     parsers.set(configured.id, parser);
   }
@@ -123,6 +127,10 @@ const accountLabels = computed<Record<string, string>>(() => {
 
 const parserLabels = computed<Record<string, string>>(
   () => Object.fromEntries(catalog.value.accounts.map((account) => [account.id, account.parser_label])),
+);
+
+const accountIdentities = computed<Record<string, AccountIdentity | null>>(
+  () => Object.fromEntries(catalog.value.accounts.map((account) => [account.id, account.identity])),
 );
 
 const chartLabels = computed<Record<string, string>>(() =>
@@ -350,6 +358,7 @@ onBeforeUnmount(() => events?.close());
         :active-metrics="filters.metrics"
         :dark="dark"
         :service-icons="catalog.service_icons"
+        :metric-icons="catalog.metric_icons"
         @toggle-service="onToggleService"
         @toggle-account="onToggleAccount"
         @toggle-organization="onToggleOrganization"
@@ -380,7 +389,16 @@ onBeforeUnmount(() => events?.close());
         :show-data-points="showDataPoints"
         @toggle-series="toggleSeries"
       />
-      <ServicePanels v-if="detailedSeries.length" :series="detailedSeries" :account-labels="accountLabels" :parser-labels="parserLabels" />
+      <ServicePanels
+        v-if="detailedSeries.length"
+        :series="detailedSeries"
+        :account-labels="accountLabels"
+        :parser-labels="parserLabels"
+        :account-identities="accountIdentities"
+        :service-icons="catalog.service_icons"
+        :provider-icons="catalog.provider_icons"
+        :metric-icons="catalog.metric_icons"
+      />
     </main>
   </div>
 </template>

@@ -17,6 +17,7 @@ const props = defineProps<{
   activeMetrics: string[];
   dark: boolean;
   serviceIcons?: Record<string, IconRef>;
+  metricIcons?: Record<string, IconRef>;
 }>();
 
 const emit = defineEmits<{
@@ -90,6 +91,7 @@ function render(): void {
     props.activeMetrics,
     props.dark,
     props.serviceIcons,
+    props.metricIcons,
   );
   nodes.value = built.nodes;
   chart.setOption({
@@ -125,6 +127,7 @@ watch(
     props.activeMetrics,
     props.dark,
     props.serviceIcons,
+    props.metricIcons,
   ],
   () => render(),
   { deep: true },
@@ -148,6 +151,7 @@ onBeforeUnmount(() => {
         :label="node.displayName"
         :icon="node.icon"
         :title="node.title"
+        :icon-only="node.kind === 'service'"
         :active="isActive(node)"
         @click="toggle(node)"
       />
