@@ -280,23 +280,37 @@ interface SeriesRow {
   detail: string;
 }
 
-// One unified hover tooltip driven purely by the hovered x-position (not by precisely
-// targeting a line or a markArea box): every currently-displayed series' value at that
-// timestamp, grouped by account+provider (one color-swatched header, one compact line per
-// metric underneath) instead of repeating the account/provider label per metric — plus any
-// active promo/notice notes appended once at the end.
-export function axisTooltipHtml(
+export interface TooltipMetricRow {
+  key: string;
+  name: string;
+  icon?: IconRef;
+  valueLabel: string;
+  detail: string;
+}
+
+export interface TooltipGroup {
+  key: string;
+  color: string;
+  service: string;
+  serviceIcon?: IconRef;
+  badges: string[];
+  metrics: TooltipMetricRow[];
+}
+
+export interface AxisTooltipData {
+  timeLabel: string;
+  notes: NoteRange[];
+  groups: TooltipGroup[];
+}
+
+function buildAxisTooltipGroups(
   seriesList: GraphSeries[],
-  paramsList: { axisValue?: unknown }[],
+  atMs: number,
   accountLabels: Record<string, string>,
   now: Date,
-  notes: NoteRange[] = [],
-  serviceIcons: Record<string, IconRef> = {},
-  metricIcons: Record<string, IconRef> = {},
-): string {
-  const axisEntry = paramsList.find((params) => typeof params.axisValue === "number");
-  if (!axisEntry) return "";
-  const atMs = axisEntry.axisValue as number;
+  serviceIcons: Record<string, IconRef>,
+  metricIcons: Record<string, IconRef>,
+): TooltipGroup[] {
   const rows: SeriesRow[] = [];
   for (const item of seriesList) {
     const held = pointAtOrBefore(item.points, atMs);
@@ -311,33 +325,93 @@ export function axisTooltipHtml(
     }
     rows.push({ item, valueLabel, detail: window ? compactWindowDetail(item, window, now) : "" });
   }
-  if (!rows.length) return "";
+  if (!rows.length) return [];
 
   const groups = new Map<string, SeriesRow[]>();
   for (const row of rows) {
     const key = `${row.item.provider}::${accountLabelFor(row.item, accountLabels)}`;
     (groups.get(key) ?? groups.set(key, []).get(key)!).push(row);
   }
-  const blocks = Array.from(groups.values()).map((groupRows) => {
+  return Array.from(groups.entries()).map(([key, groupRows]) => {
     const firstItem = groupRows[0]!.item;
     const accountParts = accountLabelFor(firstItem, accountLabels).split(" · ");
     // The account's configuration label (e.g. "app-server") sometimes already equals the raw
     // provider key once the service-name prefix is stripped off it — skip the provider badge
     // rather than showing the same text twice.
-    const parts = accountParts.some((part) => part.toLowerCase() === firstItem.provider.toLowerCase())
+    const badges = accountParts.some((part) => part.toLowerCase() === firstItem.provider.toLowerCase())
       ? accountParts
       : [...accountParts, firstItem.provider];
-    const groupHeader = `${iconHtml(serviceIcons[firstItem.service], firstItem.service)}${badgeRowHtml(parts, firstItem.color)}`;
-    const metricLines = groupRows.map((row) => {
-      const icon = iconHtml(metricIcons[row.item.metric_key], row.item.metric_name);
-      const base = `&nbsp;&nbsp;${icon}${row.item.metric_name}: ${row.valueLabel}`;
-      return row.detail ? `${base} — ${row.detail}` : base;
-    });
-    return [groupHeader, ...metricLines].join("<br/>");
+    return {
+      key,
+      color: firstItem.color,
+      service: firstItem.service,
+      serviceIcon: serviceIcons[firstItem.service],
+      badges,
+      metrics: groupRows.map((row) => ({
+        key: row.item.metric_key,
+        name: row.item.metric_name,
+        icon: metricIcons[row.item.metric_key],
+        valueLabel: row.valueLabel,
+        detail: row.detail,
+      })),
+    };
   });
+}
 
-  const header = `<strong>${new Date(atMs).toLocaleString()}</strong>`;
-  const noteLines = activeNotesAt(notes, atMs).map((note) => noteTooltipHtml(note));
+// One unified hover tooltip driven purely by the hovered x-position (not by precisely
+// targeting a line or a markArea box): every currently-displayed series' value at that
+// timestamp, grouped by account+provider (one badge-row header, one compact line per metric
+// underneath) instead of repeating the account/provider label per metric — plus any active
+// promo/notice notes appended once at the end. Pure data, no markup — used by the pinned/click
+// tooltip in `UsageChart.vue`, which renders it with real Vue components (`Badge`/`Icon`)
+// instead of an HTML string.
+export function axisTooltipData(
+  seriesList: GraphSeries[],
+  paramsList: { axisValue?: unknown }[],
+  accountLabels: Record<string, string>,
+  now: Date,
+  notes: NoteRange[] = [],
+  serviceIcons: Record<string, IconRef> = {},
+  metricIcons: Record<string, IconRef> = {},
+): AxisTooltipData | null {
+  const axisEntry = paramsList.find((params) => typeof params.axisValue === "number");
+  if (!axisEntry) return null;
+  const atMs = axisEntry.axisValue as number;
+  const groups = buildAxisTooltipGroups(seriesList, atMs, accountLabels, now, serviceIcons, metricIcons);
+  if (!groups.length) return null;
+  return {
+    timeLabel: new Date(atMs).toLocaleString(),
+    notes: activeNotesAt(notes, atMs),
+    groups,
+  };
+}
+
+// HTML-string rendering of `axisTooltipData()`, needed only because ECharts' own hover tooltip
+// is a floating DOM node it manages itself — its `formatter` option can't mount a Vue component,
+// only return markup for it to set as innerHTML. The pinned/click tooltip in `UsageChart.vue`
+// uses `axisTooltipData()` directly and renders real components instead.
+export function axisTooltipHtml(
+  seriesList: GraphSeries[],
+  paramsList: { axisValue?: unknown }[],
+  accountLabels: Record<string, string>,
+  now: Date,
+  notes: NoteRange[] = [],
+  serviceIcons: Record<string, IconRef> = {},
+  metricIcons: Record<string, IconRef> = {},
+): string {
+  const data = axisTooltipData(seriesList, paramsList, accountLabels, now, notes, serviceIcons, metricIcons);
+  if (!data) return "";
+  const blocks = data.groups.map((group) => {
+    const header = `${iconHtml(group.serviceIcon, group.service)}${badgeRowHtml(group.badges, group.color)}`;
+    const metricLines = group.metrics.map((metric) => {
+      const icon = iconHtml(metric.icon, metric.name);
+      const base = `&nbsp;&nbsp;${icon}${metric.name}: ${metric.valueLabel}`;
+      return metric.detail ? `${base} — ${metric.detail}` : base;
+    });
+    return [header, ...metricLines].join("<br/>");
+  });
+  const header = `<strong>${data.timeLabel}</strong>`;
+  const noteLines = data.notes.map((note) => noteTooltipHtml(note));
   return [header, ...noteLines, ...blocks].join("<br/>");
 }
 

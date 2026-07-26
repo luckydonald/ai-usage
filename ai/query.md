@@ -2963,3 +2963,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ in the overlay: have the current headline for a metric (the account information and whatnot) be badges as well, badge colored in the graph's color (what currently is a color blob at the start of the line). Instead of the dot to separate infos, use multiple badges. The metrics shall have a leading metrics icon.
 
+❯ Don't use raw HTML, therefore edit to use a component. This is Vue.
+
