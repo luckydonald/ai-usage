@@ -1,0 +1,11 @@
+Read source code in ~/git/moritzfl/llm-subscription-usage-intellij for these 4 providers and extract EXACT implementation details (not summaries — actual field names, cookie names, regexes, literal strings) needed to port them to a Python tool:
+
+1. Cursor — files under `quota/cursor/` and `quota/idea/cursor/`. Need: exact PasswordSafe-stored cookie/value format, the literal cookie name if any HTTP request sets a `Cookie:` header (grep for "WorkosCursorSessionToken" usage — is it literally the browser cookie name, or just an internal storage key?), exact JSON field names in `UsageSummaryResponse`/`CurrentPeriodUsageResponse`/`PlanInfoResponse` Kotlin data classes (read the actual .kt files, do not summarize), exact request URLs/headers/methods, and CursorSessionTokenParser's exact string operations.
+
+2. Ollama — files under `quota/ollama/` and `quota/idea/ollama/`. Need: exact CSS selectors / Jsoup selector strings used, exact regex patterns, exact URL(s), exact cookie header names (`__Secure-session`, `cf_clearance` — confirm literal names used in code), and the exact HTML structure assumptions (element tags/classes) from the Jsoup traversal code.
+
+3. SuperGrok — files under `quota/supergrok/`. Need: exact request/response field names from the billing/settings JSON parsing code (`config.used`, `config.monthlyLimit`, etc — read the real parsing code, not the plan summary), exact headers, exact PKCE/OAuth constants (client_id, redirect_uri, port, scopes exactly as coded).
+
+4. Kimi — files under `quota/kimi/`. Need: exact JSON field names from `KimiUsageResponseDto`/`KimiLimitDto`/etc Kotlin data classes, exact device-flow constants (client_id, endpoints), exact header names (X-Msh-* headers), and how identity/email (if any) is obtained — check if there's ANY endpoint or JWT claim giving Kimi user email/username.
+
+Return literal field names, literal strings, literal URLs — quote the actual code lines where useful. This is for porting to a Python client so precision matters more than prose.

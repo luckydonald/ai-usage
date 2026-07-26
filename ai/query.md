@@ -2789,3 +2789,52 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+❯ You may inspect the two source projects for open implementation details, i.e.api shapes, which cookies, etc.
+
+❯ Task Notification:
+> - Task `aab100d24580c2f1b` <kbd>completed</kbd>
+> - Tool `toolu_014VnGGWuBa3DhV3TEWZKKTr`
+> - > Agent "Extract Cline/OpenRouter/xAI-identity exact shapes" finished
+> - [Query (`1704` chars, `1.67 KB`)](output/agents/053.aab100d24580c2f1b/prompt.md)
+> - [Answer (`9407` chars, `9.26 KB`)](output/agents/053.aab100d24580c2f1b/result.md)
+> - [Raw log (`257294` chars, `252 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/ae3f5d59-bf5b-4a03-9fa5-5f15e5d1e6b3/tasks/aab100d24580c2f1b.output)
+> - `14` tools, `62297` tokens, `1.39785 s`
+
+❯ Task Notification:
+> - Task `a3a14dc4c0515448b` <kbd>completed</kbd>
+> - Tool `toolu_01YEqbi51yQ983q7ao4kmTMd`
+> - > Agent "Extract Cursor/Ollama/SuperGrok/Kimi exact shapes" finished
+> - [Query (`2021` chars, `1.99 KB`)](output/agents/054.a3a14dc4c0515448b/prompt.md)
+> - [Answer (`11416` chars, `11.2 KB`)](output/agents/054.a3a14dc4c0515448b/result.md)
+> - [Raw log (`370398` chars, `362 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/ae3f5d59-bf5b-4a03-9fa5-5f15e5d1e6b3/tasks/a3a14dc4c0515448b.output)
+> - `27` tools, `80986` tokens, `1.99668 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Kimi's usage API has zero identity signal (confirmed from source: only membership.level, no id/email/JWT claim anywhere). Raising ProviderLoginError here would permanently block Kimi's provider-add wizard. How to handle Kimi specifically?
+>> 2. SuperGrok's usage endpoints also lack identity, but its OAuth scope requests openid/profile/email — the token exchange may return an id_token JWT with an email claim even though the reference plugin never decodes it. Attempt that?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Kimi identity** (1/2) <kbd>Single Select</kbd><br>
+>> Kimi's usage API has zero identity signal (confirmed from source: only membership.level, no id/email/JWT claim anywhere). Raising ProviderLoginError here would permanently block Kimi's provider-add wizard. How to handle Kimi specifically?
+> - [ ] 1\. Fallback pseudo-identity for Kimi only (Recommended)
+>   - _e.g. "kimi-" + short hash of access token — lets setup complete; documented as a known limitation since no real account identifier exists_
+> - [x] 2\. Keep strict raise — Kimi becomes unusable via wizard
+>   - _Ships the provider code but provider add will always fail at the verify step; only usable if cli.py's identity handling changes later_
+> - [ ] 3\. _Type something._
+>
+>> **SuperGrok identity** (2/2) <kbd>Single Select</kbd><br>
+>> SuperGrok's usage endpoints also lack identity, but its OAuth scope requests openid/profile/email — the token exchange may return an id_token JWT with an email claim even though the reference plugin never decodes it. Attempt that?
+> - [x] 1\. Decode id_token JWT claims (email/sub) if present (Recommended)
+>   - _Best-effort: after PKCE token exchange, check response for id_token, decode claims (no signature verification, same as ai-usage's existing JWT handling elsewhere) — falls back to ProviderLoginError only if no id_token or no usable claim_
+> - [ ] 2\. Don't bother — same fallback pseudo-identity as Kimi
+>   - _Simpler, skip JWT decoding entirely, use a stable hash-derived pseudo-identity_
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
