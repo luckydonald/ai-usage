@@ -1664,7 +1664,7 @@ Adiitionally it would be very helpful for moile which have only simulated mousem
 - the push action may ask for an user login, which is blocking, so it needs a timeout.
 
 › I'm getting timeout errors with claude - And debugging showed me that `child.before` contains the following:
-@ai/errors/9.txt 
+@ai/errors/9.txt
 Now my assumption is, that the CLI command is run somewhere in a weird temporary folder where it can't access the normal `~/.codex/` files, where it already would have the color configured - but more importantly the account login stored.
 
 › Question answered.
@@ -1703,7 +1703,7 @@ I'd also like it to write to `/tmp/ai-usage/errors/claude-cli.<hash of content>.
 
 › It still isn't working because the output is horrible with many escape codes - see @ai/errors/11.txt
 
-› I found something better, running `claude --ax-screen-reader --name=/usage --no-chrome --print --no-session-persistence --safe-mode '/usage'` directly. It terminates on it's own, and the format is quite parsable, see @ai/errors/11.output.txt 
+› I found something better, running `claude --ax-screen-reader --name=/usage --no-chrome --print --no-session-persistence --safe-mode '/usage'` directly. It terminates on it's own, and the format is quite parsable, see @ai/errors/11.output.txt
 This shall be the first check, and if that doesn't work use the way we just have implemented. Both ways should be separate files to give the functions some space.
 
 ❯ The recently implemented feature with click-to-reopen-the-graph-tooltip-as-a-static-overlay mode does not work - click does nothing.
@@ -2966,4 +2966,6 @@ This shall be the first check, and if that doesn't work use the way we just have
 ❯ Don't use raw HTML, therefore edit to use a component. This is Vue.
 
 ❯ Document your learnings.
+
+❯ For the screenshot memory, make sure it's not called too often, as it is expesive ass fuck.
 
