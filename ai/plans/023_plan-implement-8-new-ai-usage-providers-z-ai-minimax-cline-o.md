@@ -130,18 +130,18 @@ Registry diff: import `SuperGrokBillingProvider`, `KimiUsageProvider`, append to
 
 ## Todos
 
-- [ ] Shared: _shared/static_api_key.py
-- [ ] Shared: _shared/oauth_pkce.py
-- [ ] Shared: _shared/oauth_device_flow.py
-- [ ] Provider: Z.ai
-- [ ] Provider: MiniMax
-- [ ] Provider: Cline
-- [ ] Provider: OpenRouter
-- [ ] Provider: Cursor
-- [ ] Provider: Ollama Cloud
-- [ ] Provider: SuperGrok
-- [ ] Provider: Kimi
-- [ ] Wire registry.py
-- [ ] Add beautifulsoup4 to pyproject.toml
-- [ ] Tests for all new providers + shared helpers
-- [ ] Run full test suite
+- [x] Shared: _shared/static_api_key.py
+- [x] Shared: _shared/oauth_pkce.py
+- [x] Shared: _shared/oauth_device_flow.py
+- [x] Provider: Z.ai
+- [x] Provider: MiniMax
+- [x] Provider: Cline
+- [x] Provider: OpenRouter
+- [x] Provider: Cursor
+- [x] Provider: Ollama Cloud
+- [x] Provider: SuperGrok
+- [x] Provider: Kimi
+- [x] Wire registry.py
+- [x] Add beautifulsoup4 to pyproject.toml
+- [x] Tests for all new providers + shared helpers
+- [x] Run full test suite
