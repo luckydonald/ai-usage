@@ -5,8 +5,11 @@ import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-import { axisTooltipHtml, chartOption, seriesDisplayName, seriesKey } from "../chart";
+import { axisTooltipData, chartOption, seriesDisplayName, seriesKey, type AxisTooltipData } from "../chart";
+import { renderNoteMarkdown } from "../markdown";
 import type { GraphSeries, IconRef, NoteRange } from "../types";
+import Badge from "./Badge.vue";
+import Icon from "./Icon.vue";
 
 echarts.use([
   LineChart,
@@ -41,12 +44,12 @@ const props = defineProps<{
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
 const closeButton = ref<HTMLButtonElement>();
-const pinnedTooltipHtml = ref("");
-const tooltipOpen = computed(() => pinnedTooltipHtml.value !== "");
+const pinnedTooltipData = ref<AxisTooltipData | null>(null);
+const tooltipOpen = computed(() => pinnedTooltipData.value !== null);
 let chart: echarts.ECharts | undefined;
 
 function closePinnedTooltip(): void {
-  pinnedTooltipHtml.value = "";
+  pinnedTooltipData.value = null;
 }
 
 // The overlay is `position: fixed` over the whole viewport, so without this the page
@@ -61,10 +64,10 @@ async function pinTooltip(offsetX: number, offsetY: number): Promise<void> {
   const atMs = Array.isArray(coordinate) ? coordinate[0] : undefined;
   if (typeof atMs !== "number") return;
 
-  const html = axisTooltipHtml(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes, props.serviceIcons, props.metricIcons);
-  if (!html) return;
+  const data = axisTooltipData(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes, props.serviceIcons, props.metricIcons);
+  if (!data) return;
   chart.dispatchAction({ type: "hideTip" });
-  pinnedTooltipHtml.value = html;
+  pinnedTooltipData.value = data;
   await nextTick();
   closeButton.value?.focus();
 }
@@ -158,7 +161,20 @@ onBeforeUnmount(() => {
     <div v-if="tooltipOpen" class="tooltip-overlay" role="presentation" @click.self="closePinnedTooltip">
       <section class="pinned-tooltip" role="dialog" aria-modal="true" aria-label="Usage details">
         <button ref="closeButton" class="pinned-tooltip-close" type="button" aria-label="Close usage details" @click="closePinnedTooltip">×</button>
-        <div class="pinned-tooltip-content" v-html="pinnedTooltipHtml" />
+        <div v-if="pinnedTooltipData" class="pinned-tooltip-content">
+          <p class="tooltip-time"><strong>{{ pinnedTooltipData.timeLabel }}</strong></p>
+          <p v-for="note in pinnedTooltipData.notes" :key="`${note.service}-${note.account_id}-${note.start}`" class="tooltip-note" v-html="renderNoteMarkdown(note.text)" />
+          <div v-for="group in pinnedTooltipData.groups" :key="group.key" class="tooltip-group">
+            <div class="tooltip-group-header">
+              <Icon v-if="group.serviceIcon" v-bind="group.serviceIcon" :title="group.service" />
+              <Badge v-for="badge in group.badges" :key="badge" :label="badge" :color="group.color" />
+            </div>
+            <p v-for="metric in group.metrics" :key="metric.key" class="tooltip-metric-line">
+              <Icon v-if="metric.icon" v-bind="metric.icon" />
+              {{ metric.name }}: {{ metric.valueLabel }}<template v-if="metric.detail"> — {{ metric.detail }}</template>
+            </p>
+          </div>
+        </div>
       </section>
     </div>
   </Teleport>
@@ -221,5 +237,32 @@ onBeforeUnmount(() => {
 
 .pinned-tooltip-content :deep(a) {
   color: var(--color-primary);
+}
+
+.tooltip-time {
+  margin: 0 0 .5rem;
+}
+
+.tooltip-note {
+  margin: 0 0 .5rem;
+}
+
+.tooltip-group {
+  margin: 0 0 .75rem;
+}
+
+.tooltip-group-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .15rem;
+  margin: 0 0 .25rem;
+}
+
+.tooltip-metric-line {
+  margin: 0 0 0 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
 }
 </style>
