@@ -388,6 +388,7 @@ onBeforeUnmount(() => events?.close());
         :range-end="rangeEnd"
         :account-labels="chartLabels"
         :service-icons="catalog.service_icons"
+        :metric-icons="catalog.metric_icons"
         :notes="notes"
         :show-data-points="showDataPoints"
         @toggle-series="toggleSeries"

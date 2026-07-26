@@ -4,14 +4,25 @@ import { renderNoteMarkdown } from "./markdown";
 import { formatDuration, formatRelative } from "./time";
 import type { GraphPoint, GraphSeries, GraphWindow, IconRef, NoteRange } from "./types";
 
-// Small inline `<img>` for a service's brand icon, used in the hover/click tooltip in place of
-// spelling the service name out in text (the color swatch + provider/account text next to it
-// already identify which series this is).
-function serviceIconHtml(service: string, serviceIcons: Record<string, IconRef>): string {
-  const icon = serviceIcons[service];
+// Small inline `<img>` for a brand/metric icon, used in the hover/click tooltip in place of
+// spelling the service name out in text (the badges/text next to it already identify which
+// series this is) and as a leading glyph on each metric line.
+function iconHtml(icon: IconRef | undefined, alt: string): string {
   if (!icon) return "";
   const url = `/img/icons/${icon.pack}/${icon.version}/${icon.set}/${icon.name}.svg`;
-  return `<img src="${url}" alt="${service}" title="${service}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;border-radius:50%;background:#fff;padding:1px;" />`;
+  return `<img src="${url}" alt="${alt}" title="${alt}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;border-radius:50%;background:#fff;padding:1px;" />`;
+}
+
+// Renders each piece of group-identifying info (account, organization, configuration, provider)
+// as its own pill instead of joining them with " · " — colored with the series' own graph color
+// (the same color previously shown as a small dot at the start of the line) so the badges double
+// as that color legend.
+function badgeHtml(text: string, color: string): string {
+  return `<span style="display:inline-block;padding:1px 8px;margin:1px 4px 2px 0;border-radius:999px;background:${color};color:#fff;font-size:.85em;line-height:1.5;white-space:nowrap;">${text}</span>`;
+}
+
+function badgeRowHtml(parts: string[], color: string): string {
+  return parts.filter(Boolean).map((part) => badgeHtml(part, color)).join("");
 }
 
 export function seriesDisplayName(item: GraphSeries, accountLabels: Record<string, string> = {}): string {
@@ -281,6 +292,7 @@ export function axisTooltipHtml(
   now: Date,
   notes: NoteRange[] = [],
   serviceIcons: Record<string, IconRef> = {},
+  metricIcons: Record<string, IconRef> = {},
 ): string {
   const axisEntry = paramsList.find((params) => typeof params.axisValue === "number");
   if (!axisEntry) return "";
@@ -308,10 +320,17 @@ export function axisTooltipHtml(
   }
   const blocks = Array.from(groups.values()).map((groupRows) => {
     const firstItem = groupRows[0]!.item;
-    const swatch = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${firstItem.color};margin-right:4px;"></span>`;
-    const groupHeader = `${swatch}${serviceIconHtml(firstItem.service, serviceIcons)}<strong>${accountLabelFor(firstItem, accountLabels)} · ${firstItem.provider}</strong>`;
+    const accountParts = accountLabelFor(firstItem, accountLabels).split(" · ");
+    // The account's configuration label (e.g. "app-server") sometimes already equals the raw
+    // provider key once the service-name prefix is stripped off it — skip the provider badge
+    // rather than showing the same text twice.
+    const parts = accountParts.some((part) => part.toLowerCase() === firstItem.provider.toLowerCase())
+      ? accountParts
+      : [...accountParts, firstItem.provider];
+    const groupHeader = `${iconHtml(serviceIcons[firstItem.service], firstItem.service)}${badgeRowHtml(parts, firstItem.color)}`;
     const metricLines = groupRows.map((row) => {
-      const base = `&nbsp;&nbsp;${row.item.metric_name}: ${row.valueLabel}`;
+      const icon = iconHtml(metricIcons[row.item.metric_key], row.item.metric_name);
+      const base = `&nbsp;&nbsp;${icon}${row.item.metric_name}: ${row.valueLabel}`;
       return row.detail ? `${base} — ${row.detail}` : base;
     });
     return [groupHeader, ...metricLines].join("<br/>");
@@ -332,6 +351,7 @@ export interface ChartOptions {
   notes?: NoteRange[];
   showDataPoints?: boolean;
   serviceIcons?: Record<string, IconRef>;
+  metricIcons?: Record<string, IconRef>;
 }
 
 export function chartOption(
@@ -345,6 +365,7 @@ export function chartOption(
   const notes = options.notes ?? [];
   const showDataPoints = options.showDataPoints ?? false;
   const serviceIcons = options.serviceIcons ?? {};
+  const metricIcons = options.metricIcons ?? {};
   const rendered: SeriesOption[] = [];
   for (const item of series) {
     const name = seriesDisplayName(item, accountLabels);
@@ -455,7 +476,7 @@ export function chartOption(
       backgroundColor: dark ? "#1f2937" : "#ffffff",
       borderColor: dark ? "#374151" : "#e5e7eb",
       textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
-      formatter: (raw: unknown) => (Array.isArray(raw) ? axisTooltipHtml(series, raw as { axisValue?: unknown }[], accountLabels, now, notes, serviceIcons) : ""),
+      formatter: (raw: unknown) => (Array.isArray(raw) ? axisTooltipHtml(series, raw as { axisValue?: unknown }[], accountLabels, now, notes, serviceIcons, metricIcons) : ""),
     },
     legend: {
       type: "scroll",

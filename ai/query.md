@@ -2961,3 +2961,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ Also use this to "compress" the information on the graph hover&click overlay. So no icon there instead of the full name of the service. For the info panels, you can add the name of the service (claude/codex/etc. back in with the icon after it, also there have the icon for the metrics follow the text, too, to give a better visual structure.
 
+❯ in the overlay: have the current headline for a metric (the account information and whatnot) be badges as well, badge colored in the graph's color (what currently is a color blob at the start of the line). Instead of the dot to separate infos, use multiple badges. The metrics shall have a leading metrics icon.
+
