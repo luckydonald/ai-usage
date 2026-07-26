@@ -2965,3 +2965,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ Don't use raw HTML, therefore edit to use a component. This is Vue.
 
+❯ Document your learnings.
+
