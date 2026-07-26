@@ -99,6 +99,7 @@ const PROJECTED_ICON: IconRef = { set: "solid", name: "chart-line", pack: "fonta
   <section v-if="panels.length" class="info-panels" aria-label="Service info panels">
     <div v-for="panel in panels" :key="`${panel.service}::${panel.accountId}::${panel.parserLabel}`" class="info-panel">
       <h2>
+        {{ panel.service }}
         <Icon v-if="serviceIcons[panel.service]" v-bind="serviceIcons[panel.service]!" :title="panel.service" class="service-mark" />
       </h2>
       <div class="badge-row">
@@ -120,8 +121,8 @@ const PROJECTED_ICON: IconRef = { set: "solid", name: "chart-line", pack: "fonta
       </div>
       <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric">
         <h3>
-          <Icon v-if="metricIcons[entry.item.metric_key]" v-bind="metricIcons[entry.item.metric_key]!" />
           {{ entry.item.metric_name }}
+          <Icon v-if="metricIcons[entry.item.metric_key]" v-bind="metricIcons[entry.item.metric_key]!" />
         </h3>
         <template v-if="entry.details">
           <p><RelativeTime :at="new Date(entry.details.window.start)" /> → <RelativeTime :at="new Date(entry.details.window.end)" /></p>

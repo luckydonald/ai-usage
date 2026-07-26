@@ -6,7 +6,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { axisTooltipHtml, chartOption, seriesDisplayName, seriesKey } from "../chart";
-import type { GraphSeries, NoteRange } from "../types";
+import type { GraphSeries, IconRef, NoteRange } from "../types";
 
 echarts.use([
   LineChart,
@@ -35,6 +35,7 @@ const props = defineProps<{
   accountLabels: Record<string, string>;
   notes: NoteRange[];
   showDataPoints: boolean;
+  serviceIcons?: Record<string, IconRef>;
 }>();
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
@@ -59,7 +60,7 @@ async function pinTooltip(offsetX: number, offsetY: number): Promise<void> {
   const atMs = Array.isArray(coordinate) ? coordinate[0] : undefined;
   if (typeof atMs !== "number") return;
 
-  const html = axisTooltipHtml(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes);
+  const html = axisTooltipHtml(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes, props.serviceIcons);
   if (!html) return;
   chart.dispatchAction({ type: "hideTip" });
   pinnedTooltipHtml.value = html;
@@ -96,6 +97,7 @@ function render(recreate: boolean): void {
       accountLabels: props.accountLabels,
       notes: props.notes,
       showDataPoints: props.showDataPoints,
+      serviceIcons: props.serviceIcons,
     }),
     recreate || isNew,
   );
@@ -134,6 +136,7 @@ watch(
     props.accountLabels,
     props.notes,
     props.showDataPoints,
+    props.serviceIcons,
   ],
   () => render(false),
   { deep: true },

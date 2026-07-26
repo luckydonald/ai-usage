@@ -8,6 +8,7 @@ import ServicePanels from "./components/ServicePanels.vue";
 import UsageChart from "./components/UsageChart.vue";
 import { defaultFilters, toggleAccount, toggleMetric, toggleOrganization, toggleParser, toggleService } from "./filterCascade";
 import { renderNoteMarkdown } from "./markdown";
+import { stripServicePrefix } from "./sankey";
 import { customRange, paddedChartEnd, presetLabels, rangeForPreset, toDateInputValue, wideningOrder, type TimePreset } from "./time";
 import type { AccountIdentity, Catalog, Filters, GraphSeries, NoteRange, SankeyParser, SankeyService } from "./types";
 
@@ -137,7 +138,8 @@ const chartLabels = computed<Record<string, string>>(() =>
   Object.fromEntries(
     catalog.value.accounts.map((account) => {
       const organization = account.account.organization?.name;
-      return [account.id, [accountLabel(account), organization, account.parser_label].filter(Boolean).join(" · ")];
+      const parserLabel = stripServicePrefix(account.service, account.parser_label);
+      return [account.id, [accountLabel(account), organization, parserLabel].filter(Boolean).join(" · ")];
     }),
   ),
 );
@@ -385,6 +387,7 @@ onBeforeUnmount(() => events?.close());
         :range-start="rangeStart"
         :range-end="rangeEnd"
         :account-labels="chartLabels"
+        :service-icons="catalog.service_icons"
         :notes="notes"
         :show-data-points="showDataPoints"
         @toggle-series="toggleSeries"

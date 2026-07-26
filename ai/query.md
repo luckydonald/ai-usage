@@ -2959,3 +2959,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ I want the name back in the toggle's services. I don't want the name repeated inside of the configurations.
 
+❯ Also use this to "compress" the information on the graph hover&click overlay. So no icon there instead of the full name of the service. For the info panels, you can add the name of the service (claude/codex/etc. back in with the icon after it, also there have the icon for the metrics follow the text, too, to give a better visual structure.
+
