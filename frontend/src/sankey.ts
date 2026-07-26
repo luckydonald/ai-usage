@@ -2,6 +2,15 @@ import type { IconRef, SankeyService } from "./types";
 
 export type NodeKind = "service" | "account" | "organization" | "parser" | "metric";
 
+// Configuration/parser labels (e.g. "Claude status line with /usage fallback") usually restate
+// the service name that's already shown by its own chip/icon right next to them — strip it so the
+// label isn't redundant.
+export function stripServicePrefix(service: string, label: string): string {
+  const pattern = new RegExp(`^${service}\\b[\\s-]*`, "i");
+  const stripped = label.replace(pattern, "").trim();
+  return stripped || label;
+}
+
 export interface SankeyNodeDatum {
   name: string;
   kind: NodeKind;
@@ -74,7 +83,7 @@ export function buildSankeyData(
         for (const parser of organization.parsers) {
           const parserId = `parser:${parser.id}`;
           const parserActive = activeAccounts.includes(parser.id);
-          addNode(parserId, parser.label, "parser", parser.id, parserActive, parser.icon, `Configuration ${parser.id}`);
+          addNode(parserId, stripServicePrefix(service.service, parser.label), "parser", parser.id, parserActive, parser.icon, `Configuration ${parser.id}`);
           addLink(parentId, parserId, parserActive);
           for (const metric of parser.metrics) {
             const metricId = `metric:${metric.key}`;

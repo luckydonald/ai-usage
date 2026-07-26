@@ -151,7 +151,6 @@ onBeforeUnmount(() => {
         :label="node.displayName"
         :icon="node.icon"
         :title="node.title"
-        :icon-only="node.kind === 'service'"
         :active="isActive(node)"
         @click="toggle(node)"
       />
