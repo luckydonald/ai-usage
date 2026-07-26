@@ -2838,3 +2838,15 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+❯ Task Notification:
+> - Task `bemrlwr7g` <kbd>completed</kbd>
+> - Tool `toolu_01DJ1PrrDhb4vWTgmJ1okRxN`
+> - > Background command "Wait a bit for background pytest run" completed (exit code 0)
+> - [Query (`0` chars, `0 B`)](output/agents/055.bemrlwr7g/prompt.md)
+> - [Answer (`0` chars, `0 B`)](output/agents/055.bemrlwr7g/result.md)
+> - [Raw log (`0` chars, `0 B`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/ae3f5d59-bf5b-4a03-9fa5-5f15e5d1e6b3/tasks/bemrlwr7g.output)
+
+❯ Check on background pytest run for new provider tests; diagnose hang if still stuck.
+
+❯ /commit-with-lplp-style try to combine it with the relevant todo entries (and their dates). The already squashed ai commits (those who are a list of the squashed commits without any further description) please fill in the git headline and summary as usual, but keep the list of squashed commits as last section of the commit message. Do not touch commit `da9817344c0b0f5910ddc260ad158826562678f6` or older.
+

@@ -8,6 +8,7 @@ from ai_usage.providers.claude import (
     ClaudeUsageProvider,
     ClaudeWebUsageProvider,
 )
+from ai_usage.providers.cline.provider import ClineProvider
 from ai_usage.providers.codex.provider import (
     CodexAppServerProvider,
     CodexStatusProvider,
@@ -18,6 +19,13 @@ from ai_usage.providers.copilot.provider import (
     CopilotEntitlementsProvider,
     CopilotStatusProvider,
 )
+from ai_usage.providers.cursor.provider import CursorUsageProvider
+from ai_usage.providers.kimi.provider import KimiUsageProvider
+from ai_usage.providers.minimax.provider import MiniMaxProvider
+from ai_usage.providers.ollama.provider import OllamaCloudUsageProvider
+from ai_usage.providers.openrouter.provider import OpenRouterProvider
+from ai_usage.providers.supergrok.provider import SuperGrokBillingProvider
+from ai_usage.providers.zai.provider import ZaiProvider
 
 
 class ProviderRegistry:
@@ -63,6 +71,14 @@ def built_in_registry() -> ProviderRegistry:
         CodexWebUsageProvider(),
         ClaudeWebUsageProvider(),
         CopilotEntitlementsProvider(),
+        ZaiProvider(),
+        MiniMaxProvider(),
+        ClineProvider(),
+        OpenRouterProvider(),
+        CursorUsageProvider(),
+        OllamaCloudUsageProvider(),
+        SuperGrokBillingProvider(),
+        KimiUsageProvider(),
     ):
         registry.register(provider)
     # end for
