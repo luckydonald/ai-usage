@@ -36,6 +36,7 @@ const props = defineProps<{
   notes: NoteRange[];
   showDataPoints: boolean;
   serviceIcons?: Record<string, IconRef>;
+  metricIcons?: Record<string, IconRef>;
 }>();
 const emit = defineEmits<{ (event: "toggle-series", key: string, visible: boolean): void }>();
 const container = ref<HTMLDivElement>();
@@ -60,7 +61,7 @@ async function pinTooltip(offsetX: number, offsetY: number): Promise<void> {
   const atMs = Array.isArray(coordinate) ? coordinate[0] : undefined;
   if (typeof atMs !== "number") return;
 
-  const html = axisTooltipHtml(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes, props.serviceIcons);
+  const html = axisTooltipHtml(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes, props.serviceIcons, props.metricIcons);
   if (!html) return;
   chart.dispatchAction({ type: "hideTip" });
   pinnedTooltipHtml.value = html;
@@ -98,6 +99,7 @@ function render(recreate: boolean): void {
       notes: props.notes,
       showDataPoints: props.showDataPoints,
       serviceIcons: props.serviceIcons,
+      metricIcons: props.metricIcons,
     }),
     recreate || isNew,
   );
@@ -137,6 +139,7 @@ watch(
     props.notes,
     props.showDataPoints,
     props.serviceIcons,
+    props.metricIcons,
   ],
   () => render(false),
   { deep: true },

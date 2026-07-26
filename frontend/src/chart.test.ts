@@ -384,7 +384,7 @@ describe("axisTooltipHtml", () => {
   it("groups multiple metrics of the same account+provider under one header instead of repeating it", () => {
     const sameAccountOtherMetric: GraphSeries = { ...series, metric_key: "seven-days", metric_name: "Seven days" };
     const html = axisTooltipHtml([series, sameAccountOtherMetric], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);
-    expect(html.match(/account · app-server/g)?.length).toBe(1);
+    expect(html.match(/>app-server</g)?.length).toBe(1);
     expect(html).toContain("Five hours: 20.0%");
     expect(html).toContain("Seven days: 20.0%");
   });
