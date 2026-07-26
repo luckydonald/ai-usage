@@ -3,6 +3,7 @@ import { computed, reactive } from "vue";
 
 import { computeWindowStats, type WindowStats } from "../chart";
 import { formatDuration } from "../time";
+import { stripServicePrefix } from "../sankey";
 import type { AccountIdentity, GraphSeries, GraphWindow, IconRef } from "../types";
 import Icon from "./Icon.vue";
 import RelativeTime from "./RelativeTime.vue";
@@ -62,7 +63,7 @@ const panels = computed<ServicePanel[]>(() => {
       provider: first!.provider,
       accountId,
       accountLabel: props.accountLabels[accountId] ?? accountId.slice(0, 8),
-      parserLabel: props.parserLabels[accountId] ?? first!.provider,
+      parserLabel: stripServicePrefix(first!.service, props.parserLabels[accountId] ?? first!.provider),
       favicon: domain ? `/img/favicon/${domain}` : undefined,
       entries: items.map((item) => {
         const window = item.windows.find((entry) => entry.current) ?? item.windows.at(-1);

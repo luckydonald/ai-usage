@@ -2957,3 +2957,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+❯ I want the name back in the toggle's services. I don't want the name repeated inside of the configurations.
+
