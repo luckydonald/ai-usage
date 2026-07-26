@@ -13,3 +13,6 @@
 - [New providers batch](project_ai_usage_new_providers_batch.md) — 8 providers added (Z.ai/MiniMax/Cline/OpenRouter/Cursor/Ollama/SuperGrok/Kimi); Kimi/OpenRouter identity always raises by design
 - [respx no loopback passthrough](feedback_respx_loopback_no_passthrough.md) — respx pass_through()/assert_all_mocked=False doesn't reach a real local http.server, fakes it instead
 - [http.server keep-alive hang](feedback_http_server_keepalive_hang.md) — local callback handler needs explicit Content-Length or HTTP/1.1 clients hang forever
+- [Vue: no raw HTML strings](feedback_vue_no_raw_html_strings.md) — build UI with real components/v-bind, not string-concatenated HTML injected via v-html
+- [ai-usage icon infrastructure](project_ai_usage_icon_infrastructure.md) — SERVICE_ICONS/METRIC_ICONS, stripServicePrefix, Badge.vue, axisTooltipData/Html split
+- [Ground UI wording via screenshot](feedback_ground_ui_wording_via_screenshot.md) — screenshot the live dev instance (port 4458) before trusting ambiguous UI wording
