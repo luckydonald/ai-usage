@@ -2969,3 +2969,8 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ For the screenshot memory, make sure it's not called too often, as it is expesive ass fuck.
 
+❯ Conversation compacted <kbd>manual</kbd>:
+> - [Result (`31109` chars, `30.4 KB`)](output/compact/010.4f683748-c54e-4a09-a384-b3b36945dd55/result.md)
+
+❯ We still got `(<1m)` for stuff which happened in the past, which is *technically* correct, but I'd prefer a "X ago" instead.
+
