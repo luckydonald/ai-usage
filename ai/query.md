@@ -3067,3 +3067,23 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Beyond the durable `Plan` allowance (`4,425/5,000 AIC`), should the collector persist Copilot’s current-session token/credit counters?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Recorded metrics** (1/1) <kbd>Single Select</kbd><br>
+>> Beyond the durable `Plan` allowance (`4,425/5,000 AIC`), should the collector persist Copilot’s current-session token/credit counters?
+> - [x] 1\. Plan only (Recommended)
+>   - _Record only the account-level Plan metric; omit per-session counters that reset whenever the CLI session ends._
+> - [ ] 2\. Plan and session
+>   - _Also persist per-session AI-credit and token totals as separate no-reset metrics._
+> - [ ] 3\. _Type something._
+>
+> </details>
+>
+
