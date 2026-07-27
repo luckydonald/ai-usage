@@ -3020,3 +3020,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › do not "fix" the original commit, only squash the AI stuff. The fix is a separate commit.
 
+› I want to add another parser for `copilot`, using @ai/references/https/docs.github.com/en/copilot/reference/copilot-cli-reference/acp-server.md , specifically the `/usage` command. Possibly the startup command can be optimized with setting cli flags, like `copilot --reasoning-effort none --disallow-temp-dir --available-tools='' --disable-builtin-mcps --max-ai-credits 30 --no-ask-user --no-auto-update --no-bash-env --no-color --no-custom-instructions --no-experimental --no-mouse --no-remote --no-remote-export --output-format=text --screen-reader --interactive="/usage" --silent --acp …`.
+
