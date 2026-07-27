@@ -172,9 +172,13 @@ onBeforeUnmount(() => {
             <p v-for="metric in group.metrics" :key="metric.key" class="tooltip-metric-line">
               <Icon v-if="metric.icon" v-bind="metric.icon" />
               <span class="tooltip-metric-value">{{ metric.name }}: {{ metric.valueLabel }}<template v-if="metric.nativeUsageLabel"> ({{ metric.nativeUsageLabel }})</template></span>
-              <span v-if="metric.resetTiming" class="tooltip-reset-timing" :title="`Reset: ${metric.resetTiming.resetAt}`">
-                <span><span aria-hidden="true">⌛</span> then {{ metric.resetTiming.hovered }}</span>
-                <span><span aria-hidden="true">◷</span> now {{ metric.resetTiming.current }}</span>
+              <span v-if="metric.resetTiming" class="tooltip-reset-timing">
+                <span class="tooltip-reset-timing-part" :title="`Time remaining at the hovered point; reset: ${metric.resetTiming.resetAt}`">
+                  <Icon set="solid" name="clock-rotate-left" />{{ metric.resetTiming.hovered }}
+                </span>
+                <span class="tooltip-reset-timing-part" :title="`Time remaining now; reset: ${metric.resetTiming.resetAt}`">
+                  <Icon set="solid" name="stopwatch" />{{ metric.resetTiming.current }}
+                </span>
               </span>
               <template v-if="metric.detail"> — {{ metric.detail }}</template>
             </p>
@@ -274,12 +278,22 @@ onBeforeUnmount(() => {
 
 .tooltip-reset-timing {
   display: inline-flex;
-  gap: .35rem;
-  padding: .08rem .35rem;
-  border: 1px solid var(--border);
+  overflow: hidden;
   border-radius: .45rem;
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
   color: var(--text-muted);
   font-size: .8em;
   line-height: 1.35;
+}
+
+.tooltip-reset-timing-part {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  padding: .08rem .35rem;
+
+  + .tooltip-reset-timing-part {
+    border-left: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+  }
 }
 </style>

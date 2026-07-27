@@ -82,7 +82,9 @@ describe("UsageChart pinned tooltip", () => {
     expect(overlay).not.toBeNull();
     expect(overlay?.textContent).toContain("Five hours: 20.0%");
     expect(overlay?.textContent).toContain("3,075 / 5,000 AIC");
-    expect(overlay?.textContent).toContain("then in 4h 0m");
+    expect(overlay?.textContent).toContain("in 4h 0m");
+    expect(overlay?.querySelector('img[src*="clock-rotate-left.svg"]')).not.toBeNull();
+    expect(overlay?.querySelector('img[src*="stopwatch.svg"]')).not.toBeNull();
     expect(chart.dispatchAction).toHaveBeenCalledWith({ type: "hideTip" });
 
     const closeButton = document.querySelector<HTMLButtonElement>(".pinned-tooltip-close");

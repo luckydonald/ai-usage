@@ -4,6 +4,9 @@ import { renderNoteMarkdown } from "./markdown";
 import { formatDuration, formatRelative } from "./time";
 import type { GraphPoint, GraphSeries, GraphWindow, IconRef, NoteRange } from "./types";
 
+const HOVERED_TIME_ICON: IconRef = { pack: "fontawesome-free-pack", version: "latest", set: "solid", name: "clock-rotate-left" };
+const CURRENT_TIME_ICON: IconRef = { pack: "fontawesome-free-pack", version: "latest", set: "solid", name: "stopwatch" };
+
 // Small inline `<img>` for a brand/metric icon, used in the hover/click tooltip in place of
 // spelling the service name out in text (the badges/text next to it already identify which
 // series this is) and as a leading glyph on each metric line.
@@ -288,6 +291,13 @@ function resetTiming(window: GraphWindow, atMs: number, now: Date): TooltipReset
   };
 }
 
+function resetTimingHtml(timing: TooltipResetTiming): string {
+  const badgeStyle = "display:inline-flex;align-items:center;gap:3px;background:rgba(107,100,120,.14);font-size:.8em;line-height:1.35;";
+  const hovered = `<span title="Time remaining at the hovered point; reset: ${timing.resetAt}" style="${badgeStyle}padding:2px 5px 2px 6px;border-radius:5px 0 0 5px;">${iconHtml(HOVERED_TIME_ICON, "Time remaining at the hovered point")}${timing.hovered}</span>`;
+  const current = `<span title="Time remaining now; reset: ${timing.resetAt}" style="${badgeStyle}padding:2px 6px 2px 5px;border-left:1px solid rgba(107,100,120,.35);border-radius:0 5px 5px 0;">${iconHtml(CURRENT_TIME_ICON, "Time remaining now")}${timing.current}</span>`;
+  return `<span style="display:inline-flex;vertical-align:middle;">${hovered}${current}</span>`;
+}
+
 interface SeriesRow {
   item: GraphSeries;
   valueLabel: string;
@@ -435,9 +445,7 @@ export function axisTooltipHtml(
     const metricLines = group.metrics.map((metric) => {
       const icon = iconHtml(metric.icon, metric.name);
       const nativeUsage = metric.nativeUsageLabel ? ` (${metric.nativeUsageLabel})` : "";
-      const timing = metric.resetTiming
-        ? ` <span title="Reset: ${metric.resetTiming.resetAt}">⌛ then ${metric.resetTiming.hovered} · ◷ now ${metric.resetTiming.current}</span>`
-        : "";
+      const timing = metric.resetTiming ? ` ${resetTimingHtml(metric.resetTiming)}` : "";
       const base = `&nbsp;&nbsp;${icon}${metric.name}: ${metric.valueLabel}${nativeUsage}${timing}`;
       return metric.detail ? `${base} — ${metric.detail}` : base;
     });
