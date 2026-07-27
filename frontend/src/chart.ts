@@ -250,12 +250,11 @@ export function activeNotesAt(notes: NoteRange[], atMs: number): NoteRange[] {
 // Same window facts as `windowDetailLines`, but as one short " · "-joined line instead of
 // several full sentences — used in the grouped hover tooltip where every metric of the same
 // account/provider already gets its own line, so a multi-line block per metric would be a
-// wall of mostly-repeated text.
+// wall of mostly-repeated text. Reset timing is intentionally separate in `resetTiming`: it
+// compares the historical hovered moment with the viewer's current clock.
 function compactWindowDetail(item: GraphSeries, window: GraphWindow, now: Date): string {
   const stats = computeWindowStats(item.points, window, now);
-  const resetLabel = formatRelative(new Date(window.end), now).replace(/^in /, "");
   const parts = [
-    `resets ${new Date(window.end).toLocaleString()} (${resetLabel})`,
     `peak ${stats.maximumPercentage.toFixed(0)}%`,
   ];
   if (stats.burnRatePerHour !== null) parts.push(`${stats.burnRatePerHour.toFixed(1)}%/h`);
@@ -274,10 +273,26 @@ function compactWindowDetail(item: GraphSeries, window: GraphWindow, now: Date):
   return parts.join(" · ");
 }
 
+export interface TooltipResetTiming {
+  resetAt: string;
+  hovered: string;
+  current: string;
+}
+
+function resetTiming(window: GraphWindow, atMs: number, now: Date): TooltipResetTiming {
+  const resetAt = new Date(window.end);
+  return {
+    resetAt: resetAt.toLocaleString(),
+    hovered: formatRelative(resetAt, new Date(atMs)),
+    current: formatRelative(resetAt, now),
+  };
+}
+
 interface SeriesRow {
   item: GraphSeries;
   valueLabel: string;
   nativeUsageLabel: string | null;
+  resetTiming: TooltipResetTiming | null;
   detail: string;
 }
 
@@ -287,6 +302,7 @@ export interface TooltipMetricRow {
   icon?: IconRef;
   valueLabel: string;
   nativeUsageLabel: string | null;
+  resetTiming: TooltipResetTiming | null;
   detail: string;
 }
 
@@ -328,7 +344,13 @@ function buildAxisTooltipGroups(
     const nativeUsageLabel = held.current !== null && held.maximum !== null && held.unit
       ? `${held.current.toLocaleString()} / ${held.maximum.toLocaleString()} ${held.unit}`
       : null;
-    rows.push({ item, valueLabel, nativeUsageLabel, detail: window ? compactWindowDetail(item, window, now) : "" });
+    rows.push({
+      item,
+      valueLabel,
+      nativeUsageLabel,
+      resetTiming: window ? resetTiming(window, atMs, now) : null,
+      detail: window ? compactWindowDetail(item, window, now) : "",
+    });
   }
   if (!rows.length) return [];
 
@@ -358,6 +380,7 @@ function buildAxisTooltipGroups(
         icon: metricIcons[row.item.metric_key],
         valueLabel: row.valueLabel,
         nativeUsageLabel: row.nativeUsageLabel,
+        resetTiming: row.resetTiming,
         detail: row.detail,
       })),
     };
@@ -412,7 +435,10 @@ export function axisTooltipHtml(
     const metricLines = group.metrics.map((metric) => {
       const icon = iconHtml(metric.icon, metric.name);
       const nativeUsage = metric.nativeUsageLabel ? ` (${metric.nativeUsageLabel})` : "";
-      const base = `&nbsp;&nbsp;${icon}${metric.name}: ${metric.valueLabel}${nativeUsage}`;
+      const timing = metric.resetTiming
+        ? ` <span title="Reset: ${metric.resetTiming.resetAt}">⌛ then ${metric.resetTiming.hovered} · ◷ now ${metric.resetTiming.current}</span>`
+        : "";
+      const base = `&nbsp;&nbsp;${icon}${metric.name}: ${metric.valueLabel}${nativeUsage}${timing}`;
       return metric.detail ? `${base} — ${metric.detail}` : base;
     });
     return [header, ...metricLines].join("<br/>");

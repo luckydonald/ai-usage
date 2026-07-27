@@ -171,7 +171,12 @@ onBeforeUnmount(() => {
             </div>
             <p v-for="metric in group.metrics" :key="metric.key" class="tooltip-metric-line">
               <Icon v-if="metric.icon" v-bind="metric.icon" />
-              {{ metric.name }}: {{ metric.valueLabel }}<template v-if="metric.nativeUsageLabel"> ({{ metric.nativeUsageLabel }})</template><template v-if="metric.detail"> — {{ metric.detail }}</template>
+              <span class="tooltip-metric-value">{{ metric.name }}: {{ metric.valueLabel }}<template v-if="metric.nativeUsageLabel"> ({{ metric.nativeUsageLabel }})</template></span>
+              <span v-if="metric.resetTiming" class="tooltip-reset-timing" :title="`Reset: ${metric.resetTiming.resetAt}`">
+                <span><span aria-hidden="true">⌛</span> then {{ metric.resetTiming.hovered }}</span>
+                <span><span aria-hidden="true">◷</span> now {{ metric.resetTiming.current }}</span>
+              </span>
+              <template v-if="metric.detail"> — {{ metric.detail }}</template>
             </p>
           </div>
         </div>
@@ -262,7 +267,19 @@ onBeforeUnmount(() => {
 .tooltip-metric-line {
   margin: 0 0 0 1.25rem;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: .35rem;
+}
+
+.tooltip-reset-timing {
+  display: inline-flex;
+  gap: .35rem;
+  padding: .08rem .35rem;
+  border: 1px solid var(--border);
+  border-radius: .45rem;
+  color: var(--text-muted);
+  font-size: .8em;
+  line-height: 1.35;
 }
 </style>

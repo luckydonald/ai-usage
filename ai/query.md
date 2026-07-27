@@ -3093,3 +3093,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › If available, the graph hover/click info shall display the native units, too (i.e. copilot).
 
+› In the graph hover/click info, it shall use both the time relative to back then (where hovered) and the current clock time. This needs to be separated info with a nice gui design, while still staying compact. Maybe via icons?
+
