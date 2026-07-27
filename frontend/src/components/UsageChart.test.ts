@@ -31,7 +31,7 @@ const series = [{
   metric_key: "five-hours",
   metric_name: "Five hours",
   color: "#f97316",
-  points: [{ at: "2026-07-17T10:00:00Z", percentage: 20, current: null, maximum: null }],
+  points: [{ at: "2026-07-17T10:00:00Z", percentage: 20, current: 3_075, maximum: 5_000, unit: "AIC" }],
   windows: [],
 }];
 
@@ -74,6 +74,7 @@ describe("UsageChart pinned tooltip", () => {
     const overlay = document.querySelector<HTMLElement>(".tooltip-overlay");
     expect(overlay).not.toBeNull();
     expect(overlay?.textContent).toContain("Five hours: 20.0%");
+    expect(overlay?.textContent).toContain("3,075 / 5,000 AIC");
     expect(chart.dispatchAction).toHaveBeenCalledWith({ type: "hideTip" });
 
     const closeButton = document.querySelector<HTMLButtonElement>(".pinned-tooltip-close");

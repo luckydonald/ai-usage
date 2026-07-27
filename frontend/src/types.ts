@@ -77,6 +77,7 @@ export interface GraphPoint {
   percentage: number;
   current: number | null;
   maximum: number | null;
+  unit?: string | null;
 }
 
 export interface GraphWindow {

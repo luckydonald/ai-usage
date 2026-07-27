@@ -47,6 +47,19 @@ def test_graph_builds_step_points_window_and_projection() -> None:
 # end def
 
 
+def test_graph_preserves_native_usage_units_when_available() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    record = sample("one", now, 61.5, now + timedelta(hours=2))
+    record.current_value = 3075
+    record.maximum_value = 5000
+    record.unit = "AIC"
+
+    point = build_series([record], now=now)[0].points[0]
+
+    assert (point.current, point.maximum, point.unit) == (3075, 5000, "AIC")
+# end def
+
+
 def test_graph_projection_is_not_clamped_when_it_would_exceed_100() -> None:
     now = datetime(2026, 7, 17, 12, tzinfo=UTC)
     reset = now + timedelta(hours=2)
@@ -177,4 +190,3 @@ def test_ungrouped_accounts_remain_separate_series() -> None:
     series = build_series(records, now=now)
     assert {item.account_id for item in series} == {"laptop", "web"}
 # end def
-

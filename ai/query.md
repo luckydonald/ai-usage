@@ -3091,3 +3091,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 > › Implement the [Plan](./plans/026_copilot-acp-usage-collector.md). <kbd>cleared</kbd>
 
+› If available, the graph hover/click info shall display the native units, too (i.e. copilot).
+

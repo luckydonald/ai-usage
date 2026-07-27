@@ -174,6 +174,7 @@ def build_series(
                 percentage=sample.percentage,
                 current=sample.current_value,
                 maximum=sample.maximum_value,
+                unit=sample.unit,
             )
             for sample in metric_samples
         ]
@@ -285,4 +286,3 @@ def projected_percentage(samples: list[MetricSampleRecord], end: datetime) -> fl
     remaining = max(0.0, (end - last_at).total_seconds())
     return max(last.percentage, last.percentage + delta / elapsed * remaining)
 # end def
-
