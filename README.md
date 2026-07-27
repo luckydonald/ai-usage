@@ -112,8 +112,7 @@ Delete the plaintext credential file after confirming `ai-usage fetch` works. AI
 | `ai-usage crawl [-d]` | Run the adaptive collector loop, optionally detached. |
 | `ai-usage serve [--host HOST] [--port PORT]` | Serve the dashboard and API without crawling. |
 | `ai-usage up [-d]` (alias `start`) | Crawl and serve together. |
-| `ai-usage install [--serve/--no-serve]` | Install and start a user-level startup service. |
-| `ai-usage uninstall` / `deinstall` | Remove the startup service without deleting data. |
+| `ai-usage service local|docker status|install|uninstall|deinstall` | Inspect and manage native or Docker-backed background services. |
 | `ai-usage completion [--shell ...]` | Install shell completion for Bash, Zsh, or Fish. |
 | `ai-usage db-upgrade` | Apply pending Alembic migrations manually. |
 
@@ -221,13 +220,19 @@ Set `AI_USAGE_HOME` to move the entire data directory.
 
 ## Running in the background
 
-Install a startup service with the dashboard enabled:
+Install a native startup service with the dashboard and crawler enabled:
 
 ```shell
-ai-usage install --serve --host localhost --port 4458
+ai-usage service local install
 ```
 
-Use `--no-serve` for collection only. The installer uses a systemd user unit on Linux, a LaunchAgent on macOS, and a logon task on Windows. `ai-usage uninstall` removes only that integration and keeps all account and history data.
+The installer asks for crawler, webserver, or both; use `--mode` for automation. It uses a systemd user unit on Linux, a LaunchAgent on macOS, and a logon task on Windows. `ai-usage service local uninstall` removes only that integration and keeps all account and history data.
+
+## Docker and Coolify
+
+From a source checkout, start crawler and dashboard together with `docker compose up -d`. The dashboard is available only at `http://localhost:4458`, and the named `ai-usage-data` volume retains configuration and history. `ai-usage service docker install` can instead prompt for the desired Docker mode; `ai-usage service docker uninstall` stops containers without removing the volume.
+
+For Coolify, deploy `docker-compose.coolify.yml`, assign a domain that routes to container port 4458, and keep the declared `ai-usage-data` volume. The dashboard has no built-in authentication, so protect a public Coolify domain with suitable proxy access control.
 
 Detached runs are also available without installing a startup service:
 

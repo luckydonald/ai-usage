@@ -1,0 +1,28 @@
+name: ai-usage
+
+services:
+  crawler:
+    build: .
+    command: ["crawl"]
+    environment:
+      AI_USAGE_HOME: /data
+    volumes:
+      - ai-usage-data:/data
+
+  webserver:
+    build: .
+    command: ["serve", "--host", "0.0.0.0", "--port", "4458"]
+    environment:
+      AI_USAGE_HOME: /data
+    ports:
+      - "127.0.0.1:4458:4458"
+    volumes:
+      - ai-usage-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4458/api/v1/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  ai-usage-data:

@@ -61,7 +61,9 @@ from ai_usage.providers.claude import (
     remove_status_relay,
     write_relay_payload,
 )
-from ai_usage.services import detach, install_service, uninstall_service
+from ai_usage.services import detach, local_install, local_status, local_uninstall
+from ai_usage.services import docker as docker_service
+from ai_usage.services.base import ServiceMode, ServiceStatus
 from ai_usage.settings import Paths, default_paths
 from ai_usage.shell_completion import install_completion
 
@@ -84,6 +86,12 @@ config_git_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
 config_app.add_typer(
     config_git_app, name="git", help="Enable/disable git commit/push of the data directory after fetches."
 )
+service_app = typer.Typer(rich_markup_mode=None, invoke_without_command=True)
+app.add_typer(service_app, name="service", help="Install, inspect, and remove local or Docker services.")
+local_service_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
+docker_service_app = typer.Typer(rich_markup_mode=None, no_args_is_help=True)
+service_app.add_typer(local_service_app, name="local", help="Manage the current user's native startup service.")
+service_app.add_typer(docker_service_app, name="docker", help="Manage the Docker Compose service stack.")
 
 
 CRAWL_LOGGER = logging.getLogger("ai_usage.crawl")
@@ -1452,15 +1460,83 @@ def claude_relay_remove(account_id: Annotated[str, typer.Argument()]) -> None:
 # end def
 
 
-@app.command()
-def install(
-    enable_server: Annotated[bool, typer.Option("--serve/--no-serve")] = True,
+def selected_mode(mode: ServiceMode | None) -> ServiceMode:
+    return mode or click.prompt("Run which service", type=click.Choice(["crawler", "webserver", "both"]), default="both")
+# end def
+
+
+def print_service_status(status: ServiceStatus) -> None:
+    click.echo(f"Installed: {'yes' if status.installed else 'no'}")
+    if status.installed:
+        click.echo(f"Enabled: {'yes' if status.enabled else 'no'}")
+        click.echo(f"Active: {'yes' if status.active else 'no'}")
+        click.echo(f"Mode: {status.mode}")
+    # end if
+    click.echo(f"Detail: {status.detail}")
+# end def
+
+
+@service_app.callback()
+def service_callback(ctx: typer.Context) -> None:
+    """Manage native or Docker-backed background services."""
+    if ctx.invoked_subcommand is None:
+        if not sys.stdin.isatty():
+            raise click.UsageError("choose either `local` or `docker`\n\n" + ctx.get_help())
+        # end if
+        target = click.prompt("Service target", type=click.Choice(["local", "docker"]))
+        click.echo(f"Selected {target}.\n")
+        click.echo(ctx.get_help())
+    # end if
+# end def
+
+
+@local_service_app.command("install")
+def local_service_install(
+    mode: Annotated[ServiceMode | None, typer.Option("--mode")] = None,
     host: Annotated[str, typer.Option("--host")] = "localhost",
     port: Annotated[int, typer.Option("--port")] = 4458,
 ) -> None:
-    """Install a user-level startup service."""
-    target = install_service(default_paths(), enable_server, host, port)
+    """Install a native user-level startup service."""
+    target = local_install(default_paths(), selected_mode(mode), host, port)
     click.echo(f"Installed {target}")
+# end def
+
+
+@local_service_app.command("status")
+def local_service_status() -> None:
+    """Show native service installation and runtime state."""
+    print_service_status(local_status(default_paths()))
+# end def
+
+
+@local_service_app.command("uninstall")
+def local_service_uninstall() -> None:
+    """Remove the native service without deleting usage data."""
+    local_uninstall(default_paths())
+    click.echo("Native service removed")
+# end def
+
+
+@docker_service_app.command("install")
+def docker_service_install(mode: Annotated[ServiceMode | None, typer.Option("--mode")] = None) -> None:
+    """Build and start the selected Docker Compose services."""
+    docker_service.install(selected_mode(mode))
+    click.echo("Docker services started")
+# end def
+
+
+@docker_service_app.command("status")
+def docker_service_status() -> None:
+    """Show Docker Compose service state."""
+    print_service_status(docker_service.status())
+# end def
+
+
+@docker_service_app.command("uninstall")
+def docker_service_uninstall() -> None:
+    """Stop and remove Docker services without deleting data volumes."""
+    docker_service.uninstall()
+    click.echo("Docker services removed; data volume retained")
 # end def
 
 
@@ -1483,14 +1559,6 @@ def completion(
     else:
         click.echo(f"Wrote {result.script_path}")
     # end if
-# end def
-
-
-@app.command("uninstall")
-def uninstall() -> None:
-    """Remove the user-level startup service without deleting data."""
-    uninstall_service(default_paths())
-    click.echo("Startup service removed")
 # end def
 
 
@@ -1645,9 +1713,7 @@ COMMAND_SECTIONS: dict[str, str] = {
     "start": "Operate",
     "serve": "Operate",
     "config": "Setup",
-    "install": "Setup",
-    "uninstall": "Setup",
-    "deinstall": "Setup",
+    "service": "Setup",
     "completion": "Setup",
     "db-upgrade": "Setup",
     "history-cleanup": "Setup",
@@ -1684,10 +1750,27 @@ def format_commands_by_section(self: click.Group, ctx: click.Context, formatter)
 # end def
 
 
+def format_service_help(self: click.Group, ctx: click.Context, formatter) -> None:
+    click.Group.format_help(self, ctx, formatter)
+    formatter.write("\nTargets and actions:\n")
+    formatter.write("  local install [--mode crawler|webserver|both] [--host HOST] [--port PORT]\n")
+    formatter.write("  local status\n")
+    formatter.write("  local uninstall|deinstall\n")
+    formatter.write("  docker install [--mode crawler|webserver|both]\n")
+    formatter.write("  docker status\n")
+    formatter.write("  docker uninstall|deinstall\n")
+# end def
+
+
 main = typer.main.get_command(app)
 main.format_commands = types.MethodType(format_commands_by_section, main)
 main.add_command(main.commands["up"], "start")
-main.add_command(main.commands["uninstall"], "deinstall")
+local_service_click = main.commands["service"].commands["local"]
+local_service_click.add_command(local_service_click.commands["uninstall"], "deinstall")
+docker_service_click = main.commands["service"].commands["docker"]
+docker_service_click.add_command(docker_service_click.commands["uninstall"], "deinstall")
+service_click = main.commands["service"]
+service_click.format_help = types.MethodType(format_service_help, service_click)
 
 _provider_click = main.commands["provider"]
 _provider_click.add_command(_provider_click.commands["add"], "new")
