@@ -3044,3 +3044,26 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Which session should the ACP `/usage` provider inspect, given that a fresh collector session has no usage to report?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Session source** (1/1) <kbd>Single Select</kbd><br>
+>> Which session should the ACP `/usage` provider inspect, given that a fresh collector session has no usage to report?
+> - [ ] 1\. Configured session ID (Recommended)
+>   - _Add a required `--session-id`/provider option and load that existing Copilot session over ACP; failure to resolve it is a clear fetch error._
+> - [ ] 2\. Fresh session
+>   - _Create a new ACP session on each fetch, accepting that only its zero/current collector usage is recorded._
+> - [ ] 3\. Skip CLI provider
+>   - _Do not implement the `/usage` collector; keep the existing account-quota collector only._
+> - [x] 4\. _Type something:_
+>   - > Actually there's `Plan    88% used\n    4,425/5,000 AIC` in the `/usage` command. Also the user can be printed via `/user show` or `/user list`.
+>
+> </details>
+>
+
