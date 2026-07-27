@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
             </div>
             <p v-for="metric in group.metrics" :key="metric.key" class="tooltip-metric-line">
               <Icon v-if="metric.icon" v-bind="metric.icon" />
-              {{ metric.name }}: {{ metric.valueLabel }}<template v-if="metric.detail"> — {{ metric.detail }}</template>
+              {{ metric.name }}: {{ metric.valueLabel }}<template v-if="metric.nativeUsageLabel"> ({{ metric.nativeUsageLabel }})</template><template v-if="metric.detail"> — {{ metric.detail }}</template>
             </p>
           </div>
         </div>

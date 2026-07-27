@@ -277,6 +277,7 @@ function compactWindowDetail(item: GraphSeries, window: GraphWindow, now: Date):
 interface SeriesRow {
   item: GraphSeries;
   valueLabel: string;
+  nativeUsageLabel: string | null;
   detail: string;
 }
 
@@ -285,6 +286,7 @@ export interface TooltipMetricRow {
   name: string;
   icon?: IconRef;
   valueLabel: string;
+  nativeUsageLabel: string | null;
   detail: string;
 }
 
@@ -323,7 +325,10 @@ function buildAxisTooltipGroups(
     } else {
       valueLabel = `${held.percentage.toFixed(1)}%`;
     }
-    rows.push({ item, valueLabel, detail: window ? compactWindowDetail(item, window, now) : "" });
+    const nativeUsageLabel = held.current !== null && held.maximum !== null && held.unit
+      ? `${held.current.toLocaleString()} / ${held.maximum.toLocaleString()} ${held.unit}`
+      : null;
+    rows.push({ item, valueLabel, nativeUsageLabel, detail: window ? compactWindowDetail(item, window, now) : "" });
   }
   if (!rows.length) return [];
 
@@ -352,6 +357,7 @@ function buildAxisTooltipGroups(
         name: row.item.metric_name,
         icon: metricIcons[row.item.metric_key],
         valueLabel: row.valueLabel,
+        nativeUsageLabel: row.nativeUsageLabel,
         detail: row.detail,
       })),
     };
@@ -405,7 +411,8 @@ export function axisTooltipHtml(
     const header = `${iconHtml(group.serviceIcon, group.service)}${badgeRowHtml(group.badges, group.color)}`;
     const metricLines = group.metrics.map((metric) => {
       const icon = iconHtml(metric.icon, metric.name);
-      const base = `&nbsp;&nbsp;${icon}${metric.name}: ${metric.valueLabel}`;
+      const nativeUsage = metric.nativeUsageLabel ? ` (${metric.nativeUsageLabel})` : "";
+      const base = `&nbsp;&nbsp;${icon}${metric.name}: ${metric.valueLabel}${nativeUsage}`;
       return metric.detail ? `${base} — ${metric.detail}` : base;
     });
     return [header, ...metricLines].join("<br/>");

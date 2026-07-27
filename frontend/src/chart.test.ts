@@ -11,7 +11,7 @@ const series: GraphSeries = {
   metric_name: "Five hours",
   color: "#f97316",
   points: [
-    { at: "2026-07-17T10:00:00Z", percentage: 20, current: null, maximum: null },
+    { at: "2026-07-17T10:00:00Z", percentage: 20, current: 1_000, maximum: 5_000, unit: "AIC" },
     { at: "2026-07-17T11:00:00Z", percentage: 40, current: null, maximum: null },
   ],
   windows: [{
@@ -372,6 +372,11 @@ describe("axisTooltipHtml", () => {
     expect(html).toContain("Five hours: 20.0%");
     expect(html).toContain("peak 40%"); // series' window detail folded into a compact line, not the verbose block
     expect(html).toContain("Seven days: 55.0%");
+  });
+
+  it("shows the native current/maximum unit when the source provides it", () => {
+    const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);
+    expect(html).toContain("1,000 / 5,000 AIC");
   });
 
   it("tells you when the hovered window resets and how long that is from now", () => {

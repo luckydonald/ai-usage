@@ -152,6 +152,7 @@ class GraphPoint(BaseModel):
     percentage: float
     current: float | None = None
     maximum: float | None = None
+    unit: str | None = None
 # end class
 
 
