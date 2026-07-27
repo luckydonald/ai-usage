@@ -17,6 +17,7 @@ usage-time login side effects move out of `fetch()`.
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from ai_usage.providers.base import DiscoveredAccount, LoginMethod
 
@@ -82,5 +83,15 @@ class TokenReuseLogin(LoginMethod):
                 credential={"token": token, "login": login},
             )
         ]
+    # end def
+
+    async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
+        """Reuse the local session when manually adding the provider."""
+        config_dir = Path(str(options.get("config_dir", Path.home() / ".copilot")))
+        token, login = copilot_cli_credentials(config_dir)
+        if not token:
+            return None
+        # end if
+        return {"token": token, "login": login}
     # end def
 # end class

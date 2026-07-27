@@ -1,0 +1,57 @@
+$ ai-usage provider add
+2026-07-26 08:26:43,034 INFO [alembic.runtime.migration] Context impl SQLiteImpl.
+2026-07-26 08:26:43,034 INFO [alembic.runtime.migration] Will assume non-transactional DDL.
+Opening a login window for Copilot CLI quota (local session)...
+Traceback (most recent call last):
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 614, in execute
+    credential = await login_method.authenticate(dynamic_options)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/providers/base.py", line 63, in authenticate
+    raise ProviderLoginError(f"{self.display_name} does not support interactive login")
+ai_usage.providers.base.ProviderLoginError: Reuse Copilot CLI session does not support interactive login
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/user/.local/bin/ai-usage", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 807, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1203, in main
+    return _main(
+        self,
+    ...<6 lines>...
+        **extra,
+    )
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 189, in _main
+    rv = self.invoke(ctx)
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1125, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/core.py", line 1125, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 746, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/_click/core.py", line 489, in invoke
+    return callback(*args, **kwargs)
+  File "/home/user/git/luckydonald/ai-usage/.venv/lib64/python3.14/site-packages/typer/main.py", line 1524, in wrapper
+    return callback(**use_params)
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 664, in provider_add
+    asyncio.run(execute())
+    ~~~~~~~~~~~^^^^^^^^^^^
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 205, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/usr/lib64/python3.14/asyncio/runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/lib64/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/user/git/luckydonald/ai-usage/src/ai_usage/cli.py", line 616, in execute
+    raise click.ClickException(str(exception)) from exception
+click.exceptions.ClickException: Reuse Copilot CLI session does not support interactive login

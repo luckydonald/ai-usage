@@ -3014,3 +3014,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Properly squash the commits after `a996d6d87d78908a6774543c88d86ae7ad59b352`
 
+› Fix adding local `copilot` cli: @ai/errors/12.txt
+
