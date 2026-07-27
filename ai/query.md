@@ -3022,3 +3022,25 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › I want to add another parser for `copilot`, using @ai/references/https/docs.github.com/en/copilot/reference/copilot-cli-reference/acp-server.md , specifically the `/usage` command. Possibly the startup command can be optimized with setting cli flags, like `copilot --reasoning-effort none --disallow-temp-dir --available-tools='' --disable-builtin-mcps --max-ai-credits 30 --no-ask-user --no-auto-update --no-bash-env --no-color --no-custom-instructions --no-experimental --no-mouse --no-remote --no-remote-export --output-format=text --screen-reader --interactive="/usage" --silent --acp …`.
 
+› Question answered.
+> <details><summary>
+>
+>> 1. Copilot documents `/usage` as per-session, per-model token statistics, while the existing `copilot/statusline` collector records plan premium-request quota. How should the new collector be exposed?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Metric scope** (1/1) <kbd>Single Select</kbd><br>
+>> Copilot documents `/usage` as per-session, per-model token statistics, while the existing `copilot/statusline` collector records plan premium-request quota. How should the new collector be exposed?
+> - [x] 1\. Add cli-usage (Recommended)
+>   - _Add `copilot/cli-usage` for session token metrics; retain the existing quota collector unchanged._
+> - [ ] 2\. Replace statusline
+>   - _Make `/usage` the standard Copilot collector and retire the current quota-API path._
+> - [ ] 3\. Quota only
+>   - _Use `/usage` only if it exposes plan quota; otherwise do not add the collector._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
