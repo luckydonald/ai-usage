@@ -5,6 +5,7 @@ import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -41,6 +42,7 @@ from ai_usage.providers.codex.usage.web.private_api import (
     parse_codex_web_usage,
     parse_rate_limits,
 )
+from ai_usage.providers.copilot.login.cli import token_reuse
 from ai_usage.providers.copilot.login.cli.token_reuse import TokenReuseLogin, copilot_cli_credentials
 from ai_usage.providers.copilot.provider import CopilotBillingProvider, CopilotStatusProvider
 from ai_usage.providers.copilot.usage.web.billing_api import next_billing_reset
@@ -640,6 +642,27 @@ def test_copilot_cli_credentials_prefers_env_var(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("GITHUB_TOKEN", "env-token")
     token, login = copilot_cli_credentials(tmp_path)
     assert (token, login) == ("env-token", None)
+# end def
+
+
+def test_copilot_cli_credentials_reads_current_cli_keyring_token(monkeypatch, tmp_path) -> None:
+    (tmp_path / "config.json").write_text(
+        "// Copilot CLI application state\n"
+        '{"lastLoggedInUser": {"host": "github.com", "login": "lucy"}}',
+        encoding="utf-8",
+    )
+    calls: list[list[str]] = []
+
+    def run(arguments: list[str], **kwargs) -> SimpleNamespace:
+        del kwargs
+        calls.append(arguments)
+        return SimpleNamespace(returncode=0, stdout="keyring-token\n")
+    # end def
+
+    monkeypatch.setattr(token_reuse.subprocess, "run", run)
+
+    assert copilot_cli_credentials(tmp_path) == ("keyring-token", "lucy")
+    assert calls == [["secret-tool", "lookup", "service", "copilot-cli"]]
 # end def
 
 

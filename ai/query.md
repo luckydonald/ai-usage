@@ -3016,3 +3016,7 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Fix adding local `copilot` cli: @ai/errors/12.txt
 
+› It happens still @ai/errors/13.txt
+
+› do not "fix" the original commit, only squash the AI stuff. The fix is a separate commit.
+
