@@ -41,7 +41,7 @@ from ai_usage.providers.codex.usage.web.private_api import (
     parse_codex_web_usage,
     parse_rate_limits,
 )
-from ai_usage.providers.copilot.login.cli.token_reuse import copilot_cli_credentials
+from ai_usage.providers.copilot.login.cli.token_reuse import TokenReuseLogin, copilot_cli_credentials
 from ai_usage.providers.copilot.provider import CopilotBillingProvider, CopilotStatusProvider
 from ai_usage.providers.copilot.usage.web.billing_api import next_billing_reset
 from ai_usage.providers.copilot.usage.web.quota_api import parse_copilot_quota_payload
@@ -640,6 +640,25 @@ def test_copilot_cli_credentials_prefers_env_var(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("GITHUB_TOKEN", "env-token")
     token, login = copilot_cli_credentials(tmp_path)
     assert (token, login) == ("env-token", None)
+# end def
+
+
+@pytest.mark.asyncio
+async def test_copilot_cli_login_reuses_configured_session(tmp_path) -> None:
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "last_logged_in_user": {"host": "github.com", "login": "lucy"},
+                "copilot_tokens": {"github.com:lucy": "abc123"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    credential = await TokenReuseLogin().authenticate({"config_dir": str(tmp_path)})
+
+    assert credential == {"token": "abc123", "login": "lucy"}
 # end def
 
 
