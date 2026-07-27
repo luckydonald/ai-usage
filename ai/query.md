@@ -3097,3 +3097,7 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Use our icon component, with the icon endpoint, for frontawesome. "Back then" becomes `clock-rotate-left` and "Now" becomes `stopwatch`. The section shall have the explainer what it means as icon. Make it a gray badge with a split like the split button, probably @ai/references/https/github.com/luckydonald/tunnel2tunnel/blob/55964a0c613da397729102b28f48a2f473fdbe75/frontend/src/components/MultiButton.vue be reused.
 
+› Document in AGENTS.md which the most important files for that kind of edit are.
+
+› And/or functions
+
