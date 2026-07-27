@@ -2974,3 +2974,43 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ We still got `(<1m)` for stuff which happened in the past, which is *technically* correct, but I'd prefer a "X ago" instead.
 
+› create the installation commands. This shall be `ai-usage service status/install/deinstall/uninstall` (instead of previously planned top-level). Furthermore this shall be for linux, macos and windows, each of those having own sub-sub-module files to have it clean and separated. Additionally there shall also be a Docker image & -compose.yml, ready to use, as well as one for coolify specifically. The commands ask you if you want to run the crawler, the webserver, or both (default).
+
+› Question answered.
+> <details><summary>
+>
+>> 1. How should the ready-to-use Compose deployments expose the unauthenticated dashboard?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Deployment access** (1/1) <kbd>Single Select</kbd><br>
+>> How should the ready-to-use Compose deployments expose the unauthenticated dashboard?
+> - [x] 1\. Local Docker, Coolify domain (Recommended)
+>   - _Regular Compose binds only to 127.0.0.1:4458; the Coolify file listens internally on 4458 and is routed through a configured Coolify domain/proxy._
+> - [ ] 2\. Public port mapping
+>   - _Both Compose files publish port 4458 on all interfaces, requiring the operator to secure network access._
+> - [ ] 3\. Proxy-only everywhere
+>   - _Neither file publishes a host port; both assume an external reverse proxy or same-network access._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
+› _top-level startup commands_ is wrong, as stuff like `ai-usage up` etc shall not be touched. The `service` one shall have a local or docker option up front, so it could also start the docker-compose file for you (add a `name: ai-usage` to the non-coolify dockercompose file root, one so the docker services are consistenly named).
+
+› Also enable lplp style once implementing.
+
+› If you omit `local` or `docker` subcommand, it shall in interactive mode just ask, in noninteractive mode fail with a error message (help). The full help text shall be (again) already appear at `ai-usage service` level, i.e. with the subcommands and their parameters - like we did for other commands. The coolify dockercompose is called `docker-compose.coolify.yml`. Call out the lplp as `$commit-with-lplp-style`.
+
+› `docker-compose.coolify.yml` needs to also provide the volumes as persistent volumes. Add tests for install/deinstall/status to be executed via github runner pipelines on all three platforms.
+
+> › Implement the [Plan](./plans/025_local-and-docker-service-management.md).
+
+› Follow the `py` code style.
+
+› It's mostly about the `_` prefix.
+
+› Properly squash the commits after `a996d6d87d78908a6774543c88d86ae7ad59b352`
+

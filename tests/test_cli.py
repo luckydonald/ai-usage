@@ -93,6 +93,23 @@ def test_config_help_lists_git_subcommands_inline() -> None:
 # end def
 
 
+def test_service_help_lists_nested_actions_and_parameters() -> None:
+    result = CliRunner().invoke(main, ["service", "--help"])
+
+    assert result.exit_code == 0
+    assert "local install [--mode crawler|webserver|both]" in result.output
+    assert "docker uninstall|deinstall" in result.output
+# end def
+
+
+def test_service_without_target_fails_without_a_terminal() -> None:
+    result = CliRunner().invoke(main, ["service"])
+
+    assert result.exit_code != 0
+    assert "choose either `local` or `docker`" in str(result.exception)
+# end def
+
+
 def test_bare_invocation_prints_status_and_help_without_starting_anything(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("AI_USAGE_HOME", str(tmp_path))
     result = CliRunner().invoke(main, [])
