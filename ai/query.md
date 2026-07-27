@@ -3095,3 +3095,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › In the graph hover/click info, it shall use both the time relative to back then (where hovered) and the current clock time. This needs to be separated info with a nice gui design, while still staying compact. Maybe via icons?
 
+› Use our icon component, with the icon endpoint, for frontawesome. "Back then" becomes `clock-rotate-left` and "Now" becomes `stopwatch`. The section shall have the explainer what it means as icon. Make it a gray badge with a split like the split button, probably @ai/references/https/github.com/luckydonald/tunnel2tunnel/blob/55964a0c613da397729102b28f48a2f473fdbe75/frontend/src/components/MultiButton.vue be reused.
+
