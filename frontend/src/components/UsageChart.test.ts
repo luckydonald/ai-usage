@@ -32,7 +32,14 @@ const series = [{
   metric_name: "Five hours",
   color: "#f97316",
   points: [{ at: "2026-07-17T10:00:00Z", percentage: 20, current: 3_075, maximum: 5_000, unit: "AIC" }],
-  windows: [],
+  windows: [{
+    start: "2026-07-17T09:00:00Z",
+    end: "2026-07-17T14:00:00Z",
+    maximum_percentage: 20,
+    exhausted_from: null,
+    current: true,
+    projected_end_percentage: null,
+  }],
 }];
 
 function mountChart() {
@@ -75,6 +82,7 @@ describe("UsageChart pinned tooltip", () => {
     expect(overlay).not.toBeNull();
     expect(overlay?.textContent).toContain("Five hours: 20.0%");
     expect(overlay?.textContent).toContain("3,075 / 5,000 AIC");
+    expect(overlay?.textContent).toContain("then in 4h 0m");
     expect(chart.dispatchAction).toHaveBeenCalledWith({ type: "hideTip" });
 
     const closeButton = document.querySelector<HTMLButtonElement>(".pinned-tooltip-close");
