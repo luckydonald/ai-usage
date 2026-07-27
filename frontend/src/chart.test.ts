@@ -382,18 +382,22 @@ describe("axisTooltipHtml", () => {
   it("separates reset timing at the hovered moment from reset timing now", () => {
     // The window ends at 14:00. At the 10:00 hover it was 4h away; at `now` (12:00) it is 2h away.
     const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, now);
-    expect(html).toContain(`Reset: ${new Date("2026-07-17T14:00:00Z").toLocaleString()}`);
-    expect(html).toContain("⌛ then in 4h 0m");
-    expect(html).toContain("◷ now in 2h 0m");
+    expect(html).toContain("clock-rotate-left.svg");
+    expect(html).toContain("stopwatch.svg");
+    expect(html).toContain("Time remaining at the hovered point; reset:");
+    expect(html).toContain("Time remaining now; reset:");
+    expect(html).toContain("in 4h 0m");
+    expect(html).toContain("in 2h 0m");
   });
 
   it("shows an already-reset window's reset time as '... ago' instead of a clamped <1m", () => {
     // series' window ends 2026-07-17T14:00:00Z; hover `now` fixed well past that.
     const later = new Date("2026-07-17T16:30:00Z");
     const html = axisTooltipHtml([series], [{ axisValue: atMs("2026-07-17T10:00:00Z") }], {}, later);
-    expect(html).toContain(`Reset: ${new Date("2026-07-17T14:00:00Z").toLocaleString()}`);
-    expect(html).toContain("⌛ then in 4h 0m");
-    expect(html).toContain("◷ now 2h 30m ago");
+    expect(html).toContain("clock-rotate-left.svg");
+    expect(html).toContain("stopwatch.svg");
+    expect(html).toContain("in 4h 0m");
+    expect(html).toContain("2h 30m ago");
   });
 
   it("groups multiple metrics of the same account+provider under one header instead of repeating it", () => {
