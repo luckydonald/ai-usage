@@ -4,6 +4,7 @@ from ai_usage.icons import IconRef
 from ai_usage.models import AccountConfig, ProviderFetchResult
 from ai_usage.providers.base import ConfigurationField, Provider, ProviderLoginError, canonical_login
 from ai_usage.providers.copilot.login.cli.token_reuse import TokenReuseLogin
+from ai_usage.providers.copilot.usage.cli.acp import CopilotAcpUsage
 from ai_usage.providers.copilot.usage.web.billing_api import BillingApiUsage
 from ai_usage.providers.copilot.usage.web.entitlements import GenericPrivateWebUsage
 from ai_usage.providers.copilot.usage.web.quota_api import QuotaApiUsage
@@ -50,6 +51,24 @@ class CopilotStatusProvider(Provider):
         return canonical_login(
             result.identity.name if result.identity else None, self.display_name
         )
+    # end def
+# end class
+
+
+class CopilotCliUsageProvider(Provider):
+    service = "copilot"
+    key = "cli-usage"
+    display_name = "Copilot CLI account Plan usage"
+    icon = IconRef(set="brands", name="github")
+    configuration_fields = (
+        ConfigurationField(key="command", label="Copilot executable", default="copilot"),
+    )
+    usage_method = CopilotAcpUsage()
+    login_methods = ()
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del account
+        return canonical_login(result.identity.name if result.identity else None, self.display_name)
     # end def
 # end class
 

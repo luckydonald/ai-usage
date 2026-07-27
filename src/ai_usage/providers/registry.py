@@ -16,6 +16,7 @@ from ai_usage.providers.codex.provider import (
 )
 from ai_usage.providers.copilot.provider import (
     CopilotBillingProvider,
+    CopilotCliUsageProvider,
     CopilotEntitlementsProvider,
     CopilotStatusProvider,
 )
@@ -68,6 +69,7 @@ def built_in_registry() -> ProviderRegistry:
         ClaudeUsageProvider(),
         CopilotBillingProvider(),
         CopilotStatusProvider(),
+        CopilotCliUsageProvider(),
         CodexWebUsageProvider(),
         ClaudeWebUsageProvider(),
         CopilotEntitlementsProvider(),

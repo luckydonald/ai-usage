@@ -3089,3 +3089,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › Also see @ai/references/https/docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference.md
 
+> › Implement the [Plan](./plans/026_copilot-acp-usage-collector.md). <kbd>cleared</kbd>
+
