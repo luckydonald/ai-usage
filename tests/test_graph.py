@@ -147,6 +147,43 @@ def test_graph_marks_exhausted_interval() -> None:
 # end def
 
 
+def test_graph_splits_window_on_substantial_mid_window_percentage_drop() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now + timedelta(hours=1)
+    drop_at = now - timedelta(minutes=30)
+    records = [
+        sample("one", now - timedelta(hours=1), 100, reset),
+        # Same reset_at/window_seconds, but a provider-side quota bump dropped usage from
+        # 100% down to 71.9% (e.g. Copilot: 5000/5000 -> 5032/7000) without a new reset_at.
+        sample("two", drop_at, 71.9, reset),
+    ]
+    windows = build_series(records, now=now)[0].windows
+    assert len(windows) == 2
+    first, second = windows
+    assert first.end == drop_at
+    assert first.current is False
+    assert first.exhausted_from == now - timedelta(hours=1)
+    assert first.maximum_percentage == 100
+    assert second.start == drop_at
+    assert second.end == reset
+    assert second.current is True
+    assert second.exhausted_from is None
+    assert second.maximum_percentage == 71.9
+# end def
+
+
+def test_graph_tolerates_small_drops_as_caching_noise() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now + timedelta(hours=1)
+    records = [
+        sample("one", now - timedelta(hours=1), 50, reset),
+        sample("two", now - timedelta(minutes=30), 49, reset),
+    ]
+    windows = build_series(records, now=now)[0].windows
+    assert len(windows) == 1
+# end def
+
+
 def test_grouped_accounts_merge_into_a_single_series_under_the_group_id() -> None:
     now = datetime(2026, 7, 17, 12, tzinfo=UTC)
     reset = now + timedelta(hours=2)

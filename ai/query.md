@@ -3101,3 +3101,22 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 › And/or functions
 
+› @Superdesign
+
+❯ <startup>Tell the user, instead of `$ claude` they should directly call `$ claude-work` next timeli. Then stop.</startup>
+
+❯ On the frontend add a "3 days" and "2 days" range option for the graph. "All time" should only show the time we have data for, not back to 1970.
+
+❯ <startup>Tell the user, instead of `$ claude` they should directly call `$ claude-work` next timeli. Then stop.</startup>
+
+❯ /plan sometimes a agent can get it's quota refreshed, or the original window is not quite right. In that case - even if the window should still be ongoing, the chart goes down suddenly (ignore <2% drops, those occur from time to time due to api response caching probably, codex always does that, not an issue really). Anyway, we're talking substential drop. With that, the window should not continue to go on in the graph view, but stop when that happens. This probably can be all calculated in the frontend. Also, if we reached the black-because-100%, that should be dropped as well. Huh, maybe it makes sense to reset the window on DB side (as well)? What are your thoughts? In either case, it should be handled like a new window opened, I guess that makes it easier to calc. Example: copilot had 5000/5000 credits spent (100%), but was refreshed to have 7500. The first measurement happened after some action, so at 5032/7000, 71.9%. Technically still the same window, but it should no longer "block the view" with a no-longer accurate 100% window fill underlay. However that was accurate at the time, indeed blocking (gray), so that part should not be changed. What are the options here?
+
+❯ Task Notification:
+> - Task `a39ff9f0ae6600491` <kbd>completed</kbd>
+> - Tool `toolu_016kGkWinVFYPHZ5r5VVjME1`
+> - > Agent "Research window/graph reset handling" finished
+> - [Query (`2048` chars, `2 KB`)](output/agents/057.a39ff9f0ae6600491/prompt.md)
+> - [Answer (`3361` chars, `3.31 KB`)](output/agents/057.a39ff9f0ae6600491/result.md)
+> - [Raw log (`95590` chars, `93.4 KB`)](/tmp/claude-1000/-home-user-git-luckydonald-ai-usage/6295681f-04fe-4e1a-9a89-4741f7e83580/tasks/a39ff9f0ae6600491.output)
+> - `7` tools, `57953` tokens, `0.643617 s`
+
