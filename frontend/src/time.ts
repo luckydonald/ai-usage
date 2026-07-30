@@ -1,6 +1,19 @@
 import type { GraphSeries } from "./types";
 
-export type TimePreset = "auto" | "1h" | "3h" | "6h" | "12h" | "day" | "week" | "month" | "year" | "all" | "custom";
+export type TimePreset =
+  | "auto"
+  | "1h"
+  | "3h"
+  | "6h"
+  | "12h"
+  | "day"
+  | "2days"
+  | "3days"
+  | "week"
+  | "month"
+  | "year"
+  | "all"
+  | "custom";
 
 export const presetLabels: Record<TimePreset, string> = {
   auto: "Auto",
@@ -9,6 +22,8 @@ export const presetLabels: Record<TimePreset, string> = {
   "6h": "6 hours",
   "12h": "12 hours",
   day: "24 hours",
+  "2days": "2 days",
+  "3days": "3 days",
   week: "7 days",
   month: "Since this day last month",
   year: "1 year",
@@ -35,6 +50,8 @@ export function rangeForPreset(preset: TimePreset, now = new Date()): [Date, Dat
   if (preset === "6h") start.setTime(now.getTime() - 6 * 60 * 60 * 1000);
   if (preset === "12h") start.setTime(now.getTime() - 12 * 60 * 60 * 1000);
   if (preset === "day") start.setTime(now.getTime() - 24 * 60 * 60 * 1000);
+  if (preset === "2days") start.setTime(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+  if (preset === "3days") start.setTime(now.getTime() - 3 * 24 * 60 * 60 * 1000);
   if (preset === "week") start.setTime(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   if (preset === "month") return [subtractCalendarMonth(now), end];
   if (preset === "year") start.setUTCFullYear(start.getUTCFullYear() - 1);
@@ -42,7 +59,7 @@ export function rangeForPreset(preset: TimePreset, now = new Date()): [Date, Dat
   return [start, end];
 }
 
-export const wideningOrder: TimePreset[] = ["1h", "3h", "6h", "12h", "day", "week", "month", "year", "all"];
+export const wideningOrder: TimePreset[] = ["1h", "3h", "6h", "12h", "day", "2days", "3days", "week", "month", "year", "all"];
 
 // Extends `end` into the future on relative ranges so a still-open window's projection/reset boundary
 // stays visible, without ever pulling in future padding for "custom" or "all time" ranges.
