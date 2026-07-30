@@ -144,6 +144,23 @@ const chartLabels = computed<Record<string, string>>(() =>
   ),
 );
 
+// Earliest sample across points and windows; falls back to `end` (empty range) when there's
+// no data at all, so an all-time query with nothing to show doesn't render as a decades-wide axis.
+function earliestDataStart(items: GraphSeries[], end: Date): Date {
+  let earliest: number | undefined;
+  for (const item of items) {
+    for (const point of item.points) {
+      const at = new Date(point.at).getTime();
+      if (earliest === undefined || at < earliest) earliest = at;
+    }
+    for (const window of item.windows) {
+      const at = new Date(window.start).getTime();
+      if (earliest === undefined || at < earliest) earliest = at;
+    }
+  }
+  return earliest === undefined ? end : new Date(earliest);
+}
+
 interface LoadOptions {
   autoWiden?: boolean;
   silent?: boolean;
@@ -167,10 +184,13 @@ async function performLoad({ autoWiden = false, silent = false }: LoadOptions): 
       preset.value === "custom"
         ? customRange(customStartText.value, customEndText.value)
         : rangeForPreset(preset.value);
-    rangeStart.value = start;
     detailedSeries.value = await fetchSeries(start, end, filters);
     series.value = aggregation.value === "legacy" ? await fetchLegacySeries(start, end, filters) : detailedSeries.value;
-    rangeEnd.value = paddedChartEnd(preset.value, start, end, series.value, includeWindowEnds.value);
+    // "all time" queries from the epoch so the backend returns every sample, but the epoch
+    // itself is never a real data point — anchor the visible axis to the earliest sample
+    // instead, or the chart shows decades of empty space.
+    rangeStart.value = preset.value === "all" ? earliestDataStart(series.value, end) : start;
+    rangeEnd.value = paddedChartEnd(preset.value, rangeStart.value, end, series.value, includeWindowEnds.value);
     pruneHiddenSeriesKeys();
     if (autoWiden && preset.value !== "custom" && series.value.every((item) => item.points.length === 0)) {
       const next = wideningOrder[wideningOrder.indexOf(preset.value) + 1];
