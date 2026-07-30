@@ -223,6 +223,28 @@ def with_window_reset_zeros(
 # end def
 
 
+# A same-window percentage drop this large or larger (e.g. a mid-window quota bump/reset the
+# provider doesn't report via `reset_at`) is treated as a new window opening. Smaller drops are
+# tolerated as API-response caching noise (observed consistently, e.g. from Codex).
+RESET_DROP_THRESHOLD_PCT = 2.0
+
+
+def split_on_reset_drops(
+    samples: list[MetricSampleRecord],
+) -> list[list[MetricSampleRecord]]:
+    """Split a same-(reset_at, window_seconds) group wherever percentage drops substantially,
+    signalling a provider-side quota reset/bump that wasn't reflected in `reset_at`."""
+    segments: list[list[MetricSampleRecord]] = [[samples[0]]]
+    for previous, current in zip(samples, samples[1:]):
+        if current.percentage < previous.percentage - RESET_DROP_THRESHOLD_PCT:
+            segments.append([])
+        # end if
+        segments[-1].append(current)
+    # end for
+    return segments
+# end def
+
+
 def build_windows(samples: list[MetricSampleRecord], now: datetime) -> list[GraphWindow]:
     grouped: dict[tuple[datetime | None, int | None], list[MetricSampleRecord]] = defaultdict(list)
     for sample in samples:
@@ -235,29 +257,46 @@ def build_windows(samples: list[MetricSampleRecord], now: datetime) -> list[Grap
         window_samples.sort(key=lambda sample: aware(sample.observed_at) or now)
         first_at = aware(window_samples[0].observed_at) or now
         last_at = aware(window_samples[-1].observed_at) or now
-        start = (
+        group_start = (
             reset_at - timedelta(seconds=window_seconds)
             if reset_at is not None and window_seconds is not None
             else first_at
         )
-        end = reset_at or last_at
-        maximum = max(sample.percentage for sample in window_samples)
-        exhausted = next(
-            (aware(sample.observed_at) for sample in window_samples if sample.percentage >= 100),
-            None,
-        )
-        current = end > now
-        projection = projected_percentage(window_samples, end) if current else None
-        windows.append(
-            GraphWindow(
-                start=start,
-                end=end,
-                maximum_percentage=maximum,
-                exhausted_from=exhausted,
-                current=current,
-                projected_end_percentage=projection,
+        group_end = reset_at or last_at
+        segments = split_on_reset_drops(window_samples)
+        segment_start = group_start
+        for index, segment_samples in enumerate(segments):
+            is_last_segment = index == len(segments) - 1
+            segment_end = (
+                group_end
+                if is_last_segment
+                else aware(segments[index + 1][0].observed_at) or group_end
             )
-        )
+            maximum = max(sample.percentage for sample in segment_samples)
+            exhausted = next(
+                (
+                    aware(sample.observed_at)
+                    for sample in segment_samples
+                    if sample.percentage >= 100
+                ),
+                None,
+            )
+            current = is_last_segment and segment_end > now
+            projection = (
+                projected_percentage(segment_samples, segment_end) if current else None
+            )
+            windows.append(
+                GraphWindow(
+                    start=segment_start,
+                    end=segment_end,
+                    maximum_percentage=maximum,
+                    exhausted_from=exhausted,
+                    current=current,
+                    projected_end_percentage=projection,
+                )
+            )
+            segment_start = segment_end
+        # end for
     # end for
     return windows
 # end def
