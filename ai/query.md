@@ -3124,3 +3124,24 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ /plan At some commit some time ago we made the graph overlay our own, with own hover handling, so we can display all entries in that popup. I don't want that for the mouseover thing any longer, the native per-graph display would be better here. However, clicking should still keep the "full" vue overlay with all entries at that time.
 
+❯ Question answered.
+> <details><summary>
+>
+>> 1. For the hover tooltip, "native per-graph display" could mean two different ECharts behaviors. Which do you want?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Hover tooltip mode** (1/1) <kbd>Single Select</kbd><br>
+>> For the hover tooltip, "native per-graph display" could mean two different ECharts behaviors. Which do you want?
+> - [ ] 1\. Per-line (item trigger)
+>   - _Hovering near a specific line shows only that line's own tooltip (series name + value at nearest point) — ECharts' default single-series tooltip. Other series at the same x are not shown._
+> - [ ] 2\. Per-axis, default formatting
+>   - _Keep axis trigger (hovering an x-position still shows all series at that x), but drop our custom grouped/badged HTML and let ECharts render its own default axis tooltip (colored dot + series name + value per line)._
+> - [x] 3\. _Type something:_
+>   - > per line, but enhance the default view with our extras, but make it fit that design. also the blocks (max value per window) should have those too. Maybe a windo and that line could be merged?
+>
+> </details>
+>
+
