@@ -3122,3 +3122,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ Figure out what frontend/src/App.vue / time.ts is about and continue/fix & commit.
 
+❯ /plan At some commit some time ago we made the graph overlay our own, with own hover handling, so we can display all entries in that popup. I don't want that for the mouseover thing any longer, the native per-graph display would be better here. However, clicking should still keep the "full" vue overlay with all entries at that time.
+
