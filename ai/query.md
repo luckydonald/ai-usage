@@ -3145,3 +3145,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 > </details>
 >
 
+❯ Have the line/window color be marked in that "native" overlay.
+
