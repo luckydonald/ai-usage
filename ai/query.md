@@ -3147,3 +3147,5 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ Have the line/window color be marked in that "native" overlay.
 
+❯ for the info section, the section titles are black even in dark mode, and not following the general white text color. Maybe remove that style forcing it black?
+
