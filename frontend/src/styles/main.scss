@@ -51,6 +51,7 @@ button, select, input { font: inherit; }
 .app {
   min-height: 100vh;
   padding: clamp(1rem, 3vw, 2.5rem);
+  color: var(--text);
   background: var(--bg);
   transition: color 160ms, background 160ms;
 }
