@@ -236,6 +236,16 @@ ai-usage service local install
 
 The installer asks for crawler, webserver, or both; use `--mode` for automation. It uses a systemd user unit on Linux, a LaunchAgent on macOS, and a logon task on Windows. `ai-usage service local uninstall` removes only that integration and keeps all account and history data.
 
+### Desktop shortcut (source checkouts)
+
+`scripts/run.sh` wraps a source checkout's build-and-run cycle (`(cd frontend && yarn build) ; ai-usage up`) into one command, and can install itself as a `.desktop` launcher:
+
+```shell
+./scripts/run.sh
+```
+
+It then prompts for `run` (build and launch immediately, the default), `install` (add an "AI Usage" launcher to the applications menu and autostart), or `uninstall` (remove that launcher). This is independent of `ai-usage service local install` above, which runs the installed package as a background service instead of launching a terminal from a source checkout.
+
 ## Docker and Coolify
 
 From a source checkout, start crawler and dashboard together with `docker compose up -d`. The dashboard is available only at `http://localhost:4458`, and the named `ai-usage-data` volume retains configuration and history. `ai-usage service docker install` can instead prompt for the desired Docker mode; `ai-usage service docker uninstall` stops containers without removing the volume.
