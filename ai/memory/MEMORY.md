@@ -4,7 +4,6 @@
 - [Native GUI needs a real run](feedback_native_gui_needs_real_run.md) — pywebview/native-GUI code needs a genuine-tty smoke test, mocks can't catch thread/toolkit failures
 - [Verify third-party return shapes](feedback_verify_thirdparty_return_shapes.md) — read the actual library source for return shapes/threading model, don't assume from convention
 - [Cloudflare TLS fingerprint / Codex+Claude](project_cloudflare_tls_fingerprint_codex.md) — both are Cloudflare-protected; cf_clearance ties to TLS fingerprint, both now use curl_cffi impersonation not httpx
-- [History-master replay guards](2026-07-20-history-master-replay-guards.md) — TODO: summarize this file.
 - [Login/usage split test targets](feedback_login_usage_split_test_targets.md) — after Provider composition refactor, mock the LoginMethod not the old Provider delegator
 - [provider add wizard](project_ai_usage_provider_add_wizard.md) — cli.py add flow chains service→usage-method→login-method prompts (commit d59697e)
 - [Verify baseline before blaming refactor](feedback_verify_baseline_before_blaming_refactor.md) — diff test failures against pre-refactor branch, don't chase pre-existing failures
