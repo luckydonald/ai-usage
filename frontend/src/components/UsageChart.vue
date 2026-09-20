@@ -101,8 +101,6 @@ function render(recreate: boolean): void {
       accountLabels: props.accountLabels,
       notes: props.notes,
       showDataPoints: props.showDataPoints,
-      serviceIcons: props.serviceIcons,
-      metricIcons: props.metricIcons,
     }),
     recreate || isNew,
   );
