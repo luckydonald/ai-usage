@@ -3149,3 +3149,15 @@ This shall be the first check, and if that doesn't work use the way we just have
 
 ❯ for the info section, the section titles are black even in dark mode, and not following the general white text color. Maybe remove that style forcing it black?
 
+❯ cd /home/user/git/luckydonald/ai-usage && claude-work --resume dffd728f-cef0-408d-9b02-cb40dea2235c
+
+❯ Check the "
+
+<pasted_content id="b3ff">
+status line with /usage fallback
+</pasted_content id="b3ff">
+
+" parser, it's no longer finding the session end, it seems.
+
+❯ chack what those are about and commit where it makes sense.
+

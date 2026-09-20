@@ -2,7 +2,6 @@
 
 import asyncio
 import re
-import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -35,15 +34,24 @@ async def run_claude_usage(command: str, profile_dir: str | None) -> str:
             if startup_state == 0:
                 raise ProviderError(claude_cli_failure_message(startup_output, command, profile_dir))
             # end if
-            child.sendline("/usage")
+            child.send("/usage\r")
             child.expect("Current", timeout=30)
             usage_output = child.before + child.after
             child.expect("session", timeout=30)
             usage_output += child.before + child.after
-            time.sleep(1)
-            child.sendline("/exit")
-            child.expect(pexpect.EOF, timeout=10)
-            return usage_output + child.before
+            # The window totals render immediately; the slower per-session breakdown that
+            # follows can keep scanning for a while, so don't wait on it before exiting.
+            child.expect(["What's contributing", pexpect.TIMEOUT], timeout=10)
+            usage_output += child.before + (child.after if child.after != pexpect.TIMEOUT else "")
+            child.send("\x1b")  # dismiss the breakdown overlay in case it's still scanning
+            child.send("/exit\r")
+            try:
+                child.expect(pexpect.EOF, timeout=10)
+                usage_output += child.before
+            except pexpect.TIMEOUT:
+                pass
+            # end try
+            return usage_output
         except (pexpect.TIMEOUT, pexpect.EOF) as exception:
             raise ProviderError(
                 claude_cli_failure_message(child.before or "", command, profile_dir)
