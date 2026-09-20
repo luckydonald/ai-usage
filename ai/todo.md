@@ -1,0 +1,3 @@
+- [x] If available, the graph hover/click info shall display the native unit, too.
+- [ ] Have the info panels have a badge with the graph color, so they are easy to recognize.
+- [-] In the graph hover/click info, it shall use both the time relative to back then (where hovered) and the current clock time. This needs to be separated info with a nice gui design, while still staying compact. Maybe via icons?
