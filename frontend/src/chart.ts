@@ -16,16 +16,11 @@ function iconHtml(icon: IconRef | undefined, alt: string): string {
   return `<img src="${url}" alt="${alt}" title="${alt}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;border-radius:50%;background:#fff;padding:1px;" />`;
 }
 
-// Renders each piece of group-identifying info (account, organization, configuration, provider)
-// as its own pill instead of joining them with " · " — colored with the series' own graph color
-// (the same color previously shown as a small dot at the start of the line) so the badges double
-// as that color legend.
-function badgeHtml(text: string, color: string): string {
-  return `<span style="display:inline-block;padding:1px 8px;margin:1px 4px 2px 0;border-radius:999px;background:${color};color:#fff;font-size:.85em;line-height:1.5;white-space:nowrap;">${text}</span>`;
-}
-
-function badgeRowHtml(parts: string[], color: string): string {
-  return parts.filter(Boolean).map((part) => badgeHtml(part, color)).join("");
+// Small colored dot marking which line/window a native hover tooltip belongs to — the same
+// role as ECharts' own default tooltip marker, since the per-item tooltip no longer has a
+// grouped header or badge to carry that color.
+function colorMarkerHtml(color: string): string {
+  return `<span style="display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:50%;background:${color};vertical-align:middle;"></span>`;
 }
 
 export function seriesDisplayName(item: GraphSeries, accountLabels: Record<string, string> = {}): string {
@@ -126,29 +121,6 @@ function accountLabelFor(item: GraphSeries, accountLabels: Record<string, string
   return accountLabels[item.account_id] ?? item.account_id.slice(0, 8);
 }
 
-export function pointTooltipHtml(
-  item: GraphSeries,
-  point: GraphPoint,
-  window: GraphWindow | undefined,
-  accountLabels: Record<string, string>,
-): string {
-  const lines = [
-    `<strong>${new Date(point.at).toLocaleString()}</strong>`,
-    `Service: ${item.service}`,
-    `Provider: ${item.provider}`,
-    `Account: ${accountLabelFor(item, accountLabels)}`,
-    `Usage: ${point.percentage.toFixed(1)}%`,
-  ];
-  if (window) {
-    const remainingMs = new Date(window.end).getTime() - new Date(point.at).getTime();
-    lines.push(
-      `Window end: ${new Date(window.end).toLocaleString()} (${formatDuration(remainingMs)} away)`,
-      `${percentThroughWindow(point.at, window).toFixed(0)}% through window`,
-    );
-  }
-  return lines.join("<br/>");
-}
-
 // Relative time with the absolute timestamp as a native title tooltip — used only here, not in
 // the hover tooltip's own separate `compactWindowDetail`, which already shows its own countdown.
 function relativeTimeSpan(at: Date, now: Date): string {
@@ -188,7 +160,7 @@ export function windowTooltipHtml(
   includeHeader = true,
 ): string {
   const lines = includeHeader
-    ? [`<strong>${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`]
+    ? [`<strong>${colorMarkerHtml(item.color)}${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`]
     : [];
   lines.push(...windowDetailLines(item, window, now));
   return lines.join("<br/>");
@@ -425,35 +397,92 @@ export function axisTooltipData(
   };
 }
 
-// HTML-string rendering of `axisTooltipData()`, needed only because ECharts' own hover tooltip
-// is a floating DOM node it manages itself — its `formatter` option can't mount a Vue component,
-// only return markup for it to set as innerHTML. The pinned/click tooltip in `UsageChart.vue`
-// uses `axisTooltipData()` directly and renders real components instead.
-export function axisTooltipHtml(
+// Content for hovering a single series' line at a given instant — merges the point's own value
+// (plus native usage / reset timing, same facts the grouped tooltip showed per metric) with its
+// containing window's detail lines, so hovering the line and hovering the window's shaded block
+// underneath it (`windowTooltipHtml` below) read as the same family of tooltip.
+export function seriesPointTooltipHtml(
+  item: GraphSeries,
+  atMs: number,
+  now: Date,
+  accountLabels: Record<string, string> = {},
+): string {
+  const held = pointAtOrBefore(item.points, atMs);
+  if (!held) return "";
+  const window = windowByPoint(item.windows, new Date(atMs).toISOString());
+  let valueLabel: string;
+  if (window?.current && atMs > new Date(held.at).getTime() && isLastPoint(item.points, held)) {
+    const projected = projectedValueAt(held, window, atMs);
+    valueLabel = projected !== null ? `~${projected.toFixed(1)}% (projected)` : `${held.percentage.toFixed(1)}%`;
+  } else {
+    valueLabel = `${held.percentage.toFixed(1)}%`;
+  }
+  const nativeUsage = held.current !== null && held.maximum !== null && held.unit
+    ? ` (${held.current.toLocaleString()} / ${held.maximum.toLocaleString()} ${held.unit})`
+    : "";
+  const timing = window ? ` ${resetTimingHtml(resetTiming(window, atMs, now))}` : "";
+  const lines = [
+    `<strong>${colorMarkerHtml(item.color)}${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`,
+    `Usage: ${valueLabel}${nativeUsage}${timing}`,
+  ];
+  if (window) lines.push(...windowDetailLines(item, window, now));
+  return lines.join("<br/>");
+}
+
+function parseActualSeriesId(seriesId: string | undefined): { accountId: string; metricKey: string } | undefined {
+  if (!seriesId) return undefined;
+  const match = /^(.*)\/([^/]+)\/actual$/.exec(seriesId);
+  if (!match) return undefined;
+  return { accountId: match[1]!, metricKey: match[2]! };
+}
+
+function firstMarkAreaPoint(data: unknown): Record<string, unknown> | undefined {
+  const first = Array.isArray(data) ? data[0] : data;
+  return first && typeof first === "object" ? (first as Record<string, unknown>) : undefined;
+}
+
+export interface ItemTooltipParams {
+  componentType?: string;
+  seriesId?: string;
+  value?: unknown;
+  data?: unknown;
+}
+
+// HTML-string rendering for ECharts' native per-item hover tooltip (`trigger: "item"`): hovering
+// a line reports that one series' value at the hovered instant, hovering a window's shaded
+// background reports that window's stats, hovering a note marker reports that note — never every
+// visible series at once. The click-pinned overlay in `UsageChart.vue` still shows everything at
+// a timestamp; it goes through `axisTooltipData()` directly and doesn't call this.
+export function itemTooltipHtml(
   seriesList: GraphSeries[],
-  paramsList: { axisValue?: unknown }[],
+  params: ItemTooltipParams,
   accountLabels: Record<string, string>,
   now: Date,
   notes: NoteRange[] = [],
-  serviceIcons: Record<string, IconRef> = {},
-  metricIcons: Record<string, IconRef> = {},
 ): string {
-  const data = axisTooltipData(seriesList, paramsList, accountLabels, now, notes, serviceIcons, metricIcons);
-  if (!data) return "";
-  const blocks = data.groups.map((group) => {
-    const header = `${iconHtml(group.serviceIcon, group.service)}${badgeRowHtml(group.badges, group.color)}`;
-    const metricLines = group.metrics.map((metric) => {
-      const icon = iconHtml(metric.icon, metric.name);
-      const nativeUsage = metric.nativeUsageLabel ? ` (${metric.nativeUsageLabel})` : "";
-      const timing = metric.resetTiming ? ` ${resetTimingHtml(metric.resetTiming)}` : "";
-      const base = `&nbsp;&nbsp;${icon}${metric.name}: ${metric.valueLabel}${nativeUsage}${timing}`;
-      return metric.detail ? `${base} — ${metric.detail}` : base;
-    });
-    return [header, ...metricLines].join("<br/>");
-  });
-  const header = `<strong>${data.timeLabel}</strong>`;
-  const noteLines = data.notes.map((note) => noteTooltipHtml(note));
-  return [header, ...noteLines, ...blocks].join("<br/>");
+  if (params.seriesId === "notes-marker") {
+    const noteIndex = firstMarkAreaPoint(params.data)?.noteIndex;
+    const note = typeof noteIndex === "number" ? notes[noteIndex] : undefined;
+    return note ? noteTooltipHtml(note) : "";
+  }
+
+  const parsed = parseActualSeriesId(params.seriesId);
+  if (!parsed) return "";
+  const item = seriesList.find((entry) => entry.account_id === parsed.accountId && entry.metric_key === parsed.metricKey);
+  if (!item) return "";
+
+  if (params.componentType === "markArea") {
+    const windowIndex = firstMarkAreaPoint(params.data)?.windowIndex;
+    const window = typeof windowIndex === "number" ? item.windows[windowIndex] : undefined;
+    return window ? windowTooltipHtml(item, window, now, accountLabels) : "";
+  }
+
+  const value = params.value;
+  const atRaw = Array.isArray(value) ? value[0] : undefined;
+  if (typeof atRaw !== "string" && typeof atRaw !== "number") return "";
+  const atMs = new Date(atRaw).getTime();
+  if (Number.isNaN(atMs)) return "";
+  return seriesPointTooltipHtml(item, atMs, now, accountLabels);
 }
 
 export interface ChartOptions {
@@ -465,8 +494,6 @@ export interface ChartOptions {
   accountLabels?: Record<string, string>;
   notes?: NoteRange[];
   showDataPoints?: boolean;
-  serviceIcons?: Record<string, IconRef>;
-  metricIcons?: Record<string, IconRef>;
 }
 
 export function chartOption(
@@ -479,8 +506,6 @@ export function chartOption(
   const accountLabels = options.accountLabels ?? {};
   const notes = options.notes ?? [];
   const showDataPoints = options.showDataPoints ?? false;
-  const serviceIcons = options.serviceIcons ?? {};
-  const metricIcons = options.metricIcons ?? {};
   const rendered: SeriesOption[] = [];
   for (const item of series) {
     const name = seriesDisplayName(item, accountLabels);
@@ -585,13 +610,13 @@ export function chartOption(
     animation: options.animate ?? true,
     textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
     tooltip: {
-      trigger: "axis",
+      trigger: "item",
       confine: true,
       extraCssText: "max-width: 22rem; white-space: normal; max-height: 60vh; overflow-y: auto;",
       backgroundColor: dark ? "#1f2937" : "#ffffff",
       borderColor: dark ? "#374151" : "#e5e7eb",
       textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
-      formatter: (raw: unknown) => (Array.isArray(raw) ? axisTooltipHtml(series, raw as { axisValue?: unknown }[], accountLabels, now, notes, serviceIcons, metricIcons) : ""),
+      formatter: (raw: unknown) => itemTooltipHtml(series, raw as ItemTooltipParams, accountLabels, now, notes),
     },
     legend: {
       type: "scroll",
