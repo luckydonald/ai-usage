@@ -37,6 +37,7 @@ xcuserdata/
 [Ll]ib
 [Ll]ib64
 [Ll]ocal
+!src/ai_usage/providers/**/local/
 [Ss]cripts
 pyvenv.cfg
 .venv
