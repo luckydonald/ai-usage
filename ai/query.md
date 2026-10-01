@@ -3161,3 +3161,12 @@ status line with /usage fallback
 
 ❯ chack what those are about and commit where it makes sense.
 
+❯ /plan I lost my previous setup, but restored `~/.ai-usage` from git.
+This means I need to login back into my claude account there.
+How to without overwriting anything and such so it continues where it last stopped?
+The other subscriptions are no longer active anways, so I don't need to recover their logins right now.
+
+❯ Alright,
+- Follow /commit-with-lplp-style
+- no not mention emails/account names in the plan, and ammend/squash the errourous plan commit as soon as we are implementing (and after a tag backup).
+
