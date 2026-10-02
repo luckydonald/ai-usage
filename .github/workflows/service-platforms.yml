@@ -13,6 +13,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # `ai/references` holds captured URLs whose names contain `<` and `?`, which Windows cannot check out.
+          sparse-checkout: |
+            /*
+            !/ai/references
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      # The wheel force-includes `frontend/dist`, so it must exist before `uv sync` builds the project.
+      - run: corepack yarn@4.9.2 install
+        working-directory: frontend
+      - run: corepack yarn@4.9.2 build
+        working-directory: frontend
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.14"
