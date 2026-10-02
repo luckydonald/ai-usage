@@ -1027,3 +1027,20 @@ def test_claude_relay_uses_default_profile_for_null_option(tmp_path, monkeypatch
 
     assert (profile / "settings.json").exists()
 # end def
+
+
+@pytest.mark.asyncio
+async def test_claude_web_login_passes_the_known_email_to_the_webview(monkeypatch) -> None:
+    seen: dict = {}
+
+    def fake_capture(url, title, **kwargs):
+        seen.update(kwargs)
+        return {"session": "abc"}
+    # end def
+
+    monkeypatch.setattr(
+        "ai_usage.providers.claude.login.web.cookie_capture.capture_cookies_via_webview", fake_capture
+    )
+    await ClaudeWebUsageProvider().authenticate({"email": "someone@example.test"})
+    assert seen == {"prefill_email": "someone@example.test"}
+# end def

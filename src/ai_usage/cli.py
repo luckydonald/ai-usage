@@ -691,6 +691,17 @@ def provider_discover(
 # end def
 
 
+def login_options(account: AccountConfig) -> dict[str, Any]:
+    """The account's options plus its known email (if any), so login methods can prefill it."""
+    email = account.identity.email if account.identity else None
+    if not email and account.login:
+        candidate = account.login.partition("|")[0]
+        email = candidate if "@" in candidate else None
+    # end if
+    return {**account.options, "email": email} if email else dict(account.options)
+# end def
+
+
 @provider_app.command("login")
 def provider_login(
     account_id: Annotated[str, typer.Option("--account")],
@@ -713,7 +724,7 @@ def provider_login(
                 click.echo(provider.login_hint)
             # end if
             try:
-                credential = await login_method.authenticate(account.options)
+                credential = await login_method.authenticate(login_options(account))
             except ProviderError as exception:
                 raise click.ClickException(str(exception)) from exception
             # end try
