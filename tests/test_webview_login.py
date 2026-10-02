@@ -366,3 +366,37 @@ def test_capture_cookies_via_webview_raises_a_clear_error_without_a_gui_toolkit(
         capture_cookies_via_webview("https://example.test/login", "Example")
     # end with
 # end def
+
+
+def test_capture_cookies_via_webview_prefills_the_email_via_evaluate_js(monkeypatch) -> None:
+    cookies = SimpleCookie()
+    cookies["session"] = "prefilled"
+    window = install_fake_webview(
+        monkeypatch, cookies, urls=["https://claude.ai/login", "https://claude.ai/"]
+    )
+
+    result = capture_cookies_via_webview(
+        "https://claude.ai/login", "Claude", prefill_email="someone@example.test"
+    )
+
+    assert result == {"session": "prefilled"}
+    assert window.evaluated_js
+    script = window.evaluated_js[0]
+    assert '"someone@example.test"' in script
+    for selector in ('[data-testid=\\"email\\"]', "input#email", "requestSubmit", "form.submit()"):
+        assert selector in script
+    # end for
+# end def
+
+
+def test_capture_cookies_via_webview_does_not_touch_the_page_without_an_email(monkeypatch) -> None:
+    cookies = SimpleCookie()
+    cookies["session"] = "plain"
+    window = install_fake_webview(
+        monkeypatch, cookies, urls=["https://claude.ai/login", "https://claude.ai/"]
+    )
+
+    capture_cookies_via_webview("https://claude.ai/login", "Claude")
+
+    assert window.evaluated_js == []
+# end def

@@ -19,10 +19,12 @@ class CookieCaptureLogin(LoginMethod):
     credential_kind = "cookie_jar"
 
     async def authenticate(self, options: dict[str, Any]) -> dict[str, Any] | None:
-        del options
+        # `email` is the already-known account email (when re-logging in), used to prefill the form.
+        email = options.get("email")
+        extra = {"prefill_email": str(email)} if email else {}
         # pywebview must run on the main thread (it raises WebViewException otherwise), so this
         # is a deliberate synchronous, blocking call rather than `asyncio.to_thread(...)`.
-        cookies = capture_cookies_via_webview(CLAUDE_LOGIN_URL, self.display_name)
+        cookies = capture_cookies_via_webview(CLAUDE_LOGIN_URL, self.display_name, **extra)
         return {"cookies": cookies} if cookies else None
     # end def
 
