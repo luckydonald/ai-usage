@@ -4,6 +4,7 @@ Requires the optional `pywebview` dependency (the `browser` extra) — imported 
 base install doesn't need a system webview toolkit (WebKitGTK/WKWebView/WebView2) at all.
 """
 
+import json
 import logging
 import signal
 import threading
@@ -52,6 +53,88 @@ def _click_script(selector: str) -> str:
 # end def
 
 
+# Selectors tried in order to find the email field and the button that submits it; the first
+# visible match wins. Different sites (and redesigns of the same site) expose different hooks.
+EMAIL_INPUT_SELECTORS = (
+    '[data-testid="email"]',
+    "input#email",
+    'input[type="email"]',
+    'input[autocomplete="email"]',
+    'input[autocomplete="username"]',
+    'input[name="email"]',
+    'input[aria-label="Email" i]',
+    'input[placeholder*="email" i]',
+)
+SUBMIT_BUTTON_SELECTORS = (
+    '[data-testid="continue"]',
+    'button[type="submit"]',
+    'input[type="submit"]',
+)
+
+
+def _prefill_email_script(email: str) -> str:
+    """JS that types `email` into the login form and submits it, once per page load.
+
+    Waits (via MutationObserver) for single-page apps to render the form. The value is set through
+    the native `value` setter and followed by `input`/`change` events so React-style controlled
+    inputs register it. Submitting tries the form's own button first, then `requestSubmit()`,
+    then plain `submit()`.
+    """
+    return f"""
+(function() {{
+    if (window.__aiUsagePrefilled) return;
+    var email = {json.dumps(email)};
+    var inputSelectors = {json.dumps(list(EMAIL_INPUT_SELECTORS))};
+    var submitSelectors = {json.dumps(list(SUBMIT_BUTTON_SELECTORS))};
+    function visible(el) {{ return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }}
+    function findInput() {{
+        for (var i = 0; i < inputSelectors.length; i++) {{
+            var el = document.querySelector(inputSelectors[i]);
+            if (el && visible(el)) return el;
+        }}
+        return null;
+    }}
+    function findButton(form) {{
+        var scopes = form ? [form, document] : [document];
+        for (var s = 0; s < scopes.length; s++) {{
+            for (var i = 0; i < submitSelectors.length; i++) {{
+                var el = scopes[s].querySelector(submitSelectors[i]);
+                if (el && visible(el) && !el.disabled) return el;
+            }}
+        }}
+        return null;
+    }}
+    function submit(input) {{
+        var form = input.form || input.closest("form");
+        var button = findButton(form);
+        if (button) {{ button.click(); return; }}
+        if (form && form.requestSubmit) {{ form.requestSubmit(); return; }}
+        if (form) {{ form.submit(); }}
+    }}
+    function tryFill() {{
+        var input = findInput();
+        if (!input) return false;
+        window.__aiUsagePrefilled = true;
+        input.focus();
+        var setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+        setter.call(input, email);
+        input.dispatchEvent(new Event("input", {{bubbles: true}}));
+        input.dispatchEvent(new Event("change", {{bubbles: true}}));
+        // let the framework enable the (initially disabled) submit button before clicking it
+        setTimeout(function() {{ submit(input); }}, 300);
+        return true;
+    }}
+    if (!tryFill()) {{
+        var observer = new MutationObserver(function() {{
+            if (tryFill()) observer.disconnect();
+        }});
+        observer.observe(document.documentElement, {{childList: true, subtree: true}});
+    }}
+}})();
+"""
+# end def
+
+
 def _install_click_userscript(window, selector: str) -> bool:
     """Best-effort: inject the click as a WebKit *user script* rather than `evaluate_js`.
 
@@ -64,6 +147,12 @@ def _install_click_userscript(window, selector: str) -> bool:
     versions and only works on the GTK backend. Returns False (caller should fall back to
     `evaluate_js`) if any of that isn't available.
     """
+    return _install_userscript(window, _click_script(selector))
+# end def
+
+
+def _install_userscript(window, source: str) -> bool:
+    """See `_install_click_userscript`; the same mechanism for any script `source`."""
     try:
         import gi
 
@@ -75,7 +164,7 @@ def _install_click_userscript(window, selector: str) -> bool:
             return False
         # end if
         script = WebKit2.UserScript(
-            _click_script(selector),
+            source,
             WebKit2.UserContentInjectedFrames.TOP_FRAME,
             WebKit2.UserScriptInjectionTime.END,
             None,
@@ -91,7 +180,7 @@ def _install_click_userscript(window, selector: str) -> bool:
 
 
 def capture_cookies_via_webview(
-    url: str, title: str, click_selector: str | None = None
+    url: str, title: str, click_selector: str | None = None, prefill_email: str | None = None
 ) -> dict[str, str]:
     """Open a native webview at `url`, let the user log in, and return cookies once logged in.
 
@@ -105,6 +194,9 @@ def capture_cookies_via_webview(
     any reason — the login-detection heuristic below, or the user closing it manually — the latest
     snapshot is already captured; `closing` itself does no work.
 
+    With `prefill_email`, the email field is filled in and submitted automatically on each page
+    on `url`'s domain (see `_prefill_email_script`); the user only completes the next step.
+
     Login is detected from navigation alone (no need to close the window): either the browser
     briefly left `url`'s domain (an SSO/OAuth hop) and came back, or it stayed on the same domain
     but moved off the initial path (e.g. `/login` -> `/`).
@@ -117,7 +209,12 @@ def capture_cookies_via_webview(
     # end try
 
     initial = urlsplit(url)
-    state = {"left_initial_domain": False, "clicked": False, "userscript_installed": False}
+    state = {
+        "left_initial_domain": False,
+        "clicked": False,
+        "userscript_installed": False,
+        "prefill_userscript_installed": False,
+    }
     captured: dict[str, str] = {}
     destroy_lock = threading.Lock()
     destroyed = {"value": False}
@@ -140,6 +237,11 @@ def capture_cookies_via_webview(
     def on_before_load() -> None:
         if click_selector:
             state["userscript_installed"] = _install_click_userscript(window, click_selector)
+        # end if
+        if prefill_email:
+            state["prefill_userscript_installed"] = _install_userscript(
+                window, _prefill_email_script(prefill_email)
+            )
         # end if
     # end def
 
@@ -175,6 +277,13 @@ def capture_cookies_via_webview(
                     click_selector,
                     exception,
                 )
+            # end try
+        # end if
+        if prefill_email and not state["prefill_userscript_installed"]:
+            try:
+                window.evaluate_js(_prefill_email_script(prefill_email))
+            except Exception as exception:  # noqa: BLE001
+                LOGGER.warning("could not prefill the email (%s) — please type it yourself.", exception)
             # end try
         # end if
         if state["left_initial_domain"] or current.path.rstrip("/") != initial.path.rstrip("/"):

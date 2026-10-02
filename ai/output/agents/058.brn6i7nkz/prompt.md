@@ -1,0 +1,1 @@
+Background command "uv tool install --reinstall --with "pywebview>=5.4" . 2>&1 | tail -3; ai-usage provider login --account 019f7a40-53a0-7581-a494-0d5f8abc404d 2>&1 | tail -12" was stopped after reaching its background time limit
