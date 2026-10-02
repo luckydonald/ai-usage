@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 # For the `.desktop` file install command, where to?
 dot_desktop_install_dir="${HOME}/.local/share/applications"
