@@ -3174,3 +3174,5 @@ The other subscriptions are no longer active anways, so I don't need to recover 
 
 ❯ Also the unittests pipeline on github fails.
 
+❯ run the install and adding of the account for me
+
