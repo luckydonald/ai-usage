@@ -8,6 +8,7 @@ from ai_usage.providers.claude._shared import (
     claude_setup_required_message,
 )
 from ai_usage.providers.claude.provider import (
+    ClaudeUsageAppProvider,
     ClaudeStatusProvider,
     ClaudeUsageProvider,
     ClaudeWebUsageProvider,
@@ -48,6 +49,7 @@ __all__ = [
     "ClaudeOrganizationPayload",
     "ClaudeStatusProvider",
     "ClaudeSubscriptionStatusPayload",
+    "ClaudeUsageAppProvider",
     "ClaudeUsagePayload",
     "ClaudeUsageProvider",
     "ClaudeUsageWindowPayload",

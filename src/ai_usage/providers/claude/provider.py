@@ -12,10 +12,12 @@ from ai_usage.providers.base import (
     canonical_login,
 )
 from ai_usage.providers.claude.login.local.settings_file import SettingsFileLogin
+from ai_usage.providers.claude.login.local.usage_app import UsageAppLogin
 from ai_usage.providers.claude.login.web.cookie_capture import CookieCaptureLogin
 from ai_usage.providers.claude.usage.cli.direct import DirectCliUsage
 from ai_usage.providers.claude.usage.cli.interactive import InteractiveCliUsage
 from ai_usage.providers.claude.usage.local.relay_file import RelayFileUsage
+from ai_usage.providers.claude.usage.local.usage_app import DEFAULT_BASE_URL, UsageAppUsage
 from ai_usage.providers.claude.usage.web.private_api import PrivateApiUsage
 
 
@@ -67,6 +69,36 @@ class ClaudeStatusProvider(Provider):
             raise ProviderLoginError(f"{self.display_name} cannot determine the account login")
         # end if
         return canonical_login(result.identity.email, self.display_name)
+    # end def
+# end class
+
+
+class ClaudeUsageAppProvider(Provider):
+    service = "claude"
+    key = "claude-usage-app-api"
+    display_name = "ClaudeUsage.app (local API)"
+    experimental = True
+    icon = IconRef(set="solid", name="gauge")
+    configuration_fields = (
+        ConfigurationField(key="base_url", label="ClaudeUsage.app API URL", default=DEFAULT_BASE_URL),
+        ConfigurationField(
+            key="email",
+            label="Claude account email",
+            help="The app does not report it; defaults to the `claude auth status` email.",
+        ),
+    )
+
+    usage_method = UsageAppUsage()
+    login_methods = (UsageAppLogin(),)
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        email = account.options.get("email") or (result.identity.email if result.identity else None)
+        if not email:
+            raise ProviderLoginError(
+                f"{self.display_name} cannot determine the account login; pass --email"
+            )
+        # end if
+        return canonical_login(email, self.display_name)
     # end def
 # end class
 
