@@ -1,0 +1,7 @@
+In /Users/user/Documents/programming/Python/ai-usage, explore how providers are structured so I can add a new provider that reads Claude subscription usage from a local HTTP API (ClaudeUsage macOS app at http://127.0.0.1:47291, endpoints /session, /weekly, /opus, /usage, /health; spec in ai/references/Usage for Claude.app/claude-usage.skill.md). Very thorough. Report with file paths and line numbers:
+1. The existing Claude provider(s) (usage method, login method, identity) and how Provider composition works (Provider, UsageMethod, LoginMethod classes; base classes; registry/how providers & methods are registered/discovered).
+2. How a usage method returns data (models in src/ai_usage/models.py: samples, metrics, units, resets, windows) and how existing Claude usage maps session/weekly/opus windows to metric names (and METRIC_ICONS/SERVICE_ICONS in frontend).
+3. How the CLI `add` wizard (cli.py) prompts for service -> usage-method -> login-method, and how config/settings (e.g. base URL/port options) are stored per provider.
+4. A simple existing provider with no login (e.g. Ollama or a local one) as a template, and how its tests are written (tests dir, mocking with respx / curl_cffi).
+5. Docs/README/ai/todo.md places listing providers that would need updating.
+Don't summarize ai/references file; I've read it.

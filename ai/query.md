@@ -3194,3 +3194,54 @@ The other subscriptions are no longer active anways, so I don't need to recover 
 ```
 For that have it try to use different available methods/selectors, I.e. id, data-testid, type, autocomplete, aria-label, form.submit(), etc.
 
+❯ Implement @"ai/references/Usage for Claude.app/claude-usage.skill.md" as a possible provider for Claude subscription data.
+
+❯ Task Notification:
+> - Task `abcf759b6e30c0273` <kbd>completed</kbd>
+> - Tool `toolu_011UbyVBctQQCCf1eJz8LZqZ`
+> - > Agent "Explore provider architecture" finished
+> - [Query (`1327` chars, `1.3 KB`)](output/agents/059.abcf759b6e30c0273/prompt.md)
+> - [Answer (`16626` chars, `16.2 KB`)](output/agents/059.abcf759b6e30c0273/result.md)
+> - [Raw log (`660702` chars, `646 KB`)](/private/tmp/claude-501/-Users-user-Documents-programming-Python-ai-usage/78a1da6f-965d-487f-b3e6-df06b88ccf3b/tasks/abcf759b6e30c0273.output)
+> - `22` tools, `110213` tokens, `2.07655 s`
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. Where should the account identity (login) for the ClaudeUsage app provider come from?
+>> 2. What key and name should the new provider have under the claude service?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Identity** (1/2) <kbd>Single Select</kbd><br>
+>> Where should the account identity (login) for the ClaudeUsage app provider come from?
+> - [ ] 1\. Reuse `claude auth status` (Recommended)
+>   - _Same as the existing statusline provider: shell out to `claude auth status` for the email. Falls back to a clear ProviderLoginError if the CLI is missing or logged out._
+> - [ ] 2\. Pseudo-login from base URL
+>   - _Use something stable like `claude-usage-app@127.0.0.1:47291`. Always works, but can't dedupe against the other Claude providers for the same account._
+> - [ ] 3\. Probe /usage for an email field
+>   - _Use an email field in `/usage` if present, otherwise fall back to `claude auth status`. The field isn't documented, so I can't confirm it exists._
+> - [x] 4\. _Type something:_
+>   - > We got 
+```shell
+curl http://127.0.0.1:47291/session{"available":true,"lastUpdated":"2026-10-06T07:50:56Z","percentRemaining":97,"percentUsed":3,"resetsAt":"2026-10-06T12:39:59Z","resetsInSeconds":17343,"source":"email"}%
+```
+so I guess we can at least deduct that it must be an email.
+Which is not exactly the same as the cli auth, but I guess just ask the user to take that one or provide your own. (the cli's email being the default valuee seems fine).
+>
+>> **Provider key** (2/2) <kbd>Single Select</kbd><br>
+>> What key and name should the new provider have under the claude service?
+> - [ ] 1\. `app` / "ClaudeUsage app (local API)" (Recommended)
+>   - _Short key, matches the `web`/`statusline`/`cli-usage` style. Marked experimental._
+> - [ ] 2\. `usage-app`
+>   - _More descriptive key, same display name._
+> - [x] 3\. _Type something:_
+>   - > ClaudeUsage.app (local API)
+>
+> </details>
+>
+
+❯ Provider key may be `claude-usage-app-api` Yeah, not that short, I know.
+
