@@ -867,6 +867,53 @@ def test_add_auto_fills_claude_org_id_without_prompting(tmp_path: Path, monkeypa
 # end def
 
 
+def test_add_claude_usage_app_uses_the_discovered_local_api(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
+
+    async def discover(self):
+        return [DiscoveredAccount(name="ClaudeUsage.app", options={"base_url": "http://127.0.0.1:47291"})]
+    # end def
+
+    monkeypatch.setattr(UsageAppLogin, "discover", discover)
+    monkeypatch.setattr("ai_usage.providers.claude.ClaudeUsageAppProvider.fetch", fake_verified_fetch)
+
+    result = CliRunner().invoke(main, ["provider", "add", "claude", "claude-usage-app-api", "--no-input"])
+
+    assert result.exit_code == 0, result.output
+    account = ConfigStore(paths).list_accounts()[0]
+    assert account.provider == "claude-usage-app-api"
+    assert account.login == "user@example.com"
+    assert account.options["base_url"] == "http://127.0.0.1:47291"
+# end def
+
+
+def test_add_claude_usage_app_email_option_overrides_the_cli_identity(tmp_path: Path, monkeypatch) -> None:
+    paths = configured_paths(tmp_path, monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
+
+    async def no_app(self):
+        return []
+    # end def
+
+    monkeypatch.setattr(UsageAppLogin, "discover", no_app)
+    monkeypatch.setattr("ai_usage.providers.claude.ClaudeUsageAppProvider.fetch", fake_verified_fetch)
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "provider", "add", "claude", "claude-usage-app-api",
+            "--base-url", "http://127.0.0.1:1234", "--email", "Me@Example.com", "--no-input",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    account = ConfigStore(paths).list_accounts()[0]
+    assert account.login == "me@example.com"
+    assert account.options["base_url"] == "http://127.0.0.1:1234"
+# end def
+
+
 def test_config_git_enable_disable_status_round_trip(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
     runner = CliRunner()
