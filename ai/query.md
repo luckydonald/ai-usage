@@ -3250,3 +3250,5 @@ Also all todos from CalDAV (via MCP).
 
 ❯ /plan For some reason it seems the seettings are rendered twice now, on e in the old way, and once with yyour changes in. Is that a caching issue?
 
+❯ sorry, wrong project.
+
