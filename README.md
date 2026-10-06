@@ -151,6 +151,7 @@ Interactive removal asks whether the history should also be deleted and defaults
 | Codex | `cli-status` | Supported | Parses `codex /status`; invokes it twice to refresh stale output. |
 | Claude | `statusline` | Recommended | Uses the lightweight status relay and falls back to `claude /usage`. |
 | Claude | `cli-usage` | Supported | Always parses `claude /usage` in a pseudo-terminal. |
+| Claude | `claude-usage-app-api` | Experimental | Reads the ClaudeUsage.app macOS app's local HTTP API (`http://127.0.0.1:47291`, enable Settings → General → Local API). Override with `--base-url`; the app reports no email, so the login defaults to `claude auth status` or pass `--email`. |
 | Copilot | `statusline` | Recommended | Reuses the Copilot CLI's own local token to read premium-request quota; no separate token needed. |
 | Copilot | `cli-usage` | Supported | Reads the account Plan AIC allowance through a restricted local ACP session. |
 | Copilot | `github-api` | Supported | Reads GitHub AI-credit billing usage with an encrypted token. |

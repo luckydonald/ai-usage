@@ -19,6 +19,7 @@ from ai_usage.provider_discovery import DiscoveryChoice
 from ai_usage.provider_tui import SelectionChoice
 from ai_usage.providers import built_in_registry
 from ai_usage.providers.base import DiscoveredAccount, ProviderError
+from ai_usage.providers.claude.login.local.usage_app import UsageAppLogin
 from ai_usage.settings import Paths
 
 
@@ -95,6 +96,13 @@ def test_bare_subgroups_show_help_instead_of_a_missing_command_error() -> None:
 def test_no_input_add_lists_choices_without_creating_runtime(tmp_path: Path, monkeypatch) -> None:
     paths = configured_paths(tmp_path, monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
+
+    async def no_app(self):
+        return []
+    # end def
+
+    # A real ClaudeUsage.app on this machine's loopback port must not leak into discovery.
+    monkeypatch.setattr(UsageAppLogin, "discover", no_app)
 
     result = CliRunner().invoke(main, ["provider", "add", "--no-input"])
 
