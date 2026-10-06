@@ -3248,3 +3248,5 @@ Which is not exactly the same as the cli auth, but I guess just ask the user to 
 ❯ Plan the @ai/todo.md and @ai/todos.md
 Also all todos from CalDAV (via MCP).
 
+❯ /plan For some reason it seems the seettings are rendered twice now, on e in the old way, and once with yyour changes in. Is that a caching issue?
+
