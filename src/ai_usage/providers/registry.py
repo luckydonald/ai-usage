@@ -5,6 +5,7 @@ from importlib.metadata import entry_points
 from ai_usage.providers.base import Provider
 from ai_usage.providers.claude import (
     ClaudeStatusProvider,
+    ClaudeUsageAppProvider,
     ClaudeUsageProvider,
     ClaudeWebUsageProvider,
 )
@@ -67,6 +68,7 @@ def built_in_registry() -> ProviderRegistry:
         CodexStatusProvider(),
         ClaudeStatusProvider(),
         ClaudeUsageProvider(),
+        ClaudeUsageAppProvider(),
         CopilotBillingProvider(),
         CopilotStatusProvider(),
         CopilotCliUsageProvider(),
