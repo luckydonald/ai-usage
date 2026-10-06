@@ -3245,3 +3245,6 @@ Which is not exactly the same as the cli auth, but I guess just ask the user to 
 
 ❯ Provider key may be `claude-usage-app-api` Yeah, not that short, I know.
 
+❯ Plan the @ai/todo.md and @ai/todos.md
+Also all todos from CalDAV (via MCP).
+
