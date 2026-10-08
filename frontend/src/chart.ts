@@ -539,6 +539,18 @@ export function chartOption(
             { xAxis: window.end, yAxis: window.maximum_percentage, windowIndex: index },
           ]),
       },
+      // Solid edge at each block's end; silent so hover/click still reach the markArea.
+      markLine: {
+        symbol: "none",
+        silent: true,
+        animation: false,
+        label: { show: false },
+        lineStyle: { color: item.color, type: "solid", width: 2 },
+        data: item.windows.map((window) => [
+          { xAxis: window.end, yAxis: 0 },
+          { xAxis: window.end, yAxis: window.maximum_percentage },
+        ]),
+      },
     });
     for (const [index, window] of item.windows.entries()) {
       if (window.current) {
