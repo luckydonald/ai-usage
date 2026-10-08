@@ -121,6 +121,7 @@ const PROJECTED_ICON: IconRef = { set: "solid", name: "chart-line", pack: "fonta
       </div>
       <div v-for="entry in panel.entries" :key="entryKey(entry)" class="info-panel-metric">
         <h3>
+          <span class="color-badge" :style="{ background: entry.item.color }" :title="`Graph color of ${entry.item.metric_name}`" />
           {{ entry.item.metric_name }}
           <Icon v-if="metricIcons[entry.item.metric_key]" v-bind="metricIcons[entry.item.metric_key]!" />
         </h3>
@@ -199,6 +200,16 @@ const PROJECTED_ICON: IconRef = { set: "solid", name: "chart-line", pack: "fonta
   color: var(--text);
   font-size: .78rem;
   font-weight: 600;
+}
+
+// Same color as this metric's line and max-usage block in the graph, so a panel can be matched
+// to its graph series at a glance.
+.color-badge {
+  display: inline-block;
+  flex: none;
+  width: .7rem;
+  height: .7rem;
+  border-radius: 50%;
 }
 
 .account-favicon {
