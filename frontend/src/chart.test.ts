@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chartOption, computeWindowStats, itemTooltipHtml, noteTooltipHtml, percentThroughWindow, seriesDisplayName, seriesPointTooltipHtml, windowByPoint, windowTooltipHtml } from "./chart";
+import { axisTooltipData, chartOption, computeWindowStats, itemTooltipHtml, noteTooltipHtml, percentThroughWindow, seriesDisplayName, seriesPointTooltipHtml, windowByPoint, windowTooltipHtml } from "./chart";
 import type { GraphSeries, GraphWindow, NoteRange } from "./types";
 
 const series: GraphSeries = {
@@ -35,6 +35,15 @@ describe("seriesDisplayName", () => {
 });
 
 describe("chart rendering contract", () => {
+  it("draws older windows first so newer ones layer on top, keeping API window indexes", () => {
+    const older = { ...series.windows[0]!, start: "2026-07-10T09:00:00Z", end: "2026-07-17T09:00:00Z", current: false };
+    const newer = series.windows[0]!;
+    // API order is newest first here, to prove the chart reorders rather than trusting it.
+    const option = chartOption([{ ...series, windows: [newer, older] }], false, "#6b7280");
+    const actual = (option.series as { id: string; markArea?: { data: { windowIndex: number }[][] } }[]).find((entry) => entry.id.endsWith("/actual"))!;
+    expect(actual.markArea!.data.map((pair) => pair[0]!.windowIndex)).toEqual([1, 0]);
+  });
+
   it("renders actual steps, projection, and a now-line (no reset-boundary line)", () => {
     const option = chartOption([series], false, "#6b7280");
     const rendered = option.series;
@@ -422,5 +431,14 @@ describe("itemTooltipHtml", () => {
 
   it("returns an empty string for an unrecognized series id", () => {
     expect(itemTooltipHtml([series], { componentType: "series", seriesId: "unknown/id/actual", value: ["2026-07-17T10:00:00Z", 20] }, {}, now)).toBe("");
+  });
+});
+
+describe("axisTooltipData time labels", () => {
+  it("reports the hovered moment as clock time and relative to now", () => {
+    const atMs = new Date("2026-07-17T11:30:00Z").getTime();
+    const data = axisTooltipData([series], [{ axisValue: atMs }], {}, new Date("2026-07-17T14:30:00Z"));
+    expect(data?.timeLabel).toBe(new Date(atMs).toLocaleString());
+    expect(data?.relativeTimeLabel).toBe("3h 0m ago");
   });
 });

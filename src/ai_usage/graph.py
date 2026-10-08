@@ -245,10 +245,35 @@ def split_on_reset_drops(
 # end def
 
 
+# Providers report the same window's `reset_at` with sub-second jitter (e.g. Claude web:
+# 12:39:59.81 / 12:40:00.49). Reset times closer together than this are one window; otherwise
+# every sample would become its own window and its own overlapping max-usage block.
+RESET_AT_TOLERANCE = timedelta(seconds=60)
+
+
+def canonical_reset_times(samples: list[MetricSampleRecord]) -> dict[datetime, datetime]:
+    """Map every distinct `reset_at` to the latest one of its chain of near-identical neighbours."""
+    distinct = sorted({reset for sample in samples if (reset := aware(sample.reset_at)) is not None})
+    mapping: dict[datetime, datetime] = {}
+    cluster: list[datetime] = []
+    for reset in distinct:
+        if cluster and reset - cluster[-1] > RESET_AT_TOLERANCE:
+            mapping.update({member: cluster[-1] for member in cluster})
+            cluster = []
+        # end if
+        cluster.append(reset)
+    # end for
+    mapping.update({member: cluster[-1] for member in cluster})
+    return mapping
+# end def
+
+
 def build_windows(samples: list[MetricSampleRecord], now: datetime) -> list[GraphWindow]:
+    canonical = canonical_reset_times(samples)
     grouped: dict[tuple[datetime | None, int | None], list[MetricSampleRecord]] = defaultdict(list)
     for sample in samples:
-        grouped[(aware(sample.reset_at), sample.window_seconds)].append(sample)
+        reset = aware(sample.reset_at)
+        grouped[(canonical[reset] if reset is not None else None, sample.window_seconds)].append(sample)
     # end for
     windows: list[GraphWindow] = []
     for (reset_at, window_seconds), window_samples in sorted(

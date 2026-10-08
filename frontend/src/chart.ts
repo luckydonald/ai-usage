@@ -299,6 +299,8 @@ export interface TooltipGroup {
 
 export interface AxisTooltipData {
   timeLabel: string;
+  // Hovered moment relative to the viewer's clock now ("3h ago"); `timeLabel` is its clock time.
+  relativeTimeLabel: string;
   notes: NoteRange[];
   groups: TooltipGroup[];
 }
@@ -392,6 +394,7 @@ export function axisTooltipData(
   if (!groups.length) return null;
   return {
     timeLabel: new Date(atMs).toLocaleString(),
+    relativeTimeLabel: formatRelative(new Date(atMs), now),
     notes: activeNotesAt(notes, atMs),
     groups,
   };
@@ -521,15 +524,20 @@ export function chartOption(
       itemStyle: { color: item.color },
       markArea: {
         silent: false,
-        data: item.windows.map((window, index) => [
-          {
-            xAxis: window.start,
-            yAxis: 0,
-            itemStyle: { color: item.color, opacity: 0.16, borderColor: item.color, borderWidth: 1 },
-            windowIndex: index,
-          },
-          { xAxis: window.end, yAxis: window.maximum_percentage, windowIndex: index },
-        ]),
+        // ECharts paints markArea entries in data order, so oldest-first puts newer windows on
+        // top of older (longer-running) ones. `windowIndex` keeps pointing at the API order.
+        data: item.windows
+          .map((window, index) => ({ window, index }))
+          .sort((a, b) => new Date(a.window.start).getTime() - new Date(b.window.start).getTime() || a.index - b.index)
+          .map(({ window, index }) => [
+            {
+              xAxis: window.start,
+              yAxis: 0,
+              itemStyle: { color: item.color, opacity: 0.16, borderColor: item.color, borderWidth: 1 },
+              windowIndex: index,
+            },
+            { xAxis: window.end, yAxis: window.maximum_percentage, windowIndex: index },
+          ]),
       },
     });
     for (const [index, window] of item.windows.entries()) {
