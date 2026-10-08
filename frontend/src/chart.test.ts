@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chartOption, computeWindowStats, itemTooltipHtml, noteTooltipHtml, percentThroughWindow, seriesDisplayName, seriesPointTooltipHtml, windowByPoint, windowTooltipHtml } from "./chart";
+import { axisTooltipData, chartOption, computeWindowStats, itemTooltipHtml, noteTooltipHtml, percentThroughWindow, seriesDisplayName, seriesPointTooltipHtml, windowByPoint, windowTooltipHtml } from "./chart";
 import type { GraphSeries, GraphWindow, NoteRange } from "./types";
 
 const series: GraphSeries = {
@@ -431,5 +431,14 @@ describe("itemTooltipHtml", () => {
 
   it("returns an empty string for an unrecognized series id", () => {
     expect(itemTooltipHtml([series], { componentType: "series", seriesId: "unknown/id/actual", value: ["2026-07-17T10:00:00Z", 20] }, {}, now)).toBe("");
+  });
+});
+
+describe("axisTooltipData time labels", () => {
+  it("reports the hovered moment as clock time and relative to now", () => {
+    const atMs = new Date("2026-07-17T11:30:00Z").getTime();
+    const data = axisTooltipData([series], [{ axisValue: atMs }], {}, new Date("2026-07-17T14:30:00Z"));
+    expect(data?.timeLabel).toBe(new Date(atMs).toLocaleString());
+    expect(data?.relativeTimeLabel).toBe("3h 0m ago");
   });
 });

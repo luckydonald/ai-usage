@@ -299,6 +299,8 @@ export interface TooltipGroup {
 
 export interface AxisTooltipData {
   timeLabel: string;
+  // Hovered moment relative to the viewer's clock now ("3h ago"); `timeLabel` is its clock time.
+  relativeTimeLabel: string;
   notes: NoteRange[];
   groups: TooltipGroup[];
 }
@@ -392,6 +394,7 @@ export function axisTooltipData(
   if (!groups.length) return null;
   return {
     timeLabel: new Date(atMs).toLocaleString(),
+    relativeTimeLabel: formatRelative(new Date(atMs), now),
     notes: activeNotesAt(notes, atMs),
     groups,
   };
