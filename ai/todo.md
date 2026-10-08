@@ -16,5 +16,5 @@ To complete one: tick the box and call `mcp__sync_todo__complete_todo(calendar_i
   > • it kinda should be enough if older entries are behind newer entries
   > #max_usage
 - [x] #aiUsage horizontal line marking the end of a block clearly — `todo:63a4e32b-a3db-4317-a4f4-b329b5b15fc4`
-- [ ] #aiUsage in the crawler logs, log the crawler's name — `todo:6bea597f-f186-426b-bfc3-ee545c6d3fb1`
+- [x] #aiUsage in the crawler logs, log the crawler's name — `todo:6bea597f-f186-426b-bfc3-ee545c6d3fb1`
   > - Not `[ai_usage.crawl] …` but `[ai_usage.crawl.claude.web_ai]` - or what’s appropriate, don’t know the exact module names.

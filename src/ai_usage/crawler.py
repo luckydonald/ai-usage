@@ -14,7 +14,7 @@ from ai_usage.host_identity import account_allows_host
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.notes import NotesStore
 from ai_usage.orm import CrawlStateRecord
-from ai_usage.progress import ProgressReporter, quiet_reporter
+from ai_usage.progress import ProgressReporter, account_reporter, quiet_reporter
 
 STALE_RECHECK_SECONDS = 10
 
@@ -75,6 +75,7 @@ class Crawler:
     def report_note_changes(
         self, account: AccountConfig, result: ProviderFetchResult, now: datetime
     ) -> None:
+        report = account_reporter(self.report, account.service, account.provider)
         known = self.known_active_notes.get(account.id)
         if known is None:
             known = self.notes_store.load_active_notes(account.service, account.id)
@@ -85,7 +86,7 @@ class Crawler:
         self.known_active_notes[account.id] = updated
         for transition in transitions:
             verb = "appeared" if transition.active else "disappeared"
-            self.report(f"{account.name}: note {verb} - {transition.text}")
+            report(f"{account.name}: note {verb} - {transition.text}")
         # end for
     # end def
 
@@ -149,6 +150,7 @@ class Crawler:
         result: ProviderFetchResult,
         now: datetime,
     ) -> None:
+        report = account_reporter(self.report, account.service, account.provider)
         self.report_note_changes(account, result, now)
         intervals = self.config.intervals_for(account)
         async with self.database.sessions() as session:
@@ -165,7 +167,7 @@ class Crawler:
                 )
                 state.next_run_at = now + timedelta(seconds=backoff)
                 state.last_error = result.error
-                self.report(
+                report(
                     f"{account.name}: backing off crawl interval to {backoff} seconds "
                     f"after failure {state.failure_count}."
                 )
@@ -173,7 +175,7 @@ class Crawler:
                 state.next_run_at = now + timedelta(seconds=STALE_RECHECK_SECONDS)
                 state.failure_count = 0
                 state.last_error = None
-                self.report(
+                report(
                     f"{account.name}: limits reported as stale, rechecking in "
                     f"{STALE_RECHECK_SECONDS} seconds."
                 )
@@ -197,18 +199,18 @@ class Crawler:
                 state.failure_count = 0
                 state.last_error = None
                 if usage_increased and not was_active:
-                    self.report(
+                    report(
                         f"{account.name}: decreasing crawl interval to "
                         f"{intervals['active_seconds']} seconds after usage increased."
                     )
                 elif not usage_increased and not was_active and previous_active_until is not None:
-                    self.report(
+                    report(
                         f"{account.name}: restoring crawl interval to "
                         f"{intervals['normal_seconds']} seconds."
                     )
                     state.active_until = None
                 # end if
-                self.report(f"{account.name}: next crawl in approximately {interval} seconds.")
+                report(f"{account.name}: next crawl in approximately {interval} seconds.")
             # end if
             await session.commit()
         # end with
