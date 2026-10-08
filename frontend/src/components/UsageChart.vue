@@ -160,7 +160,10 @@ onBeforeUnmount(() => {
       <section class="pinned-tooltip" role="dialog" aria-modal="true" aria-label="Usage details">
         <button ref="closeButton" class="pinned-tooltip-close" type="button" aria-label="Close usage details" @click="closePinnedTooltip">×</button>
         <div v-if="pinnedTooltipData" class="pinned-tooltip-content">
-          <p class="tooltip-time"><strong>{{ pinnedTooltipData.timeLabel }}</strong></p>
+          <p class="tooltip-time">
+            <span class="tooltip-time-part" title="Clock time of the hovered point"><Icon set="solid" name="clock" /><strong>{{ pinnedTooltipData.timeLabel }}</strong></span>
+            <span class="tooltip-time-part tooltip-time-relative" title="Hovered point, relative to now"><Icon set="solid" name="clock-rotate-left" />{{ pinnedTooltipData.relativeTimeLabel }}</span>
+          </p>
           <p v-for="note in pinnedTooltipData.notes" :key="`${note.service}-${note.account_id}-${note.start}`" class="tooltip-note" v-html="renderNoteMarkdown(note.text)" />
           <div v-for="group in pinnedTooltipData.groups" :key="group.key" class="tooltip-group">
             <div class="tooltip-group-header">
@@ -248,6 +251,21 @@ onBeforeUnmount(() => {
 
 .tooltip-time {
   margin: 0 0 .5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .75rem;
+}
+
+.tooltip-time-part {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.tooltip-time-relative {
+  color: var(--text-muted);
+  font-size: .85em;
 }
 
 .tooltip-note {
