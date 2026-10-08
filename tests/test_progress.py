@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -10,6 +11,7 @@ from ai_usage.config import ConfigStore
 from ai_usage.crawler import STALE_RECHECK_SECONDS, Crawler
 from ai_usage.database import Database
 from ai_usage.history import HistoryStore
+from ai_usage.progress import account_reporter
 from ai_usage.models import (
     AccountConfig,
     AccountIdentity,
@@ -450,4 +452,14 @@ async def test_fetch_persists_identity_subscription_and_raw_payload(tmp_path, mo
     assert raw_file.exists()
     assert "do-not-leak-into-git" in raw_file.read_text(encoding="utf-8")
     await database.close()
+# end def
+
+
+def test_account_reporter_routes_logger_reporters_to_a_per_crawler_logger(caplog) -> None:
+    base = logging.getLogger("ai_usage.crawl")
+    with caplog.at_level(logging.INFO, logger="ai_usage.crawl"):
+        account_reporter(base.info, "claude", "web_ai")("hello")
+    assert [record.name for record in caplog.records] == ["ai_usage.crawl.claude.web_ai"]
+    messages: list[str] = []
+    assert account_reporter(messages.append, "claude", "web_ai") == messages.append
 # end def
