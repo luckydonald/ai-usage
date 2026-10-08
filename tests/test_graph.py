@@ -147,6 +147,30 @@ def test_graph_marks_exhausted_interval() -> None:
 # end def
 
 
+def test_graph_merges_jittered_reset_times_into_a_single_window() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    reset = now + timedelta(hours=1)
+    records = [
+        sample(f"jitter-{index}", now - timedelta(minutes=50 - index * 10), 10 + index, reset + timedelta(milliseconds=index * 300 - 400))
+        for index in range(5)
+    ]
+    windows = build_series(records, now=now)[0].windows
+    assert len(windows) == 1
+    assert windows[0].maximum_percentage == 14
+# end def
+
+
+def test_graph_keeps_distinct_reset_times_as_separate_windows() -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    first = now - timedelta(hours=1)
+    records = [
+        sample("old", now - timedelta(hours=3), 40, first),
+        sample("new", now - timedelta(minutes=10), 5, first + timedelta(hours=5)),
+    ]
+    assert len(build_series(records, now=now)[0].windows) == 2
+# end def
+
+
 def test_graph_splits_window_on_substantial_mid_window_percentage_drop() -> None:
     now = datetime(2026, 7, 17, 12, tzinfo=UTC)
     reset = now + timedelta(hours=1)
