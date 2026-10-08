@@ -11,7 +11,7 @@ from ai_usage.database import Database
 from ai_usage.history import HistoryStore
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.orm import FetchRunRecord
-from ai_usage.progress import ProgressReporter, percentage, quiet_reporter
+from ai_usage.progress import ProgressReporter, account_reporter, percentage, quiet_reporter
 from ai_usage.providers import ProviderRegistry
 from ai_usage.providers.base import Provider
 
@@ -68,11 +68,12 @@ class Collector:
         account: AccountConfig,
         operation: str = "fetching",
     ) -> ProviderFetchResult:
+        report = account_reporter(self.report, account.service, account.provider)
         lock = self.account_locks.setdefault(account.id, asyncio.Lock())
         async with lock:
             started = datetime.now(UTC)
             started_clock = time.monotonic()
-            self.report(
+            report(
                 f"Started {operation} {account.login or 'unresolved'} "
                 f"({account.service}/{account.provider}, {account.id})."
             )
@@ -103,7 +104,7 @@ class Collector:
                     old_value = previous.get(metric.key)
                     new_value = metric.usage.percentage
                     if old_value != new_value:
-                        self.report(
+                        report(
                             f"{account.login or account.id}'s {metric.name} got a new value to store "
                             f"({percentage(old_value)} -> {percentage(new_value)})."
                         )
@@ -134,14 +135,14 @@ class Collector:
             # end with
             elapsed = time.monotonic() - started_clock
             if success and result.status == FetchStatus.STALE:
-                self.report(f"{account.login or account.id}: {result.error} — reusing last known values.")
+                report(f"{account.login or account.id}: {result.error} — reusing last known values.")
             elif success:
-                self.report(
+                report(
                     f"Done {operation} {account.login or account.id} in {elapsed:.1f}s "
                     f"({len(result.metrics)} metrics)."
                 )
             else:
-                self.report(f"Failed {operation} {account.login or account.id} in {elapsed:.1f}s: {error}")
+                report(f"Failed {operation} {account.login or account.id} in {elapsed:.1f}s: {error}")
             # end if
             return result
         # end with
