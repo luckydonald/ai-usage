@@ -3252,3 +3252,5 @@ Also all todos from CalDAV (via MCP).
 
 ❯ sorry, wrong project.
 
+❯ Plan the @ai/todo.md
+
