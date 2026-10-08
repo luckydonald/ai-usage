@@ -35,6 +35,15 @@ describe("seriesDisplayName", () => {
 });
 
 describe("chart rendering contract", () => {
+  it("draws older windows first so newer ones layer on top, keeping API window indexes", () => {
+    const older = { ...series.windows[0]!, start: "2026-07-10T09:00:00Z", end: "2026-07-17T09:00:00Z", current: false };
+    const newer = series.windows[0]!;
+    // API order is newest first here, to prove the chart reorders rather than trusting it.
+    const option = chartOption([{ ...series, windows: [newer, older] }], false, "#6b7280");
+    const actual = (option.series as { id: string; markArea?: { data: { windowIndex: number }[][] } }[]).find((entry) => entry.id.endsWith("/actual"))!;
+    expect(actual.markArea!.data.map((pair) => pair[0]!.windowIndex)).toEqual([1, 0]);
+  });
+
   it("renders actual steps, projection, and a now-line (no reset-boundary line)", () => {
     const option = chartOption([series], false, "#6b7280");
     const rendered = option.series;
