@@ -3245,3 +3245,34 @@ Which is not exactly the same as the cli auth, but I guess just ask the user to 
 
 ❯ Provider key may be `claude-usage-app-api` Yeah, not that short, I know.
 
+❯ Plan the @ai/todo.md and @ai/todos.md
+Also all todos from CalDAV (via MCP).
+
+❯ /plan For some reason it seems the seettings are rendered twice now, on e in the old way, and once with yyour changes in. Is that a caching issue?
+
+❯ sorry, wrong project.
+
+❯ Plan the @ai/todo.md
+
+❯ Question answered.
+> <details><summary>
+>
+>> 1. What should "horizontal line marking the end of a block" look like on the chart?
+>
+> (click to expand)
+>
+> </summary>
+>
+>> **Block end** (1/1) <kbd>Single Select</kbd><br>
+>> What should "horizontal line marking the end of a block" look like on the chart?
+> - [x] 1\. Vertical line at window end (Recommended)
+>   - _A solid, window-colored line at window.end spanning 0..max%. Time runs horizontally, so the end of a block is a vertical edge. Cleanly visible even when the block fill is faint._
+> - [ ] 2\. Horizontal cap at max %
+>   - _A horizontal line along the block's top (maximum_percentage) from start to end, thicker than the current 1px border._
+> - [ ] 3\. Both
+>   - _Thick top line plus a solid end line, so the block outline is clear on both axes._
+> - [ ] 4\. _Type something._
+>
+> </details>
+>
+
