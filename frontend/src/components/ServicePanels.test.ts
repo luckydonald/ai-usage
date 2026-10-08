@@ -48,6 +48,13 @@ describe("ServicePanels", () => {
     expect(wrapper.html()).toContain(`title="${start.toLocaleString()}"`);
   });
 
+  it("marks each metric with the graph color of its series", () => {
+    const wrapper = mount(ServicePanels, { props: { series, accountLabels: {}, parserLabels: {}, accountIdentities: {}, serviceIcons: {}, providerIcons: {}, metricIcons: {} } });
+    const badge = wrapper.find(".info-panel-metric .color-badge");
+    expect(badge.exists()).toBe(true);
+    expect(badge.attributes("style")).toContain("background");
+  });
+
   it("shows a placeholder when a metric has no window data", () => {
     const noWindowSeries: GraphSeries[] = [{ ...series[0]!, windows: [] }];
     const wrapper = mount(ServicePanels, { props: { series: noWindowSeries, accountLabels: {}, parserLabels: {}, accountIdentities: {}, serviceIcons: {}, providerIcons: {}, metricIcons: {} } });
