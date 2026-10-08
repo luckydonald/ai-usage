@@ -3276,3 +3276,7 @@ Also all todos from CalDAV (via MCP).
 > </details>
 >
 
+❯ it should be split into one command per feature
+
+❯ 3cd8f61 too
+
