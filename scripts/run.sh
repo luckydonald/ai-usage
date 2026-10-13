@@ -5,15 +5,20 @@ dot_desktop_install_dir="${HOME}/.local/share/applications"
 dot_desktop_install_name="ai-usage.desktop"
 dot_desktop_autostart_dir="${HOME}/.config/autostart"
 
-project_dir="${HOME}/git/luckydonald/ai-usage"
+# The checkout this script lives in (scripts/..), so it works wherever the repo is cloned.
+project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 final_executable="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 
 
 function do_run {
     echo "launching..."
-    cd "${project_dir}"
+    cd "${project_dir}" || return 1
     echo "building frontend..."
-    (cd frontend && corepack yarn@4.9.2 build)
+    (cd frontend && corepack yarn@4.9.2 build) || return 1
+    # `ai-usage` is the uv-installed *copy* of this checkout (frontend/dist is bundled into the
+    # wheel), so without a reinstall it keeps running stale backend and frontend code.
+    echo "reinstalling ai-usage uv tool..."
+    uv tool install --reinstall . || return 1
     echo "starting ai-usage..."
     ai-usage up
 }
