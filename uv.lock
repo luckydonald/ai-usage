@@ -69,7 +69,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "respx", marker = "extra == 'test'", specifier = ">=0.22" },
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.35" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.41" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.41,<2.1" },
     { name = "textual", specifier = ">=5.3" },
     { name = "typer", specifier = ">=0.15" },
     { name = "uvicorn", specifier = ">=0.35" },
