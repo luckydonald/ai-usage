@@ -1,0 +1,163 @@
+    super()._handle_exception_no_connection(dbapi, error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/connectors/asyncio.py", line 409, in _handle_exception_no_connection
+    raise error.with_traceback(exc_info[2])
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/connectors/asyncio.py", line 185, in _aenter_cursor
+    return await_(cursor.__aenter__())  # type: ignore[no-any-return]
+                  ^^^^^^^^^^^^^^^^^
+AttributeError: 'coroutine' object has no attribute '__aenter__'. Did you mean: '__delattr__'?
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/user/.local/bin/ai-usage", line 8, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/typer/_click/core.py", line 802, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/typer/core.py", line 1197, in main
+    return _main(
+        self,
+    ...<6 lines>...
+        **extra,
+    )
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/typer/core.py", line 187, in _main
+    rv = self.invoke(ctx)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/typer/core.py", line 1119, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/typer/_click/core.py", line 741, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/typer/_click/core.py", line 483, in invoke
+    return callback(*args, **kwargs)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/typer/main.py", line 1524, in wrapper
+    return callback(**use_params)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/ai_usage/cli.py", line 1685, in run_all
+    asyncio.run(execute())
+    ~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/python/cpython-3.14.3-macos-aarch64-none/lib/python3.14/asyncio/runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/Users/user/.local/share/uv/python/cpython-3.14.3-macos-aarch64-none/lib/python3.14/asyncio/runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/user/.local/share/uv/python/cpython-3.14.3-macos-aarch64-none/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/ai_usage/cli.py", line 1670, in execute
+    await runtime.initialize()
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/ai_usage/cli.py", line 119, in initialize
+    await self.history.index_all()
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/ai_usage/history.py", line 100, in index_all
+    count += await self.index_file(path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/ai_usage/history.py", line 109, in index_file
+    indexed = await session.get(IndexedFileRecord, relative)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/ext/asyncio/session.py", line 807, in get
+    return await greenlet_spawn(
+           ^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+
+…
+
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 3845, in get
+    return self._get_impl(
+           ~~~~~~~~~~~~~~^
+        entity,
+        ^^^^^^^
+    ...<7 lines>...
+        bind_arguments=bind_arguments,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 4032, in _get_impl
+    return db_load_fn(
+        self,
+    ...<5 lines>...
+        bind_arguments=bind_arguments,
+    )
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/loading.py", line 702, in _load_on_pk_identity
+    session.execute(
+    ~~~~~~~~~~~~~~~^
+        q,
+        ^^
+    ...<2 lines>...
+        bind_arguments=bind_arguments,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2473, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2350, in _execute_internal
+    conn = self._connection_for_bind(bind)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2173, in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<sqlalchemy generated _go() wrapper for sqlalchemy.orm.session.SessionTransaction._connection_for_bind>", line 2, in _connection_for_bind
+    return target(fn, self, bind, execution_options)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 1203, in _connection_for_bind
+    conn = bind.connect()
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3263, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 149, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3287, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 445, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 1303, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 709, in checkout
+    rec = pool._do_get()
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 301, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 386, in _create_connection
+    return _ConnectionRecord(self)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 671, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 929, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 921, in __connect
+    )._exec_w_sync_on_first_run(self.dbapi_connection, self)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/event/attr.py", line 500, in _exec_w_sync_on_first_run
+    self(*args, **kw)
+    ~~~~^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/event/attr.py", line 514, in __call__
+    fn(*args, **kw)
+    ~~^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 2119, in go
+    return once_fn(*arg, **kw)
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/engine/create.py", line 759, in first_connect
+    dialect.do_rollback(c.connection)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 951, in do_rollback
+    dbapi_connection.rollback()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/.local/share/uv/tools/ai-usage/lib/python3.14/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 204, in rollback
+    if self._connection._connection:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'InlineConnection' object has no attribute '_connection'. Did you mean: 'connection'?
+<sys>:0: RuntimeWarning: coroutine 'InlineConnection.cursor' was never awaited

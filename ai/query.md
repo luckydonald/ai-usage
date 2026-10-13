@@ -3282,3 +3282,5 @@ Also all todos from CalDAV (via MCP).
 
 ❯ Fix @ai/todo.md, then check and mark done with todo MCP, then /commit-with-lplp-style
 
+❯ Fix @ai/errors/14.txt
+
