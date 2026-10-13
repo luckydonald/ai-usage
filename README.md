@@ -239,7 +239,7 @@ The installer asks for crawler, webserver, or both; use `--mode` for automation.
 
 ### Desktop shortcut (source checkouts)
 
-`scripts/run.sh` wraps a source checkout's build-and-run cycle (`(cd frontend && yarn build) ; ai-usage up`) into one command, and can install itself as a `.desktop` launcher:
+`scripts/run.sh` wraps a source checkout's build-and-run cycle (`(cd frontend && yarn build) ; uv tool install --reinstall . ; ai-usage up`, so the installed tool is rebuilt from the checkout) into one command, and can install itself as a `.desktop` launcher:
 
 ```shell
 ./scripts/run.sh
