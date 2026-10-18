@@ -497,6 +497,7 @@ export interface ChartOptions {
   accountLabels?: Record<string, string>;
   notes?: NoteRange[];
   showDataPoints?: boolean;
+  showBlockEnds?: boolean;
 }
 
 export function chartOption(
@@ -509,6 +510,7 @@ export function chartOption(
   const accountLabels = options.accountLabels ?? {};
   const notes = options.notes ?? [];
   const showDataPoints = options.showDataPoints ?? false;
+  const showBlockEnds = options.showBlockEnds ?? true;
   const rendered: SeriesOption[] = [];
   for (const item of series) {
     const name = seriesDisplayName(item, accountLabels);
@@ -539,18 +541,20 @@ export function chartOption(
             { xAxis: window.end, yAxis: window.maximum_percentage, windowIndex: index },
           ]),
       },
-      // Solid edge at each block's end; silent so hover/click still reach the markArea.
-      markLine: {
-        symbol: "none",
-        silent: true,
-        animation: false,
-        label: { show: false },
-        lineStyle: { color: item.color, type: "solid", width: 2 },
-        data: item.windows.map((window) => [
-          { xAxis: window.end, yAxis: 0 },
-          { xAxis: window.end, yAxis: window.maximum_percentage },
-        ]),
-      },
+      // Solid edge at each block's end, full chart height; silent so hover/click still reach the markArea.
+      markLine: showBlockEnds
+        ? {
+            symbol: "none",
+            silent: true,
+            animation: false,
+            label: { show: false },
+            lineStyle: { color: item.color, type: "solid", width: 2 },
+            data: item.windows.map((window) => [
+              { xAxis: window.end, yAxis: 0 },
+              { xAxis: window.end, yAxis: 100 },
+            ]),
+          }
+        : undefined,
     });
     for (const [index, window] of item.windows.entries()) {
       if (window.current) {

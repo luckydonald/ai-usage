@@ -44,12 +44,18 @@ describe("chart rendering contract", () => {
     expect(actual.markArea!.data.map((pair) => pair[0]!.windowIndex)).toEqual([1, 0]);
   });
 
-  it("draws a solid, silent end line for every window", () => {
+  it("draws a solid, silent end line up to 100% for every window", () => {
     const option = chartOption([series], false, "#6b7280");
     const actual = (option.series as { id: string; markLine?: { silent: boolean; data: { xAxis: string; yAxis: number }[][] } }[]).find((entry) => entry.id.endsWith("/actual"))!;
     const window = series.windows[0]!;
     expect(actual.markLine!.silent).toBe(true);
-    expect(actual.markLine!.data).toEqual([[{ xAxis: window.end, yAxis: 0 }, { xAxis: window.end, yAxis: window.maximum_percentage }]]);
+    expect(actual.markLine!.data).toEqual([[{ xAxis: window.end, yAxis: 0 }, { xAxis: window.end, yAxis: 100 }]]);
+  });
+
+  it("draws no end lines when showBlockEnds is off", () => {
+    const option = chartOption([series], false, "#6b7280", { showBlockEnds: false });
+    const actual = (option.series as { id: string; markLine?: unknown }[]).find((entry) => entry.id.endsWith("/actual"))!;
+    expect(actual.markLine).toBeUndefined();
   });
 
   it("renders actual steps, projection, and a now-line (no reset-boundary line)", () => {
