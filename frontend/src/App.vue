@@ -51,6 +51,7 @@ const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localStorage.getItem("ai-usage-theme") && systemDark.matches));
 const includeWindowEnds = ref(localStorage.getItem("ai-usage-pad-window-ends") === "true");
 const showDataPoints = ref(localStorage.getItem("ai-usage-show-data-points") === "true");
+const showBlockEnds = ref(localStorage.getItem("ai-usage-show-block-ends") !== "false");
 const aggregation = ref<"raw" | "legacy">(localStorage.getItem("ai-usage-chart-aggregation") === "legacy" ? "legacy" : "raw");
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 let events: EventSource | undefined;
@@ -290,6 +291,11 @@ function toggleIncludeWindowEnds(): void {
   void load();
 }
 
+function toggleShowBlockEnds(): void {
+  showBlockEnds.value = !showBlockEnds.value;
+  localStorage.setItem("ai-usage-show-block-ends", showBlockEnds.value ? "true" : "false");
+}
+
 function toggleShowDataPoints(): void {
   showDataPoints.value = !showDataPoints.value;
   localStorage.setItem("ai-usage-show-data-points", showDataPoints.value ? "true" : "false");
@@ -362,6 +368,17 @@ onBeforeUnmount(() => events?.close());
           Show data points
         </label>
       </div>
+      <div class="field field-checkbox">
+        <label for="show-block-ends">
+          <input
+            id="show-block-ends"
+            type="checkbox"
+            :checked="showBlockEnds"
+            @change="toggleShowBlockEnds"
+          />
+          Show block end lines
+        </label>
+      </div>
       <template v-if="preset === 'custom'">
         <div class="field">
           <label for="range-from">From</label>
@@ -411,6 +428,7 @@ onBeforeUnmount(() => events?.close());
         :metric-icons="catalog.metric_icons"
         :notes="notes"
         :show-data-points="showDataPoints"
+        :show-block-ends="showBlockEnds"
         @toggle-series="toggleSeries"
       />
       <ServicePanels

@@ -38,6 +38,7 @@ const props = defineProps<{
   accountLabels: Record<string, string>;
   notes: NoteRange[];
   showDataPoints: boolean;
+  showBlockEnds: boolean;
   serviceIcons?: Record<string, IconRef>;
   metricIcons?: Record<string, IconRef>;
 }>();
@@ -101,6 +102,7 @@ function render(recreate: boolean): void {
       accountLabels: props.accountLabels,
       notes: props.notes,
       showDataPoints: props.showDataPoints,
+      showBlockEnds: props.showBlockEnds,
     }),
     recreate || isNew,
   );
@@ -139,6 +141,7 @@ watch(
     props.accountLabels,
     props.notes,
     props.showDataPoints,
+    props.showBlockEnds,
     props.serviceIcons,
     props.metricIcons,
   ],
