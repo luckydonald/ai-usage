@@ -55,6 +55,7 @@ function mountChart() {
       accountLabels: {},
       notes: [],
       showDataPoints: false,
+      showBlockEnds: true,
     },
   });
 }
