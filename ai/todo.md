@@ -17,5 +17,5 @@ To complete one: tick the box and call `mcp__sync_todo__complete_todo(calendar_i
 - [x] longer max-usage blocks should be layered behind smaller ones • it kinda should be enough if older entries are behind newer entries — `todo:e3074f3c-4be6-4074-9ca9-8c033d65e1eb` _(done)_
 - [x] each increasing datapoint of a graph still draws it's own max-square on top of last point's max square — `todo:382d222f-3a08-4431-b907-b71d477702b7` _(done)_
   > - This is a followup to `todo:e3074f3c-4be6-4074-9ca9-8c033d65e1eb`.
-- [ ] the horizontal end-of-box line shall reach up to 100% — `todo:61f01373-cdc9-4cc6-81fa-5cc12d672e94`
+- [x] the horizontal end-of-box line shall reach up to 100% — `todo:61f01373-cdc9-4cc6-81fa-5cc12d672e94` _(done)_
   > Also it shall have a display toggle like _show data points_ does.
