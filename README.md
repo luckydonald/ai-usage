@@ -13,6 +13,7 @@ Everything runs on your machine. Account configuration and history live in `~/.a
 - Stepped usage lines, reset-window overlays, projections, and exhausted periods.
 - JSON API and live Server-Sent Events updates.
 - User-level startup installation on Linux, macOS, and Windows.
+- Supports **syncing multiple crawlers**, e.g. if you want to keep your work account logins on your work computer.
 
 ## Screenshots
 
