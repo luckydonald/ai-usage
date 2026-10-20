@@ -160,7 +160,7 @@ export function windowTooltipHtml(
   includeHeader = true,
 ): string {
   const lines = includeHeader
-    ? [`<strong>${colorMarkerHtml(item.color)}${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`]
+    ? [`<strong>${colorMarkerHtml(item.color)}${accountLabelFor(item, accountLabels)} · ${item.metric_name}</strong>`]
     : [];
   lines.push(...windowDetailLines(item, window, now));
   return lines.join("<br/>");
@@ -345,13 +345,7 @@ function buildAxisTooltipGroups(
   }
   return Array.from(groups.entries()).map(([key, groupRows]) => {
     const firstItem = groupRows[0]!.item;
-    const accountParts = accountLabelFor(firstItem, accountLabels).split(" · ");
-    // The account's configuration label (e.g. "app-server") sometimes already equals the raw
-    // provider key once the service-name prefix is stripped off it — skip the provider badge
-    // rather than showing the same text twice.
-    const badges = accountParts.some((part) => part.toLowerCase() === firstItem.provider.toLowerCase())
-      ? accountParts
-      : [...accountParts, firstItem.provider];
+    const badges = accountLabelFor(firstItem, accountLabels).split(" · ");
     return {
       key,
       color: firstItem.color,
@@ -425,7 +419,7 @@ export function seriesPointTooltipHtml(
     : "";
   const timing = window ? ` ${resetTimingHtml(resetTiming(window, atMs, now))}` : "";
   const lines = [
-    `<strong>${colorMarkerHtml(item.color)}${accountLabelFor(item, accountLabels)} · ${item.provider} · ${item.metric_name}</strong>`,
+    `<strong>${colorMarkerHtml(item.color)}${accountLabelFor(item, accountLabels)} · ${item.metric_name}</strong>`,
     `Usage: ${valueLabel}${nativeUsage}${timing}`,
   ];
   if (window) lines.push(...windowDetailLines(item, window, now));
@@ -495,6 +489,7 @@ export interface ChartOptions {
   end?: Date;
   animate?: boolean;
   accountLabels?: Record<string, string>;
+  overlayLabels?: Record<string, string>;
   notes?: NoteRange[];
   showDataPoints?: boolean;
   showBlockEnds?: boolean;
@@ -508,6 +503,7 @@ export function chartOption(
 ): EChartsOption {
   const now = options.now ?? new Date();
   const accountLabels = options.accountLabels ?? {};
+  const overlayLabels = options.overlayLabels ?? accountLabels;
   const notes = options.notes ?? [];
   const showDataPoints = options.showDataPoints ?? false;
   const showBlockEnds = options.showBlockEnds ?? true;
@@ -640,7 +636,7 @@ export function chartOption(
       backgroundColor: dark ? "#1f2937" : "#ffffff",
       borderColor: dark ? "#374151" : "#e5e7eb",
       textStyle: { color: dark ? "#e5e7eb" : "#1f2937" },
-      formatter: (raw: unknown) => itemTooltipHtml(series, raw as ItemTooltipParams, accountLabels, now, notes),
+      formatter: (raw: unknown) => itemTooltipHtml(series, raw as ItemTooltipParams, overlayLabels, now, notes),
     },
     legend: {
       type: "scroll",
