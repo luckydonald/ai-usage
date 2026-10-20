@@ -52,6 +52,7 @@ const dark = ref(localStorage.getItem("ai-usage-theme") === "dark" || (!localSto
 const includeWindowEnds = ref(localStorage.getItem("ai-usage-pad-window-ends") === "true");
 const showDataPoints = ref(localStorage.getItem("ai-usage-show-data-points") === "true");
 const showBlockEnds = ref(localStorage.getItem("ai-usage-show-block-ends") !== "false");
+const streamerMode = ref(localStorage.getItem("ai-usage-streamer-mode") === "true");
 const aggregation = ref<"raw" | "legacy">(localStorage.getItem("ai-usage-chart-aggregation") === "legacy" ? "legacy" : "raw");
 const exposed = !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 let events: EventSource | undefined;
@@ -93,13 +94,13 @@ const sankeyTree = computed<SankeyService[]>(() => {
     service,
     accounts: [...byAccount.entries()].map(([accountId, byOrganization]) => ({
       id: accountId,
-      label: accountId.startsWith("unresolved:") ? "Unresolved configuration" : accountId,
+      label: streamerMode.value ? maskedAccountNames.value.get(accountId) ?? "Account" : accountId.startsWith("unresolved:") ? "Unresolved configuration" : accountId,
       organizations: [...byOrganization.entries()].map(([organizationKey, parsers]) => {
         const first = parsers.values().next().value as SankeyParser;
         const configured = catalog.value.accounts.find((account) => account.id === first.id)!;
         return {
           id: configured.account.organization?.id ?? null,
-          name: configured.account.organization?.name ?? null,
+          name: configured.account.organization?.name == null ? null : streamerMode.value ? maskedOrganizationNames.value.get(configured.account.organization.id) ?? "Organization" : configured.account.organization.name,
           parsers: [...parsers.values()],
         };
       }),
@@ -115,7 +116,22 @@ const metricOptions = computed(() => [...new Set(catalog.value.metrics.map((metr
 // than just silently showing no data.
 const hasEmptyFilterDimension = computed(() => !filters.accounts.length || !filters.metrics.length);
 
+// Streamer mode replaces logins/organizations with numbered placeholders. Numbering is per distinct
+// login/organization (not per config), so the chart, panels and Sankey agree and labels stay unique.
+function placeholderNames(keys: string[], prefix: string): Map<string, string> {
+  return new Map([...new Set(keys)].map((key, index) => [key, `${prefix} ${index + 1}`]));
+}
+
+const maskedAccountNames = computed(() =>
+  placeholderNames(catalog.value.accounts.map((account) => account.account.login ?? `unresolved:${account.id}`), "Account"),
+);
+
+const maskedOrganizationNames = computed(() =>
+  placeholderNames(catalog.value.accounts.flatMap((account) => account.account.organization?.id ?? []), "Organization"),
+);
+
 function accountLabel(account: Catalog["accounts"][number]): string {
+  if (streamerMode.value) return maskedAccountNames.value.get(account.account.login ?? `unresolved:${account.id}`) ?? "Account";
   return account.account.login ?? `Unresolved configuration (${account.id.slice(0, 8)})`;
 }
 
@@ -138,7 +154,8 @@ const accountIdentities = computed<Record<string, AccountIdentity | null>>(
 const chartLabels = computed<Record<string, string>>(() =>
   Object.fromEntries(
     catalog.value.accounts.map((account) => {
-      const organization = account.account.organization?.name;
+      const organizationId = account.account.organization?.id;
+      const organization = streamerMode.value && organizationId ? maskedOrganizationNames.value.get(organizationId) : account.account.organization?.name;
       const parserLabel = stripServicePrefix(account.service, account.parser_label);
       return [account.id, [accountLabel(account), organization, parserLabel].filter(Boolean).join(" · ")];
     }),
@@ -296,6 +313,11 @@ function toggleShowBlockEnds(): void {
   localStorage.setItem("ai-usage-show-block-ends", showBlockEnds.value ? "true" : "false");
 }
 
+function toggleStreamerMode(): void {
+  streamerMode.value = !streamerMode.value;
+  localStorage.setItem("ai-usage-streamer-mode", streamerMode.value ? "true" : "false");
+}
+
 function toggleShowDataPoints(): void {
   showDataPoints.value = !showDataPoints.value;
   localStorage.setItem("ai-usage-show-data-points", showDataPoints.value ? "true" : "false");
@@ -379,6 +401,17 @@ onBeforeUnmount(() => events?.close());
           Show block end lines
         </label>
       </div>
+      <div class="field field-checkbox">
+        <label for="streamer-mode">
+          <input
+            id="streamer-mode"
+            type="checkbox"
+            :checked="streamerMode"
+            @change="toggleStreamerMode"
+          />
+          Streamer mode
+        </label>
+      </div>
       <template v-if="preset === 'custom'">
         <div class="field">
           <label for="range-from">From</label>
@@ -437,6 +470,7 @@ onBeforeUnmount(() => events?.close());
         :account-labels="accountLabels"
         :parser-labels="parserLabels"
         :account-identities="accountIdentities"
+        :streamer-mode="streamerMode"
         :service-icons="catalog.service_icons"
         :provider-icons="catalog.provider_icons"
         :metric-icons="catalog.metric_icons"
