@@ -3290,3 +3290,7 @@ Also all todos from CalDAV (via MCP).
 
 ❯ Enable /commit-with-lplp-style, too
 
+❯ In a new commit fix those failures
+
+❯ Using /commit-with-lplp-style fold all unpushed `ai:` commits into their task execution. Plan commits not containing code shall be folded as well.  `[TODOs]` commits shall be folded into the previous task.
+

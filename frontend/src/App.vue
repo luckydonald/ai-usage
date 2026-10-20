@@ -77,7 +77,7 @@ const sankeyTree = computed<SankeyService[]>(() => {
       id: configured.id,
       provider: configured.provider,
       label: configured.parser_label,
-      icon: catalog.value.provider_icons[configured.provider],
+      icon: catalog.value.provider_icons[`${configured.service}/${configured.provider}`],
       metrics: [],
     };
     if (!parser.metrics.some((entry) => entry.key === metric.metric_key)) {

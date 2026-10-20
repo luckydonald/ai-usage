@@ -132,7 +132,7 @@ def create_app(paths: Paths, reporter: ProgressReporter = LOGGER.info) -> FastAP
             metrics = [dict(row._mapping) for row in rows]
         # end with
         provider_icons = {
-            provider.key: provider.icon._asdict()
+            f"{provider.service}/{provider.key}": provider.icon._asdict()
             for provider in state.providers.providers.values()
             if provider.icon is not None
         }
