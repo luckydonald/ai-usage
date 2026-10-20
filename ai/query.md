@@ -3305,3 +3305,5 @@ Also all todos from CalDAV (via MCP).
 > - [Raw log (`405231` chars, `396 KB`)](/private/tmp/claude-501/-Users-user-Documents-programming-Python-ai-usage/fce97105-985b-4e1d-af2b-4fa6441d6c8e/tasks/a3045cded641e6bf2.output)
 > - `11` tools, `52658` tokens, `0.938233 s`
 
+❯ [/code-style](./skills/code-style/SKILL.md) md
+
