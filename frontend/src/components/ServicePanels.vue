@@ -13,6 +13,7 @@ const props = defineProps<{
   accountLabels: Record<string, string>;
   parserLabels: Record<string, string>;
   accountIdentities: Record<string, AccountIdentity | null>;
+  streamerMode?: boolean;
   serviceIcons: Record<string, IconRef>;
   providerIcons: Record<string, IconRef>;
   metricIcons: Record<string, IconRef>;
@@ -57,7 +58,8 @@ const panels = computed<ServicePanel[]>(() => {
   return [...byAccount.values()].map((items) => {
     const [first] = items;
     const accountId = first!.account_id;
-    const domain = domainFor(accountId, props.accountIdentities[accountId]);
+    // The favicon URL embeds the email domain, so it's skipped entirely while streaming.
+    const domain = props.streamerMode ? undefined : domainFor(accountId, props.accountIdentities[accountId]);
     return {
       service: first!.service,
       provider: first!.provider,
@@ -107,7 +109,7 @@ const PROJECTED_ICON: IconRef = { set: "solid", name: "chart-line", pack: "fonta
           <Icon v-if="providerIcons[`${panel.service}/${panel.provider}`]" v-bind="providerIcons[`${panel.service}/${panel.provider}`]!" />
           {{ panel.parserLabel }}
         </span>
-        <span class="chip-badge" :title="panel.accountId">
+        <span class="chip-badge" :title="streamerMode ? undefined : panel.accountId">
           <img
             v-if="panel.favicon && !brokenFavicons.has(panel.accountId)"
             :src="panel.favicon"

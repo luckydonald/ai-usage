@@ -48,6 +48,16 @@ describe("ServicePanels", () => {
     expect(wrapper.html()).toContain(`title="${start.toLocaleString()}"`);
   });
 
+  it("skips the email-domain favicon and account title in streamer mode", () => {
+    const props = { series, accountLabels: { account: "Account 1" }, parserLabels: { account: "Web" }, accountIdentities: { account: { name: null, email: "person@example.com" } }, serviceIcons: {}, providerIcons: {}, metricIcons: {} };
+    expect(mount(ServicePanels, { props }).find("img.account-favicon").exists()).toBe(true);
+
+    const masked = mount(ServicePanels, { props: { ...props, streamerMode: true } });
+    expect(masked.find("img.account-favicon").exists()).toBe(false);
+    expect(masked.html()).not.toContain("example.com");
+    expect(masked.text()).toContain("Account 1");
+  });
+
   it("marks each metric with the graph color of its series", () => {
     const wrapper = mount(ServicePanels, { props: { series, accountLabels: {}, parserLabels: {}, accountIdentities: {}, serviceIcons: {}, providerIcons: {}, metricIcons: {} } });
     const badge = wrapper.find(".info-panel-metric .color-badge");
