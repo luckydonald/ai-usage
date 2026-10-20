@@ -13,7 +13,17 @@ Everything runs on your machine. Account configuration and history live in `~/.a
 - Stepped usage lines, reset-window overlays, projections, and exhausted periods.
 - JSON API and live Server-Sent Events updates.
 - User-level startup installation on Linux, macOS, and Windows.
-- Optional direct Sentry or Bugsink reporting for backend and frontend errors.
+
+## Screenshots
+
+> ![AI Usage • 7 days • 1 account • bright mode.png](docs/img/AI%20Usage%20%E2%80%A2%207%20days%20%E2%80%A2%201%20account%20%E2%80%A2%20bright%20mode.png)
+> _Detailed history of your usage, with block markers and usage projections_ 
+ 
+> ![AI Usage • All time • 4 accounts • dark mode.png](docs/img/AI%20Usage%20%E2%80%A2%20All%20time%20%E2%80%A2%204%20accounts%20%E2%80%A2%20dark%20mode.png)
+> _Darkmode with multiple accounts and unlimited history_
+
+> ![AI Usage • Graph Details.png](docs/img/AI%20Usage%20%E2%80%A2%20Graph%20Details.png)
+> _Detailed information about an exact datapoint_
 
 ## Requirements
 
