@@ -319,7 +319,7 @@ describe("tooltip HTML", () => {
     if (!window) throw new Error("fixture must define a window");
     const html = windowTooltipHtml(series, window, new Date("2026-07-17T12:00:00Z"), { account: "person@example.com" });
     expect(html).toContain("person@example.com");
-    expect(html).toContain("app-server");
+    expect(html).not.toContain("app-server");
     expect(html).toContain("40.0%");
   });
 
@@ -378,7 +378,7 @@ describe("seriesPointTooltipHtml", () => {
 
   it("includes the header, value, native usage, reset timing, and the merged window detail", () => {
     const html = seriesPointTooltipHtml(series, atMs("2026-07-17T10:00:00Z"), now, { account: "person@example.com" });
-    expect(html).toContain("person@example.com · app-server · Five hours");
+    expect(html).toContain("person@example.com · Five hours");
     expect(html).toContain("Usage: 20.0%");
     expect(html).toContain("1,000 / 5,000 AIC");
     expect(html).toContain("Time remaining at the hovered point; reset:");
@@ -427,7 +427,7 @@ describe("itemTooltipHtml", () => {
       {},
       now,
     );
-    expect(html).toContain("app-server");
+    expect(html).not.toContain("app-server");
     expect(html).toContain("40.0%");
   });
 

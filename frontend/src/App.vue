@@ -151,6 +151,17 @@ const accountIdentities = computed<Record<string, AccountIdentity | null>>(
   () => Object.fromEntries(catalog.value.accounts.map((account) => [account.id, account.identity])),
 );
 
+// Overlay (tooltip) labels omit the parser label: it only disambiguates legend entries.
+const overlayLabels = computed<Record<string, string>>(() =>
+  Object.fromEntries(
+    catalog.value.accounts.map((account) => {
+      const organizationId = account.account.organization?.id;
+      const organization = streamerMode.value && organizationId ? maskedOrganizationNames.value.get(organizationId) : account.account.organization?.name;
+      return [account.id, [accountLabel(account), organization].filter(Boolean).join(" · ")];
+    }),
+  ),
+);
+
 const chartLabels = computed<Record<string, string>>(() =>
   Object.fromEntries(
     catalog.value.accounts.map((account) => {
@@ -457,6 +468,7 @@ onBeforeUnmount(() => events?.close());
         :range-start="rangeStart"
         :range-end="rangeEnd"
         :account-labels="chartLabels"
+        :overlay-labels="overlayLabels"
         :service-icons="catalog.service_icons"
         :metric-icons="catalog.metric_icons"
         :notes="notes"

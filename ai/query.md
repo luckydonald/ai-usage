@@ -3317,3 +3317,5 @@ Also all todos from CalDAV (via MCP).
 
 ❯ Plan accepted, auto mode.
 
+❯ Remove the Account type (private web api) etc. from the overlay(s).
+

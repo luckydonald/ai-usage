@@ -36,6 +36,7 @@ const props = defineProps<{
   rangeStart: Date;
   rangeEnd: Date;
   accountLabels: Record<string, string>;
+  overlayLabels?: Record<string, string>;
   notes: NoteRange[];
   showDataPoints: boolean;
   showBlockEnds: boolean;
@@ -65,7 +66,7 @@ async function pinTooltip(offsetX: number, offsetY: number): Promise<void> {
   const atMs = Array.isArray(coordinate) ? coordinate[0] : undefined;
   if (typeof atMs !== "number") return;
 
-  const data = axisTooltipData(props.series, [{ axisValue: atMs }], props.accountLabels, new Date(), props.notes, props.serviceIcons, props.metricIcons);
+  const data = axisTooltipData(props.series, [{ axisValue: atMs }], props.overlayLabels ?? props.accountLabels, new Date(), props.notes, props.serviceIcons, props.metricIcons);
   if (!data) return;
   chart.dispatchAction({ type: "hideTip" });
   pinnedTooltipData.value = data;
@@ -100,6 +101,7 @@ function render(recreate: boolean): void {
       end: props.rangeEnd,
       animate: recreate || isNew,
       accountLabels: props.accountLabels,
+      overlayLabels: props.overlayLabels,
       notes: props.notes,
       showDataPoints: props.showDataPoints,
       showBlockEnds: props.showBlockEnds,
