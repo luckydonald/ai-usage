@@ -32,6 +32,11 @@ Organization names become `Organization N` or are dropped from the label.
 5. Tests: extend `ServicePanels.test.ts` (no email favicon, masked label and titles when on) and `sankey.test.ts` / `FilterSankey.test.ts` (masked node labels).
    Add a small App-level or helper test that labels are unique per account.
 
+## Execution
+
+Invoke `/code-style` before writing or modifying any ts, vue or md code, and apply its rules.
+Invoke `/commit-with-lplp-style` at the start of execution, and commit after the completed task in that style.
+
 ## Verification
 
 - `corepack yarn@4.9.2 run test --run` and `corepack yarn@4.9.2 run type-check` from `frontend/`.
