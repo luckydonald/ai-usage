@@ -11,6 +11,7 @@ from ai_usage.config import ConfigStore
 from ai_usage.database import Database
 from ai_usage.git_backup import git_backup_enabled, maybe_run_git_backup
 from ai_usage.host_identity import account_allows_host
+from ai_usage.instance_lock import InstanceLock, InstanceLockHeld
 from ai_usage.models import AccountConfig, FetchStatus, ProviderFetchResult
 from ai_usage.notes import NotesStore
 from ai_usage.orm import CrawlStateRecord
@@ -217,6 +218,23 @@ class Crawler:
     # end def
 
     async def run(self) -> None:
+        # FastScheduler saves its state through a fixed `.tmp` name, so two crawlers on one state file race each other.
+        lock = InstanceLock(self.database.paths.local / "crawler.lock")
+        try:
+            lock.acquire()
+        except InstanceLockHeld as held:
+            pid = held.holder_pid if held.holder_pid is not None else "unknown"
+            self.report(f"Another crawler is already running (pid {pid}); not starting a second one.")
+            return
+        # end try
+        try:
+            await self.run_locked()
+        finally:
+            lock.release()
+        # end try
+    # end def
+
+    async def run_locked(self) -> None:
         accounts = self.accounts_for_this_host(self.config.list_accounts())
         if accounts:
             names = ", ".join(account.name for account in accounts)
