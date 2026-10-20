@@ -3294,3 +3294,14 @@ Also all todos from CalDAV (via MCP).
 
 ❯ Using /commit-with-lplp-style fold all unpushed `ai:` commits into their task execution. Plan commits not containing code shall be folded as well.  `[TODOs]` commits shall be folded into the previous task.
 
+❯ Add a streamer mode checkbox, hiding account usernames and emails.
+
+❯ Task Notification:
+> - Task `a3045cded641e6bf2` <kbd>completed</kbd>
+> - Tool `toolu_01HmMHh39fBG1J57NxhorZ18`
+> - > Agent "Explore account display code" finished
+> - [Query (`659` chars, `659 B`)](output/agents/060.a3045cded641e6bf2/prompt.md)
+> - [Answer (`8865` chars, `8.67 KB`)](output/agents/060.a3045cded641e6bf2/result.md)
+> - [Raw log (`405231` chars, `396 KB`)](/private/tmp/claude-501/-Users-user-Documents-programming-Python-ai-usage/fce97105-985b-4e1d-af2b-4fa6441d6c8e/tasks/a3045cded641e6bf2.output)
+> - `11` tools, `52658` tokens, `0.938233 s`
+
