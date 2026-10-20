@@ -42,6 +42,9 @@ ai-usage = "ai_usage.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/ai_usage"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"frontend/dist" = "ai_usage/frontend"
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
@@ -57,4 +60,3 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 pythonVersion = "3.14"
 typeCheckingMode = "strict"
 include = ["src", "tests"]
-
