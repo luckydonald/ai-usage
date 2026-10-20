@@ -3284,3 +3284,9 @@ Also all todos from CalDAV (via MCP).
 
 ❯ Fix @ai/errors/14.txt
 
+❯ `2026-10-20 14:19:58,756 ERROR [fastscheduler] Failed to save state: [Errno 2] No such file or directory: '/Users/user/.ai-usage/local/fastscheduler.tmp' -> '/Users/user/.ai-usage/local/fastscheduler.json'`
+
+❯ STOP SEARCHING `/` RECURSIVELY!!!!
+
+❯ Enable /commit-with-lplp-style, too
+
