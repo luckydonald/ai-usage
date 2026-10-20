@@ -104,7 +104,7 @@ const PROJECTED_ICON: IconRef = { set: "solid", name: "chart-line", pack: "fonta
       </h2>
       <div class="badge-row">
         <span class="chip-badge" :title="`Configuration ${panel.accountId}`">
-          <Icon v-if="providerIcons[panel.provider]" v-bind="providerIcons[panel.provider]!" />
+          <Icon v-if="providerIcons[`${panel.service}/${panel.provider}`]" v-bind="providerIcons[`${panel.service}/${panel.provider}`]!" />
           {{ panel.parserLabel }}
         </span>
         <span class="chip-badge" :title="panel.accountId">

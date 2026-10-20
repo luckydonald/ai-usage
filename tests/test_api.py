@@ -55,7 +55,7 @@ async def test_api_catalog_latest_and_series(tmp_path, monkeypatch) -> None:
         "pack": "fontawesome-free-pack",
         "version": "latest",
     }
-    assert catalog.json()["provider_icons"]["statusline"]["name"] == "gauge"
+    assert catalog.json()["provider_icons"]["claude/statusline"]["name"] == "gauge"
     assert latest.json()[0]["percentage"] == 42
     assert series.json()[0]["points"][0]["percentage"] == 42
     await runtime.close()

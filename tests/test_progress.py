@@ -26,7 +26,17 @@ from ai_usage.providers import Provider, ProviderRegistry
 from tests.test_storage import temporary_paths
 
 
-class StaleProvider(Provider):
+class FakeProvider(Provider):
+    """Test double that overrides `fetch` directly, so it also has to supply the canonical login."""
+
+    def user_identity(self, account: AccountConfig, result: ProviderFetchResult) -> str:
+        del result
+        return f"{account.id}@example.com"
+    # end def
+# end class
+
+
+class StaleProvider(FakeProvider):
     service = "test-service"
     key = "stale"
     display_name = "Stale test provider"
@@ -58,7 +68,7 @@ class StaleProvider(Provider):
 # end class
 
 
-class ChangingProvider(Provider):
+class ChangingProvider(FakeProvider):
     service = "test-service"
     key = "changing"
     display_name = "Changing test provider"
@@ -117,10 +127,10 @@ async def test_fetch_and_crawl_report_progress(tmp_path, monkeypatch) -> None:
     provider.percentage = 99
     second = await collector.fetch_account(account, operation="crawling")
 
-    assert any(message.startswith("Started fetching Test account") for message in messages)
+    assert any(message.startswith("Started fetching unresolved") for message in messages)
     assert any("no previous value -> 3%" in message for message in messages)
     assert any("3% -> 99%" in message for message in messages)
-    assert any(message.startswith("Done crawling Test account") for message in messages)
+    assert any(message.startswith("Done crawling account@example.com") for message in messages)
 
     crawler = Crawler(collector, config, database, reporter=messages.append)
     await crawler.ensure_states([account])
@@ -182,7 +192,7 @@ async def test_stale_result_is_not_treated_as_a_crawl_failure(tmp_path, monkeypa
 # end def
 
 
-class NotingProvider(Provider):
+class NotingProvider(FakeProvider):
     service = "test-service"
     key = "noting"
     display_name = "Noting test provider"
@@ -390,7 +400,7 @@ def test_crawler_without_host_id_applies_no_filtering() -> None:
 # end def
 
 
-class IdentityProvider(Provider):
+class IdentityProvider(FakeProvider):
     service = "test-service"
     key = "identity"
     display_name = "Identity test provider"
